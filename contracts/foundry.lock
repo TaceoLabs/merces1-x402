@@ -1,0 +1,14 @@
+{
+  "lib/babyjubjub-solidity": {
+    "tag": {
+      "name": "v1.0.0",
+      "rev": "4202e8794c44cf3f894c910354c0567b659e6669"
+    }
+  },
+  "lib/forge-std": {
+    "rev": "0e44f85a13976ba7491c6a9ee994b1a7efc3c281"
+  },
+  "lib/openzeppelin-contracts": {
+    "rev": "8ff78ffb6e78463f070eab59487b4ba30481b53c"
+  }
+}

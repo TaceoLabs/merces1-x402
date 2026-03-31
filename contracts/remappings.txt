@@ -1,0 +1,2 @@
+@taceo/babyjubjub/=lib/babyjubjub-solidity/src/
+@openzeppelin/contracts/=lib/openzeppelin-contracts/contracts/
