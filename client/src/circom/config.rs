@@ -66,7 +66,7 @@ mod test {
             CircomConfig::get_transfer_key_material(&mut rand::thread_rng()).unwrap();
 
         println!(
-            "Transfer R1CS size: constraints = {}, witnesses = {}",
+            "Transfer (Client) R1CS size: constraints = {}, witnesses = {}",
             key_material.zkey().matrices.0.num_constraints,
             key_material.zkey().matrices.0.num_witness_variables
         );

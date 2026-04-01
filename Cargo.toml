@@ -1,6 +1,6 @@
 [workspace]
 resolver = "3"
-members = ["client"]
+members = ["client", "e2e", "mpc-nodes"]
 exclude = ["circom-witness-rs"]
 
 [workspace.package]
@@ -13,16 +13,29 @@ license = "MIT OR Apache-2.0"
 publish = false
 
 [workspace.dependencies]
+alloy = { version = "1.6", default-features = false }
 ark-babyjubjub = { package = "taceo-ark-babyjubjub", version = "^0.5.3" }
 ark-bn254 = "^0.5.0"
 ark-ec = "^0.5.0"
 ark-ff = "^0.5.0"
+ark-groth16 = "^0.5.0"
 ark-serialize = "^0.5.0"
+clap = { version = "4.5.53", features = ["derive", "env"] }
+client = { path = "./client" }
+circom-mpc-vm = { version = "0.9.0", git = "https://github.com/TaceoLabs/co-snarks", rev = "5d91afa" }
+co-circom = { git = "https://github.com/TaceoLabs/co-snarks", rev = "5d91afa", version = "0.10.0" }
 co-noir-to-r1cs = { git = "https://github.com/TaceoLabs/CoNoir-to-R1CS", rev = "95ca79daae3778504372c52b3c87e6b8b071f979", version = "0.1.0" }
 eyre = "0.6.12"
 groth16-material = { package = "taceo-groth16-material", version = "0.2" }
+groth16-sol = { package = "taceo-groth16-sol", version = "0.2" }
+mpc-net = { version = "0.5.0", git = "https://github.com/TaceoLabs/co-snarks", rev = "5d91afa" }
 poseidon2 = { package = "taceo-poseidon2", version = "0.2", default-features = false }
 rand = "0.8.5"
+rand_chacha = "0.3"
+mpc-nodes = { path = "./mpc-nodes" }
+tokio = { version = "1", features = ["rt-multi-thread", "macros"] }
+tracing = "0.1.43"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 
 [profile.profiling]
 inherits = "bench"
