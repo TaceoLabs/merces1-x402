@@ -143,18 +143,19 @@ impl MercesContract {
         server_verifier_address: Address,
         poseidon2_address: Address,
         babyjubjub_address: Address,
+        action_queue_address: Address,
         token_address: Address,
         mpc_address: Address,
         mpc_pk1: ark_babyjubjub::EdwardsAffine,
         mpc_pk2: ark_babyjubjub::EdwardsAffine,
         mpc_pk3: ark_babyjubjub::EdwardsAffine,
     ) -> eyre::Result<Self> {
-        // Link action_vector and poseidon2 to Merces
-        let merces_json = include_str!(concat!(
+        // Link action_vector, babyjubjub and poseidon2 to Merces
+        let json = include_str!(concat!(
             env!("CARGO_MANIFEST_DIR"),
             "/../contracts/json/Merces.json"
         ));
-        let json_value: serde_json::Value = serde_json::from_str(merces_json)?;
+        let json_value: serde_json::Value = serde_json::from_str(json)?;
         let mut bytecode_str = json_value["bytecode"]["object"]
             .as_str()
             .context("bytecode not found in JSON")?
@@ -167,21 +168,28 @@ impl MercesContract {
             .to_string();
 
         bytecode_str = super::link_bytecode_hex(
-            merces_json,
+            json,
             &bytecode_str,
             "src/Poseidon2.sol:Poseidon2T2_BN254",
             poseidon2_address,
         )?;
 
         bytecode_str = super::link_bytecode_hex(
-            merces_json,
+            json,
             &bytecode_str,
             "lib/babyjubjub-solidity/src/BabyJubJub.sol:BabyJubJub",
             babyjubjub_address,
         )?;
 
+        bytecode_str = super::link_bytecode_hex(
+            json,
+            &bytecode_str,
+            "src/ActionQueue.sol:ActionQueueLib",
+            action_queue_address,
+        )?;
+
         // Decode the fully-linked bytecode
-        let merces_bytecode = Bytes::from(hex::decode(bytecode_str)?);
+        let bytecode = Bytes::from(hex::decode(bytecode_str)?);
 
         let init_data = Bytes::from(
             Merces::constructorCall {
@@ -197,7 +205,7 @@ impl MercesContract {
             .abi_encode(),
         );
 
-        let address = super::deploy_contract(provider, merces_bytecode, init_data)
+        let address = super::deploy_contract(provider, bytecode, init_data)
             .await
             .context("failed to deploy Merces implementation")?;
         tracing::info!("Deployed Merces contract at {address:#x}");

@@ -89,11 +89,11 @@ fn link_bytecode_hex(
 
 pub async fn deploy_poseidon2(provider: &DynProvider) -> eyre::Result<Address> {
     // Deploy Poseidon2 library (no dependencies)
-    let poseidon2_json = include_str!(concat!(
+    let json = include_str!(concat!(
         env!("CARGO_MANIFEST_DIR"),
         "/../contracts/json/Poseidon2.json"
     ));
-    let json_value: serde_json::Value = serde_json::from_str(poseidon2_json)?;
+    let json_value: serde_json::Value = serde_json::from_str(json)?;
     let bytecode_str = json_value["bytecode"]["object"]
         .as_str()
         .context("bytecode not found in JSON")?
@@ -104,22 +104,48 @@ pub async fn deploy_poseidon2(provider: &DynProvider) -> eyre::Result<Address> {
                 .expect("bytecode should be a string")
         })
         .to_string();
-    let poseidon2_bytecode = Bytes::from(hex::decode(bytecode_str)?);
+    let bytecode = Bytes::from(hex::decode(bytecode_str)?);
 
-    let poseidon2_address = deploy_contract(provider, poseidon2_bytecode, Bytes::new())
+    let address = deploy_contract(provider, bytecode, Bytes::new())
         .await
         .context("failed to deploy Poseidon2 library")?;
-    tracing::info!("Deployed Poseidon2 library at {poseidon2_address:#x}");
-    Ok(poseidon2_address)
+    tracing::info!("Deployed Poseidon2 library at {address:#x}");
+    Ok(address)
+}
+
+pub async fn deploy_action_queue(provider: &DynProvider) -> eyre::Result<Address> {
+    // Deploy deploy_action_queue library (no dependencies)
+    let json = include_str!(concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/../contracts/json/ActionQueue.json"
+    ));
+    let json_value: serde_json::Value = serde_json::from_str(json)?;
+    let bytecode_str = json_value["bytecode"]["object"]
+        .as_str()
+        .context("bytecode not found in JSON")?
+        .strip_prefix("0x")
+        .unwrap_or_else(|| {
+            json_value["bytecode"]["object"]
+                .as_str()
+                .expect("bytecode should be a string")
+        })
+        .to_string();
+    let bytecode = Bytes::from(hex::decode(bytecode_str)?);
+
+    let address = deploy_contract(provider, bytecode, Bytes::new())
+        .await
+        .context("failed to deploy ActionQueue library")?;
+    tracing::info!("Deployed ActionQueue library at {address:#x}");
+    Ok(address)
 }
 
 pub async fn deploy_babyjubjub(provider: &DynProvider) -> eyre::Result<Address> {
     // Deploy babyjubjub library (no dependencies)
-    let action_vector_json = include_str!(concat!(
+    let json = include_str!(concat!(
         env!("CARGO_MANIFEST_DIR"),
         "/../contracts/json/BabyJubJub.json"
     ));
-    let json_value: serde_json::Value = serde_json::from_str(action_vector_json)?;
+    let json_value: serde_json::Value = serde_json::from_str(json)?;
     let bytecode_str = json_value["bytecode"]["object"]
         .as_str()
         .context("bytecode not found in JSON")?
@@ -130,13 +156,13 @@ pub async fn deploy_babyjubjub(provider: &DynProvider) -> eyre::Result<Address> 
                 .expect("bytecode should be a string")
         })
         .to_string();
-    let action_vector_bytecode = Bytes::from(hex::decode(bytecode_str)?);
+    let bytecode = Bytes::from(hex::decode(bytecode_str)?);
 
-    let action_vector_address = deploy_contract(provider, action_vector_bytecode, Bytes::new())
+    let address = deploy_contract(provider, bytecode, Bytes::new())
         .await
         .context("failed to deploy BabyJubJub library")?;
-    tracing::info!("Deployed BabyJubJub library at {action_vector_address:#x}");
-    Ok(action_vector_address)
+    tracing::info!("Deployed BabyJubJub library at {address:#x}");
+    Ok(address)
 }
 
 async fn deploy_contract(
@@ -181,6 +207,7 @@ pub async fn deploy(
 
     let poseidon2_address = deploy_poseidon2(provider).await?;
     let babyjubjub_address = deploy_babyjubjub(provider).await?;
+    let action_queue_address = deploy_action_queue(provider).await?;
 
     let token = match token {
         DeployToken::Native => {
@@ -200,6 +227,7 @@ pub async fn deploy(
         server_verifier_address,
         poseidon2_address,
         babyjubjub_address,
+        action_queue_address,
         token
             .as_ref()
             .map(|x| x.contract_address)
