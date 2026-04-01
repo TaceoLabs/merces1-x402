@@ -1,0 +1,11 @@
+target
+.vscode
+flamegraph.svg
+perf.data
+perf.data.old
+*.pdf
+codebook.toml
+logs
+node_modules
+*.ptau
+*.env

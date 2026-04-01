@@ -1,0 +1,22 @@
+[package]
+name = "client"
+version = "0.1.0"
+edition.workspace = true
+rust-version.workspace = true
+readme.workspace = true
+homepage.workspace = true
+repository.workspace = true
+license.workspace = true
+publish.workspace = true
+
+[dependencies]
+ark-babyjubjub.workspace = true
+ark-bn254.workspace = true
+ark-ec.workspace = true
+ark-ff.workspace = true
+ark-serialize.workspace = true
+co-noir-to-r1cs.workspace = true
+eyre.workspace = true
+groth16-material.workspace = true
+poseidon2 = { workspace = true, features = ["bn254", "t2", "t3"] }
+rand.workspace = true

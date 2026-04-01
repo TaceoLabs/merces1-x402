@@ -1,0 +1,30 @@
+[workspace]
+resolver = "3"
+members = ["client"]
+exclude = ["circom-witness-rs"]
+
+[workspace.package]
+edition = "2024"
+rust-version = "1.90"
+readme = "./README.md"
+homepage = "https://www.taceo.io"
+repository = "https://github.com/TaceoLabs/Merces1_updated"
+license = "MIT OR Apache-2.0"
+publish = false
+
+[workspace.dependencies]
+ark-babyjubjub = { package = "taceo-ark-babyjubjub", version = "^0.5.3" }
+ark-bn254 = "^0.5.0"
+ark-ec = "^0.5.0"
+ark-ff = "^0.5.0"
+ark-serialize = "^0.5.0"
+co-noir-to-r1cs = { git = "https://github.com/TaceoLabs/CoNoir-to-R1CS", rev = "95ca79daae3778504372c52b3c87e6b8b071f979", version = "0.1.0" }
+eyre = "0.6.12"
+groth16-material = { package = "taceo-groth16-material", version = "0.2" }
+poseidon2 = { package = "taceo-poseidon2", version = "0.2", default-features = false }
+rand = "0.8.5"
+
+[profile.profiling]
+inherits = "bench"
+debug = true
+lto = "thin"

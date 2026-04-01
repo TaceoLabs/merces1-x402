@@ -7,3 +7,6 @@
 [submodule "contracts/lib/babyjubjub-solidity"]
 	path = contracts/lib/babyjubjub-solidity
 	url = https://github.com/TaceoLabs/babyjubjub-solidity
+[submodule "circom-witness-rs"]
+	path = circom-witness-rs
+	url = git@github.com:TaceoLabs/circom-witness-rs.git
