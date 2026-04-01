@@ -11,10 +11,14 @@ publish.workspace = true
 
 [dependencies]
 alloy = { workspace = true, features = ["full", "node-bindings", "rpc"] }
+ark-babyjubjub.workspace = true
 ark-bn254.workspace = true
+ark-ec.workspace = true
+ark-ff.workspace = true
 ark-groth16.workspace = true
 clap.workspace = true
 client.workspace = true
+contract-rs.workspace = true
 eyre.workspace = true
 groth16-material.workspace = true
 groth16-sol.workspace = true
@@ -22,6 +26,7 @@ mpc-net = { workspace = true, features = ["local"] }
 rand.workspace = true
 rand_chacha.workspace = true
 mpc-nodes.workspace = true
+secrecy.workspace = true
 tokio.workspace = true
 tracing.workspace = true
 tracing-subscriber.workspace = true

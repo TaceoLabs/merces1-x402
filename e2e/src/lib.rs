@@ -1,4 +1,9 @@
+pub mod deployer;
+pub mod keys;
+pub mod mpc;
 pub mod proving_keys;
+pub mod user;
+pub mod wallets;
 
 use crate::proving_keys::ProvingKeys;
 use alloy::{

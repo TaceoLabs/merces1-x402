@@ -1,7 +1,10 @@
 use clap::Parser;
-use e2e::{SEED, proving_keys::ProvingKeys};
+use e2e::{
+    SEED, deployer::Deployer, mpc::Mpc, proving_keys::ProvingKeys, user::User, wallets::Wallets,
+};
 use rand::SeedableRng;
 use rand_chacha::ChaCha12Rng;
+use secrecy::SecretString;
 use std::process::ExitCode;
 
 /// Cli arguments
@@ -59,6 +62,42 @@ async fn main() -> eyre::Result<ExitCode> {
     } else {
         tracing::info!("Skipping writing solidity verifiers...");
     }
+
+    tracing::info!("Initializing wallets...");
+    let wallets = Wallets::new_anvil(4)?;
+
+    tracing::info!("Connecting providers...");
+    let anvil_rpc: SecretString = e2e::ANVIL_RPC.to_string().into();
+    let deployer = Deployer::from_wallet(&anvil_rpc, wallets.wallets[0].clone()).await?;
+    let mpc = Mpc::from_wallet(
+        &anvil_rpc,
+        wallets.wallets[1].clone(),
+        proving_keys.server.clone(),
+        &mut rng,
+    )
+    .await?;
+    let alice = User::from_wallet(
+        &anvil_rpc,
+        wallets.wallets[2].clone(),
+        proving_keys.client.clone(),
+    )
+    .await?;
+    let bob = User::from_wallet(
+        &anvil_rpc,
+        wallets.wallets[3].clone(),
+        proving_keys.client.clone(),
+    )
+    .await?;
+
+    tracing::info!("Deploying contracts...");
+    let deploytoken = if cli.erc20_token {
+        contract_rs::DeployToken::ERC20
+    } else {
+        contract_rs::DeployToken::Native
+    };
+    deployer
+        .deploy(mpc.get_signer(), mpc.public_keys(), deploytoken)
+        .await?;
 
     Ok(ExitCode::SUCCESS)
 }

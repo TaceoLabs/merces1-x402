@@ -3,6 +3,7 @@ pub mod merces;
 pub mod token;
 pub mod verifiers;
 
+use crate::{merces::MercesContract, token::USDCTokenContract};
 use alloy::{
     hex,
     primitives::{Address, Bytes, TxKind, U256},
@@ -86,6 +87,32 @@ fn link_bytecode_hex(
     Ok(linked_bytecode)
 }
 
+pub async fn deploy_poseidon2(provider: &DynProvider) -> eyre::Result<Address> {
+    // Deploy Poseidon2 library (no dependencies)
+    let poseidon2_json = include_str!(concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/../contracts/json/Poseidon2.json"
+    ));
+    let json_value: serde_json::Value = serde_json::from_str(poseidon2_json)?;
+    let bytecode_str = json_value["bytecode"]["object"]
+        .as_str()
+        .context("bytecode not found in JSON")?
+        .strip_prefix("0x")
+        .unwrap_or_else(|| {
+            json_value["bytecode"]["object"]
+                .as_str()
+                .expect("bytecode should be a string")
+        })
+        .to_string();
+    let poseidon2_bytecode = Bytes::from(hex::decode(bytecode_str)?);
+
+    let poseidon2_address = deploy_contract(provider, poseidon2_bytecode, Bytes::new())
+        .await
+        .context("failed to deploy Poseidon2 library")?;
+    tracing::info!("Deployed Poseidon2 library at {poseidon2_address:#x}");
+    Ok(poseidon2_address)
+}
+
 pub async fn deploy_babyjubjub(provider: &DynProvider) -> eyre::Result<Address> {
     // Deploy babyjubjub library (no dependencies)
     let action_vector_json = include_str!(concat!(
@@ -132,4 +159,57 @@ async fn deploy_contract(
     receipt
         .contract_address
         .context("contract deployment failed - no address in receipt")
+}
+
+#[derive(Clone, Debug, Copy)]
+pub enum DeployToken {
+    Native,
+    ERC20,
+}
+
+pub async fn deploy(
+    provider: &DynProvider,
+    mpc_address: Address,
+    mpc_pk1: ark_babyjubjub::EdwardsAffine,
+    mpc_pk2: ark_babyjubjub::EdwardsAffine,
+    mpc_pk3: ark_babyjubjub::EdwardsAffine,
+    token: DeployToken,
+    initial_supply: U256,
+) -> eyre::Result<(MercesContract, Option<USDCTokenContract>)> {
+    let client_verifier_address = verifiers::client::deploy_contract(provider).await?;
+    let server_verifier_address = verifiers::server::deploy_contract(provider).await?;
+
+    let poseidon2_address = deploy_poseidon2(provider).await?;
+    let babyjubjub_address = deploy_babyjubjub(provider).await?;
+
+    let token = match token {
+        DeployToken::Native => {
+            tracing::info!("Deploying with native token");
+            None
+        }
+        DeployToken::ERC20 => {
+            tracing::info!("Deploying with ERC20 token");
+            let address = USDCTokenContract::deploy(provider, initial_supply).await?;
+            Some(address)
+        }
+    };
+
+    let merces = MercesContract::deploy(
+        provider,
+        client_verifier_address,
+        server_verifier_address,
+        poseidon2_address,
+        babyjubjub_address,
+        token
+            .as_ref()
+            .map(|x| x.contract_address)
+            .unwrap_or_default(),
+        mpc_address,
+        mpc_pk1,
+        mpc_pk2,
+        mpc_pk3,
+    )
+    .await?;
+
+    Ok((merces, token))
 }

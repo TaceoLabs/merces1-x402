@@ -25,14 +25,16 @@ client = { path = "./client" }
 circom-mpc-vm = { version = "0.9.0", git = "https://github.com/TaceoLabs/co-snarks", rev = "5d91afa" }
 co-circom = { git = "https://github.com/TaceoLabs/co-snarks", rev = "5d91afa", version = "0.10.0" }
 co-noir-to-r1cs = { git = "https://github.com/TaceoLabs/CoNoir-to-R1CS", rev = "95ca79daae3778504372c52b3c87e6b8b071f979", version = "0.1.0" }
+contract-rs = { path = "./contract-rs" }
 eyre = "0.6.12"
 groth16-material = { package = "taceo-groth16-material", version = "0.2" }
 groth16-sol = { package = "taceo-groth16-sol", version = "0.2" }
 mpc-net = { version = "0.5.0", git = "https://github.com/TaceoLabs/co-snarks", rev = "5d91afa" }
+mpc-nodes = { path = "./mpc-nodes" }
 poseidon2 = { package = "taceo-poseidon2", version = "0.2", default-features = false }
 rand = "0.8.5"
 rand_chacha = "0.3"
-mpc-nodes = { path = "./mpc-nodes" }
+secrecy = "0.10"
 serde_json = { version = "1" }
 tokio = { version = "1", features = ["rt-multi-thread", "macros"] }
 tracing = "0.1.43"

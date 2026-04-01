@@ -26,6 +26,7 @@ forge build --silent
 rm -rf json
 mkdir json
 cp out/BabyJubJub.sol/BabyJubJub.json json/BabyJubJub.json
+cp out/Poseidon2.sol/Poseidon2T2_BN254.json json/Poseidon2.json
 cp out/Merces.sol/Merces.json json/Merces.json
 cp out/Token.sol/USDCToken.json json/USDCToken.json
 cp out/VerifierClient.sol/Verifier.json json/VerifierClient.json
