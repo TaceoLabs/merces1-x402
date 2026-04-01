@@ -1,0 +1,494 @@
+use std::array;
+
+use crate::{
+    DecodedCiphertext,
+    environment::Environment,
+    merces::Merces::{ActionItem, Ciphertext, MercesInstance},
+};
+use alloy::{
+    hex,
+    primitives::{Address, Bytes, FixedBytes, Log, U256},
+    providers::{DynProvider, Provider},
+    rpc::types::{Filter, TransactionReceipt},
+    sol,
+    sol_types::{SolCall, SolConstructor, SolEvent},
+};
+use ark_bn254::Bn254;
+use ark_ff::PrimeField;
+use ark_groth16::Proof;
+use eyre::{Context, ContextCompat};
+use tracing::instrument;
+
+// Codegen from ABI file to interact with the contract.
+sol!(
+    #[sol(rpc, ignore_unlinked)]
+    #[allow(clippy::too_many_arguments)]
+    Merces,
+    concat!(env!("CARGO_MANIFEST_DIR"), "/../contracts/json/Merces.json")
+);
+
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+pub struct MercesContract {
+    pub contract_address: Address,
+}
+
+fn merces_interface_id() -> [u8; 4] {
+    let mut id = [0u8; 4];
+
+    for sel in [
+        Merces::getNextActionIndexCall::SELECTOR,
+        Merces::getQueueSizeCall::SELECTOR,
+        Merces::processMPCCall::SELECTOR,
+        Merces::readQueueCall::SELECTOR,
+        Merces::retrieveFundsCall::SELECTOR,
+    ] {
+        for i in 0..4 {
+            id[i] ^= sel[i];
+        }
+    }
+
+    id
+}
+
+impl MercesContract {
+    pub const BATCH_SIZE: usize = 50;
+
+    pub fn get_address(&self) -> Address {
+        self.contract_address
+    }
+
+    #[instrument(level = "info", skip_all)]
+    pub async fn contract_comp_check(
+        &self,
+        provider: &DynProvider,
+        environment: Environment,
+    ) -> eyre::Result<()> {
+        let instance = MercesInstance::new(self.contract_address, provider);
+        tracing::info!("checking contract address {}", self.contract_address);
+        let domain_tag_preimage = format!("{environment}-merces2");
+        tracing::info!("domain tag: {domain_tag_preimage}");
+        instance
+            .contractCompCheck(
+                FixedBytes::from(merces_interface_id()),
+                alloy::primitives::keccak256(domain_tag_preimage.as_bytes()),
+            )
+            .call()
+            .await
+            .context("while doing comp check")?;
+        Ok(())
+    }
+
+    fn encode_babyjubjub(input: ark_babyjubjub::EdwardsAffine) -> BabyJubJub::Affine {
+        BabyJubJub::Affine {
+            x: U256::from_limbs(input.x.into_bigint().0),
+            y: U256::from_limbs(input.y.into_bigint().0),
+        }
+    }
+
+    fn decode_babyjubjub(input: BabyJubJub::Affine) -> eyre::Result<ark_babyjubjub::EdwardsAffine> {
+        if input.x.is_zero() && input.y.is_zero() {
+            // Handle the identity point case
+            return Ok(ark_babyjubjub::EdwardsAffine::zero());
+        }
+
+        Ok(ark_babyjubjub::EdwardsAffine::new(
+            crate::u256_to_field(input.x)?,
+            crate::u256_to_field(input.y)?,
+        ))
+    }
+
+    fn compress_proof(proof: &Proof<Bn254>) -> [U256; 4] {
+        groth16_sol::prepare_compressed_proof(proof)
+    }
+
+    fn encode_ciphertext(
+        ciphertexts: [[ark_bn254::Fr; 2]; 3],
+        sender_pk: ark_babyjubjub::EdwardsAffine,
+    ) -> Merces::Ciphertext {
+        let amount = array::from_fn(|i| super::bn254_fr_to_u256(ciphertexts[i][0]));
+        let r = array::from_fn(|i| super::bn254_fr_to_u256(ciphertexts[i][1]));
+        Merces::Ciphertext {
+            amount,
+            r,
+            senderPk: Self::encode_babyjubjub(sender_pk),
+        }
+    }
+
+    pub fn decode_ciphertext(
+        ciphertext: Merces::Ciphertext,
+    ) -> eyre::Result<[DecodedCiphertext; 3]> {
+        Ok([
+            DecodedCiphertext {
+                amount: crate::u256_to_field(ciphertext.amount[0])?,
+                amount_r: crate::u256_to_field(ciphertext.r[0])?,
+                sender_pk: Self::decode_babyjubjub(ciphertext.senderPk.clone())?,
+            },
+            DecodedCiphertext {
+                amount: crate::u256_to_field(ciphertext.amount[1])?,
+                amount_r: crate::u256_to_field(ciphertext.r[1])?,
+                sender_pk: Self::decode_babyjubjub(ciphertext.senderPk.clone())?,
+            },
+            DecodedCiphertext {
+                amount: crate::u256_to_field(ciphertext.amount[2])?,
+                amount_r: crate::u256_to_field(ciphertext.r[2])?,
+                sender_pk: Self::decode_babyjubjub(ciphertext.senderPk)?,
+            },
+        ])
+    }
+
+    #[expect(clippy::too_many_arguments)]
+    pub async fn deploy(
+        provider: &DynProvider,
+        client_verifier_address: Address,
+        server_verifier_address: Address,
+        poseidon2_address: Address,
+        babyjubjub_address: Address,
+        token_address: Address,
+        mpc_address: Address,
+        mpc_pk1: ark_babyjubjub::EdwardsAffine,
+        mpc_pk2: ark_babyjubjub::EdwardsAffine,
+        mpc_pk3: ark_babyjubjub::EdwardsAffine,
+    ) -> eyre::Result<Self> {
+        // Link action_vector and poseidon2 to Merces
+        let merces_json = include_str!(concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/../contracts/json/Merces.json"
+        ));
+        let json_value: serde_json::Value = serde_json::from_str(merces_json)?;
+        let mut bytecode_str = json_value["bytecode"]["object"]
+            .as_str()
+            .context("bytecode not found in JSON")?
+            .strip_prefix("0x")
+            .unwrap_or_else(|| {
+                json_value["bytecode"]["object"]
+                    .as_str()
+                    .expect("bytecode should be a string")
+            })
+            .to_string();
+
+        bytecode_str = super::link_bytecode_hex(
+            merces_json,
+            &bytecode_str,
+            "src/Poseidon2.sol:Poseidon2T2_BN254",
+            poseidon2_address,
+        )?;
+
+        bytecode_str = super::link_bytecode_hex(
+            merces_json,
+            &bytecode_str,
+            "lib/babyjubjub-solidity/src/BabyJubJub.sol:BabyJubJub",
+            babyjubjub_address,
+        )?;
+
+        // Decode the fully-linked bytecode
+        let merces_bytecode = Bytes::from(hex::decode(bytecode_str)?);
+
+        let init_data = Bytes::from(
+            Merces::constructorCall {
+                _clientVerifier: client_verifier_address,
+                _serverVerifier: server_verifier_address,
+                _mpcAddress: mpc_address,
+                _tokenAddress: token_address,
+                _mpcPk1: Self::encode_babyjubjub(mpc_pk1),
+                _mpcPk2: Self::encode_babyjubjub(mpc_pk2),
+                _mpcPk3: Self::encode_babyjubjub(mpc_pk3),
+                _environmentTag: format!("{}", Environment::Test),
+            }
+            .abi_encode(),
+        );
+
+        let address = super::deploy_contract(provider, merces_bytecode, init_data)
+            .await
+            .context("failed to deploy Merces implementation")?;
+        tracing::info!("Deployed Merces contract at {address:#x}");
+        Ok(Self {
+            contract_address: address,
+        })
+    }
+
+    pub async fn retrieve_funds(
+        &self,
+        provider: &DynProvider,
+        receiver: Address,
+    ) -> eyre::Result<TransactionReceipt> {
+        let contract = Merces::new(self.contract_address, provider);
+
+        let receipt = contract
+            .retrieveFunds(receiver)
+            .send()
+            .await
+            .context("while broadcasting to network")?
+            .get_receipt()
+            .await
+            .context("while receiving receipt for transaction")?;
+
+        if receipt.status() {
+            tracing::info!(
+                "retrieve funds done with transaction hash: {}",
+                receipt.transaction_hash
+            );
+        } else {
+            eyre::bail!("cannot finish transaction: {receipt:?}");
+        }
+
+        Ok(receipt)
+    }
+
+    pub async fn get_queue_size(&self, provider: &DynProvider) -> eyre::Result<usize> {
+        let contract = Merces::new(self.contract_address, provider);
+        let size = contract
+            .getQueueSize()
+            .call()
+            .await
+            .context("while calling get_action_queue_size")?;
+
+        crate::u256_to_usize(size)
+    }
+
+    pub async fn get_next_action_index(&self, provider: &DynProvider) -> eyre::Result<usize> {
+        let contract = Merces::new(self.contract_address, provider);
+        let index = contract
+            .getNextActionIndex()
+            .call()
+            .await
+            .context("while calling get_next_action_index")?;
+
+        crate::u256_to_usize(index)
+    }
+
+    pub async fn read_queue(
+        &self,
+        num_items: usize,
+        provider: &DynProvider,
+    ) -> eyre::Result<(Vec<usize>, Vec<ActionItem>, Vec<Ciphertext>)> {
+        let contract = Merces::new(self.contract_address, provider);
+        let res = contract
+            .readQueue(U256::from(num_items))
+            .call()
+            .await
+            .context("while calling read_queue")?;
+
+        if res._0.len() != res._1.len() {
+            eyre::bail!("mismatched lengths in read_queue");
+        }
+        if res._0.len() != res._2.len() {
+            eyre::bail!("mismatched lengths in read_queue");
+        }
+        let indices = res
+            ._0
+            .into_iter()
+            .map(crate::u256_to_usize)
+            .collect::<eyre::Result<Vec<usize>>>()?;
+
+        Ok((indices, res._1, res._2))
+    }
+
+    pub async fn get_mpc_public_keys(
+        &self,
+        provider: &DynProvider,
+    ) -> eyre::Result<(
+        ark_babyjubjub::EdwardsAffine,
+        ark_babyjubjub::EdwardsAffine,
+        ark_babyjubjub::EdwardsAffine,
+    )> {
+        let contract = Merces::new(self.contract_address, provider);
+        let result = contract
+            .getMpcPublicKeys()
+            .call()
+            .await
+            .context("while calling getMPCPublicKeys")?;
+
+        Ok((
+            Self::decode_babyjubjub(result._0)?,
+            Self::decode_babyjubjub(result._1)?,
+            Self::decode_babyjubjub(result._2)?,
+        ))
+    }
+
+    pub async fn deposit(
+        &self,
+        provider: &DynProvider,
+        amount: U256,
+        native_amount: U256,
+    ) -> eyre::Result<(usize, TransactionReceipt)> {
+        let contract = Merces::new(self.contract_address, provider);
+
+        let receipt = contract
+            .deposit(amount)
+            .value(native_amount)
+            .send()
+            .await
+            .context("while broadcasting to network")?
+            .get_receipt()
+            .await
+            .context("while receiving receipt for transaction")?;
+
+        if receipt.status() {
+            tracing::info!(
+                "deposit done with transaction hash: {}",
+                receipt.transaction_hash
+            );
+        } else {
+            eyre::bail!("cannot finish transaction: {receipt:?}");
+        }
+
+        let result = receipt
+            .decoded_log::<Merces::Deposit>()
+            .ok_or_else(|| eyre::eyre!("no Deposit event found in transaction receipt logs"))?;
+        let action_index = crate::u256_to_usize(result.actionIndex)?;
+
+        Ok((action_index, receipt))
+    }
+
+    pub async fn withdraw(
+        &self,
+        provider: &DynProvider,
+        amount: U256,
+    ) -> eyre::Result<(usize, TransactionReceipt)> {
+        let contract = Merces::new(self.contract_address, provider);
+
+        let receipt = contract
+            .withdraw(amount)
+            .send()
+            .await
+            .context("while broadcasting to network")?
+            .get_receipt()
+            .await
+            .context("while receiving receipt for transaction")?;
+
+        if receipt.status() {
+            tracing::info!(
+                "withdraw done with transaction hash: {}",
+                receipt.transaction_hash
+            );
+        } else {
+            eyre::bail!("cannot finish transaction: {receipt:?}");
+        }
+
+        let result = receipt
+            .decoded_log::<Merces::Withdraw>()
+            .ok_or_else(|| eyre::eyre!("no Withdraw event found in transaction receipt logs"))?;
+        let action_index = crate::u256_to_usize(result.actionIndex)?;
+
+        Ok((action_index, receipt))
+    }
+
+    pub async fn transfer(
+        &self,
+        provider: &DynProvider,
+        receiver: Address,
+        amount_commitment: ark_bn254::Fr,
+        ciphertexts: [[ark_bn254::Fr; 2]; 3],
+        sender_pk: ark_babyjubjub::EdwardsAffine,
+        proof: Proof<Bn254>,
+    ) -> eyre::Result<(usize, TransactionReceipt)> {
+        let contract = Merces::new(self.contract_address, provider);
+
+        let ciphertext = Self::encode_ciphertext(ciphertexts, sender_pk);
+        let amount_commitment = super::bn254_fr_to_u256(amount_commitment);
+        let proof = Self::compress_proof(&proof);
+
+        let receipt = contract
+            .transfer(receiver, amount_commitment, ciphertext, proof)
+            .send()
+            .await
+            .context("while broadcasting to network")?
+            .get_receipt()
+            .await
+            .context("while receiving receipt for transaction")?;
+
+        if receipt.status() {
+            tracing::info!(
+                "transfer done with transaction hash: {}",
+                receipt.transaction_hash
+            );
+        } else {
+            eyre::bail!("cannot finish transaction: {receipt:?}");
+        }
+
+        let result = receipt
+            .decoded_log::<Merces::Transfer>()
+            .ok_or_else(|| eyre::eyre!("no Transfer event found in transaction receipt logs"))?;
+        let action_index = crate::u256_to_usize(result.actionIndex)?;
+
+        Ok((action_index, receipt))
+    }
+
+    pub async fn process_mpc(
+        &self,
+        provider: &DynProvider,
+        num_transactions: usize,
+        commitments: [U256; Self::BATCH_SIZE * 2],
+        valid: [bool; Self::BATCH_SIZE],
+        proof: Proof<Bn254>,
+    ) -> eyre::Result<(Vec<usize>, TransactionReceipt)> {
+        let contract = Merces::new(self.contract_address, provider);
+
+        let proof = Self::compress_proof(&proof);
+
+        let receipt = contract
+            .processMPC(U256::from(num_transactions), commitments, valid, proof)
+            .send()
+            .await
+            .context("while broadcasting to network")?
+            .get_receipt()
+            .await
+            .context("while receiving receipt for transaction")?;
+
+        if receipt.status() {
+            tracing::info!(
+                "processMPC done with transaction hash: {}",
+                receipt.transaction_hash
+            );
+        } else {
+            eyre::bail!("cannot finish transaction: {receipt:?}");
+        }
+
+        let result = receipt
+            .decoded_log::<Merces::ProcessedMPC>()
+            .ok_or_else(|| {
+                eyre::eyre!("no ProcessedMPC event found in transaction receipt logs")
+            })?;
+        let action_indices = result
+            .actionIndices
+            .into_iter()
+            .take(num_transactions)
+            .map(crate::u256_to_usize)
+            .collect::<eyre::Result<Vec<usize>>>()?;
+
+        Ok((action_indices, receipt))
+    }
+
+    pub async fn read_processed_mpc_events_since(
+        &self,
+        provider: &DynProvider,
+        block: u64,
+    ) -> eyre::Result<Vec<Log<Merces::ProcessedMPC>>> {
+        let filter = Filter::new()
+            .address(self.contract_address)
+            .event_signature(Merces::ProcessedMPC::SIGNATURE_HASH)
+            .from_block(block);
+        let logs = provider.get_logs(&filter).await?;
+
+        let mut logs_ = Vec::with_capacity(logs.len());
+
+        for log in logs {
+            let decoded_log = log.log_decode::<Merces::ProcessedMPC>()?;
+            logs_.push(decoded_log.into_inner());
+        }
+
+        Ok(logs_)
+    }
+
+    pub async fn read_processed_mpc_events(
+        &self,
+        provider: &DynProvider,
+        n_blocks: u64, // amount of latest blocks to read from
+    ) -> eyre::Result<Vec<Log<Merces::ProcessedMPC>>> {
+        let last_block = provider.get_block_number().await?;
+        let from_block = last_block.saturating_sub(n_blocks);
+
+        self.read_processed_mpc_events_since(provider, from_block)
+            .await
+    }
+}

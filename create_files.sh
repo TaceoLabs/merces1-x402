@@ -21,15 +21,13 @@ done
 cd ..
 
 # Solidity JSON
-# cd contracts
-# forge build --silent
-# rm -rf json
-# mkdir json
-# cp out/BabyJubJub.sol/BabyJubJub.json json/BabyJubJub.json
-# cp out/swift.sol/Swift.json json/Swift.json
-# cp out/token.sol/USDCToken.json json/USDCToken.json
-# cp out/VerifierRegisterPendingTransaction.sol/Verifier.json json/VerifierRegisterPendingTransaction.json
-# cp out/VerifierSwiftApproveTransaction.sol/Verifier.json json/VerifierSwiftApproveTransaction.json
-# cp out/VerifierClientApproveNetting.sol/Verifier.json json/VerifierClientApproveNetting.json
-# cp out/VerifierClientChallengeNetting.sol/Verifier.json json/VerifierClientChallengeNetting.json
-# cd ..
+cd contracts
+forge build --silent
+rm -rf json
+mkdir json
+cp out/BabyJubJub.sol/BabyJubJub.json json/BabyJubJub.json
+cp out/Merces.sol/Merces.json json/Merces.json
+cp out/Token.sol/USDCToken.json json/USDCToken.json
+cp out/VerifierClient.sol/Verifier.json json/VerifierClient.json
+cp out/VerifierServer.sol/Verifier.json json/VerifierServer.json
+cd ..

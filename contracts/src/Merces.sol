@@ -26,7 +26,7 @@ interface IMercesMpc {
         bool[50] calldata valid,
         uint256[4] calldata proof
     ) external returns (uint256[50] memory);
-    function readQeue(uint256 num_items)
+    function readQueue(uint256 num_items)
         external
         returns (uint256[] memory, ActionItem[] memory, Merces.Ciphertext[] memory);
     function retrieveFunds(address receiver) external;
@@ -92,11 +92,11 @@ contract Merces is ERC165, IMercesMpc {
     }
 
     // We emit the location of the registered action indices for deposit, withdraw, and transfer
-    event Deposit(uint256 indexed action_index);
-    event Withdraw(uint256 indexed action_index);
-    event Transfer(uint256 indexed action_index);
+    event Deposit(uint256 actionIndex);
+    event Withdraw(uint256 actionIndex);
+    event Transfer(uint256 actionIndex);
     // We emit the location of the registered action indices which have been processed, as well as whether they were valid or not
-    event ProcessedMPC(uint256[BATCH_SIZE] indexed action_indices, bool[BATCH_SIZE] indexed valids);
+    event ProcessedMPC(uint256[BATCH_SIZE] actionIndices, bool[BATCH_SIZE] valid);
 
     // The error codes
     error ContractComp();
@@ -181,7 +181,7 @@ contract Merces is ERC165, IMercesMpc {
         return actionQueue.peekIndex();
     }
 
-    function readQeue(uint256 num_items)
+    function readQueue(uint256 num_items)
         public
         view
         returns (uint256[] memory, ActionItem[] memory, Ciphertext[] memory)
