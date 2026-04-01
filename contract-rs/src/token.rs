@@ -38,7 +38,7 @@ impl USDCTokenContract {
     // Use U256 max value for unlimited approval
     pub async fn approve(
         &self,
-        provider: DynProvider,
+        provider: &DynProvider,
         receiver: Address,
         amount: U256,
     ) -> eyre::Result<TransactionReceipt> {
@@ -68,7 +68,7 @@ impl USDCTokenContract {
     // Use U256 max value for unlimited approval
     pub async fn approve_with_sender(
         &self,
-        provider: DynProvider,
+        provider: &DynProvider,
         from: Address,
         receiver: Address,
         amount: U256,
@@ -96,10 +96,9 @@ impl USDCTokenContract {
 
         Ok(receipt)
     }
-
     pub async fn mint(
         &self,
-        provider: DynProvider,
+        provider: &DynProvider,
         receiver: Address,
         amount: U256,
     ) -> eyre::Result<TransactionReceipt> {
@@ -128,7 +127,7 @@ impl USDCTokenContract {
 
     pub async fn transfer(
         &self,
-        provider: DynProvider,
+        provider: &DynProvider,
         receiver: Address,
         amount: U256,
     ) -> eyre::Result<TransactionReceipt> {
@@ -155,9 +154,21 @@ impl USDCTokenContract {
         Ok(receipt)
     }
 
-    pub async fn balance_of(&self, provider: DynProvider, account: Address) -> eyre::Result<U256> {
+    pub async fn balance_of(&self, provider: &DynProvider, account: Address) -> eyre::Result<U256> {
         let contract = USDCToken::new(self.contract_address, provider);
         let balance = contract.balanceOf(account).call().await?;
         Ok(balance)
+    }
+
+    pub async fn decimals(&self, provider: &DynProvider) -> eyre::Result<u8> {
+        let contract = USDCToken::new(self.contract_address, provider);
+        let decimals = contract.decimals().call().await?;
+        Ok(decimals)
+    }
+
+    pub async fn name(&self, provider: &DynProvider) -> eyre::Result<String> {
+        let contract = USDCToken::new(self.contract_address, provider);
+        let name = contract.name().call().await?;
+        Ok(name)
     }
 }

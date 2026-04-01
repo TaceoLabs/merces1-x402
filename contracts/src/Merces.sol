@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
-// import "forge-std/console.sol";
+import "forge-std/console.sol";
 import {Action, ActionItem, ActionQueue, ActionQueueLib} from "./ActionQueue.sol";
 import {BabyJubJub} from "@taceo/babyjubjub/BabyJubJub.sol";
 import {ERC165} from "@openzeppelin/contracts/utils/introspection/ERC165.sol";
@@ -283,21 +283,21 @@ contract Merces is ERC165, IMercesMpc {
             beta,
             proof,
             [
+                ciphertext.senderPk.x,
+                ciphertext.senderPk.y,
+                amountCommitment,
+                ciphertext.amount[0],
+                ciphertext.r[0],
+                ciphertext.amount[1],
+                ciphertext.r[1],
+                ciphertext.amount[2],
+                ciphertext.r[2],
                 mpcPk1.x,
                 mpcPk1.y,
                 mpcPk2.x,
                 mpcPk2.y,
                 mpcPk3.x,
-                mpcPk3.y,
-                ciphertext.senderPk.x,
-                ciphertext.senderPk.y,
-                amountCommitment,
-                ciphertext.amount[0],
-                ciphertext.amount[1],
-                ciphertext.amount[2],
-                ciphertext.r[0],
-                ciphertext.r[1],
-                ciphertext.r[2]
+                mpcPk3.y
             ]
         );
 
@@ -544,7 +544,7 @@ contract Merces is ERC165, IMercesMpc {
     {
         uint256 alpha = _computeSha256(abi.encodePacked(publicInputs));
         uint256 gamma = _computeUhfClient(alpha, beta, publicInputs);
-        serverVerifier.verifyCompressedProof(proof, [beta, gamma, alpha]);
+        clientVerifier.verifyCompressedProof(proof, [beta, gamma, alpha]);
     }
 
     function _verifyUserTxServer(uint256 beta, uint256[4] calldata proof, uint256[BATCH_SIZE * 6] memory publicInputs)

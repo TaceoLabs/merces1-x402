@@ -9,8 +9,10 @@ use crate::proving_keys::ProvingKeys;
 use alloy::{
     consensus::constants::ETH_TO_WEI,
     network::EthereumWallet,
+    primitives::{Address, U256},
     providers::{DynProvider, Provider, ProviderBuilder},
 };
+use contract_rs::{merces::MercesContract, token::USDCTokenContract};
 use eyre::Context;
 use groth16_sol::SolidityVerifierConfig;
 
@@ -47,4 +49,57 @@ pub fn write_solidity_verifiers(keys: &ProvingKeys) -> eyre::Result<()> {
     let config = SolidityVerifierConfig::default();
     keys.write_solidity_verifiers(config)?;
     Ok(())
+}
+
+async fn get_native_balance(provider: &DynProvider, address: Address) -> eyre::Result<U256> {
+    Ok(provider.get_balance(address).await?)
+}
+
+async fn get_erc20_balance(
+    provider: &DynProvider,
+    contract: &USDCTokenContract,
+    address: Address,
+) -> eyre::Result<U256> {
+    contract.balance_of(provider, address).await
+}
+
+pub async fn get_decimals(
+    providers: &DynProvider,
+    token: &Option<USDCTokenContract>,
+) -> eyre::Result<u8> {
+    match token {
+        None => Ok(18),
+        Some(token_contract) => token_contract.decimals(providers).await,
+    }
+}
+
+pub async fn check_action_queue_size(
+    contract: &MercesContract,
+    provider: &DynProvider,
+    expected: usize,
+) -> eyre::Result<()> {
+    let num_items = contract.get_queue_size(provider).await?;
+    if num_items != expected {
+        eyre::bail!("Expected action queue to have {expected} items, found {num_items}");
+    }
+    Ok(())
+}
+
+pub fn cmp_balance_with_gas(diff: U256, expected_change: U256, decimals: u8) -> eyre::Result<()> {
+    let multiplier = 10u128.pow(decimals as u32);
+    let cmp_diff = U256::from(multiplier / 1000); // Represents GAS cost
+
+    if diff < expected_change - cmp_diff || diff > expected_change + cmp_diff {
+        eyre::bail!(
+            "Balance change {diff} is not within expected range [{}, {}]",
+            expected_change - cmp_diff,
+            expected_change + cmp_diff
+        );
+    }
+
+    Ok(())
+}
+
+pub fn amount_to_wei(amount: U256, decimals: u8) -> U256 {
+    amount * U256::from(10u128.pow(decimals as u32))
 }

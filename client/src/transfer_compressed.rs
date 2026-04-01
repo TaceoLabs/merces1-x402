@@ -15,6 +15,12 @@ pub struct TransferCompressed {
     alpha: ark_bn254::Fr,
 }
 
+pub struct OnChainTransfer {
+    pub ciphertexts: [[ark_bn254::Fr; 2]; 3],
+    pub amount_commitment: ark_bn254::Fr,
+    pub sender_pk: ark_babyjubjub::EdwardsAffine,
+}
+
 impl TransferCompressed {
     #[cfg(test)]
     fn random<R: Rng + CryptoRng>(rng: &mut R) -> Self {
@@ -46,10 +52,10 @@ impl TransferCompressed {
     }
 
     // Computes and sets alpha and returns the ciphertexts
-    pub fn compute_alpha(&mut self) -> [[ark_bn254::Fr; 2]; 3] {
-        let (hash_inputs, ciphertexts) = self.get_sha_inputs();
+    pub fn compute_alpha(&mut self) -> OnChainTransfer {
+        let (hash_inputs, result) = self.get_sha_inputs();
         self.alpha = crate::compute_alpha(hash_inputs);
-        ciphertexts
+        result
     }
 
     pub fn generate_proof<R: Rng + CryptoRng>(
@@ -112,7 +118,7 @@ impl TransferCompressed {
         })
     }
 
-    pub fn get_sha_inputs(&self) -> (Vec<ark_bn254::Fr>, [[ark_bn254::Fr; 2]; 3]) {
+    pub fn get_sha_inputs(&self) -> (Vec<ark_bn254::Fr>, OnChainTransfer) {
         let encrypt_pk = self.get_encrypt_pk();
         let amount_commitment = self.get_amount_commitment();
         let ciphertexts = self.get_ciphertextexts();
@@ -129,7 +135,14 @@ impl TransferCompressed {
             hash_inputs.push(pk.x);
             hash_inputs.push(pk.y);
         }
-        (hash_inputs, ciphertexts)
+
+        let res = OnChainTransfer {
+            ciphertexts,
+            amount_commitment,
+            sender_pk: encrypt_pk,
+        };
+
+        (hash_inputs, res)
     }
 }
 

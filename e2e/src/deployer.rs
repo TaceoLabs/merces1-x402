@@ -47,4 +47,19 @@ impl Deployer {
         )
         .await
     }
+
+    pub async fn send_tokens(
+        &self,
+        token_contract: &USDCTokenContract,
+        receiver: Address,
+        amount: U256,
+    ) -> eyre::Result<()> {
+        token_contract
+            .approve(&self.provider, receiver, amount)
+            .await?;
+        token_contract
+            .transfer(&self.provider, receiver, amount)
+            .await?;
+        Ok(())
+    }
 }
