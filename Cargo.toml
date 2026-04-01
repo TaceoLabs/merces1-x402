@@ -31,11 +31,13 @@ groth16-material = { package = "taceo-groth16-material", version = "0.2" }
 groth16-sol = { package = "taceo-groth16-sol", version = "0.2" }
 mpc-net = { version = "0.5.0", git = "https://github.com/TaceoLabs/co-snarks", rev = "5d91afa" }
 mpc-nodes = { path = "./mpc-nodes" }
+num-bigint = { version = "0.4.6" }
 poseidon2 = { package = "taceo-poseidon2", version = "0.2", default-features = false }
 rand = "0.8.5"
 rand_chacha = "0.3"
 secrecy = "0.10"
 serde_json = { version = "1" }
+sha2 = { version = "0.10", features = ["compress"] }
 tokio = { version = "1", features = ["rt-multi-thread", "macros"] }
 tracing = "0.1.43"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }

@@ -18,5 +18,7 @@ ark-serialize.workspace = true
 co-noir-to-r1cs.workspace = true
 eyre.workspace = true
 groth16-material.workspace = true
+num-bigint.workspace = true
 poseidon2 = { workspace = true, features = ["bn254", "t2", "t3"] }
 rand.workspace = true
+sha2.workspace = true

@@ -4,4 +4,4 @@ include "circuits.circom";
 
 // circom -l .. --O2 --r1cs client.circom
 
-component main {public [mpc_pks]} = transfer_client(80);
+component main {public [alpha]} = transfer_client_compressed(80, 16);

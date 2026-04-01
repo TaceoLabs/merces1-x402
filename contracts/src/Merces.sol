@@ -10,11 +10,11 @@ import {Poseidon2T2_BN254} from "./Poseidon2.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 interface IVerifierClient {
-    function verifyCompressedProof(uint256[4] calldata compressedProof, uint256[15] calldata input) external view;
+    function verifyCompressedProof(uint256[4] calldata compressedProof, uint256[3] calldata input) external view;
 }
 
 interface IVerifierServer {
-    function verifyCompressedProof(uint256[4] calldata compressedProof, uint256[300] calldata input) external view;
+    function verifyCompressedProof(uint256[4] calldata compressedProof, uint256[3] calldata input) external view;
 }
 
 interface IMercesMpc {
@@ -24,6 +24,7 @@ interface IMercesMpc {
         uint256 num_transactions,
         uint256[100] calldata commitments,
         bool[50] calldata valid,
+        uint256 beta,
         uint256[4] calldata proof
     ) external returns (uint256[50] memory);
     function readQueue(uint256 num_items)
@@ -262,6 +263,7 @@ contract Merces is ERC165, IMercesMpc {
     function transfer(
         address receiver,
         uint256 amountCommitment,
+        uint256 beta,
         Ciphertext calldata ciphertext,
         uint256[4] calldata proof
     ) public returns (uint256) {
@@ -277,7 +279,8 @@ contract Merces is ERC165, IMercesMpc {
             ActionItem({action: Action.Transfer, sender: sender, receiver: receiver, amount: amountCommitment});
         uint256 index = actionQueue.push(aq);
 
-        clientVerifier.verifyCompressedProof(
+        _verifyUserTxClient(
+            beta,
             proof,
             [
                 mpcPk1.x,
@@ -310,6 +313,7 @@ contract Merces is ERC165, IMercesMpc {
         uint256 num_transactions,
         uint256[BATCH_SIZE * 2] calldata commitments,
         bool[BATCH_SIZE] calldata valid,
+        uint256 beta,
         uint256[4] calldata proof
     ) public onlyMpc returns (uint256[BATCH_SIZE] memory) {
         if (num_transactions > BATCH_SIZE) {
@@ -414,7 +418,7 @@ contract Merces is ERC165, IMercesMpc {
             // indices[i] = 0; // Dummy index
         }
 
-        serverVerifier.verifyCompressedProof(proof, publicInputs);
+        _verifyUserTxServer(beta, proof, publicInputs);
         emit ProcessedMPC(indices, valid);
         return indices;
     }
@@ -475,5 +479,81 @@ contract Merces is ERC165, IMercesMpc {
         } else {
             token.safeTransfer(receiver, amount);
         }
+    }
+
+    function _computeSha256(bytes memory input) internal pure returns (uint256 alpha) {
+        bytes32 hash = sha256(input);
+        alpha = uint256(hash);
+        alpha = (alpha << 3) >> 3; // Drop three bits from the calculated hash
+    }
+
+    function _computeUhfServer(uint256 alphaParam, uint256 beta, uint256[BATCH_SIZE * 6] memory x)
+        internal
+        pure
+        returns (uint256 gamma)
+    {
+        uint256 seed = alphaParam;
+        unchecked {
+            seed += beta;
+        }
+
+        uint256 mul = 0;
+        for (uint256 i = x.length - 1; i > 0; i--) {
+            mul = mulmod(seed, mul + x[i], PRIME);
+        }
+
+        gamma = addmod(mul, x[0], PRIME);
+    }
+
+    function _computeUhfClient(uint256 alphaParam, uint256 beta, uint256[15] memory x)
+        internal
+        pure
+        returns (uint256 gamma)
+    {
+        uint256 seed = alphaParam;
+        unchecked {
+            seed += beta;
+        }
+
+        uint256 mul = 0;
+        for (uint256 i = x.length - 1; i > 0; i--) {
+            mul = mulmod(seed, mul + x[i], PRIME);
+        }
+
+        gamma = addmod(mul, x[0], PRIME);
+    }
+
+    /// @notice Computes compressed public input hashes and verifies the client proof.
+    /// @dev This function derives `alpha` and `gamma` to compress the full set of public inputs, reducing the number of inputs required by the verifier and lowering on-chain gas costs. See https://eprint.iacr.org/2025/1500 for details on the compression technique.
+    ///
+    /// `alpha` is computed as the SHA256 hash of the public inputs. The hash output is truncated (dropping the three highest bits) inside `_computeSHA256`, ensuring the resulting value lies within the scalar field.
+    ///
+    /// `beta` is supplied by the caller. Since `beta` is passed as a public input to the verifier contract, the verifier contract enforces that it lies in the correct field. If `beta` exceeds the field modulus, the proof verification will fail.
+    ///
+    /// Note that an intermediate integer overflow may occur if `beta` is very large when calling the universal hash function (`_computeUHF`). This does not introduce a security issue and simply results in proof verification failing.
+    ///
+    /// After computing `alpha` and `gamma`, the function directly calls `clientTransferVerifier.verifyCompressedProof` to verify the proof on-chain.
+    ///
+    /// @param beta Random challenge provided by the user.
+    /// @param proof The client proof array to verify.
+    /// @param publicInputs The full set of public inputs of the circuit.
+    function _verifyUserTxClient(uint256 beta, uint256[4] calldata proof, uint256[15] memory publicInputs)
+        internal
+        view
+        virtual
+    {
+        uint256 alpha = _computeSha256(abi.encodePacked(publicInputs));
+        uint256 gamma = _computeUhfClient(alpha, beta, publicInputs);
+        serverVerifier.verifyCompressedProof(proof, [beta, gamma, alpha]);
+    }
+
+    function _verifyUserTxServer(uint256 beta, uint256[4] calldata proof, uint256[BATCH_SIZE * 6] memory publicInputs)
+        internal
+        view
+        virtual
+    {
+        uint256 alpha = _computeSha256(abi.encodePacked(publicInputs));
+        uint256 gamma = _computeUhfServer(alpha, beta, publicInputs);
+        serverVerifier.verifyCompressedProof(proof, [beta, gamma, alpha]);
     }
 }

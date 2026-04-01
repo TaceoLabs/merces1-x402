@@ -5,16 +5,17 @@ use groth16_material::circom::{CircomGroth16Material, Proof};
 use rand::{CryptoRng, Rng};
 use std::{array, collections::HashMap};
 
-pub struct Transfer {
+pub struct TransferCompressed {
     amount: ark_bn254::Fr,
     amount_r: ark_bn254::Fr,
     encrypt_sk: ark_babyjubjub::Fr,
     mpc_pks: [ark_babyjubjub::EdwardsAffine; 3],
     share_amount: [ark_bn254::Fr; 2],
     share_amount_r: [ark_bn254::Fr; 2],
+    alpha: ark_bn254::Fr,
 }
 
-impl Transfer {
+impl TransferCompressed {
     #[cfg(test)]
     fn random<R: Rng + CryptoRng>(rng: &mut R) -> Self {
         let amount = ark_bn254::Fr::from(rng.r#gen::<u64>());
@@ -40,7 +41,15 @@ impl Transfer {
             mpc_pks,
             share_amount,
             share_amount_r,
+            alpha: ark_bn254::Fr::default(),
         }
+    }
+
+    // Computes and sets alpha and returns the ciphertexts
+    pub fn compute_alpha(&mut self) -> [[ark_bn254::Fr; 2]; 3] {
+        let (hash_inputs, ciphertexts) = self.get_sha_inputs();
+        self.alpha = crate::compute_alpha(hash_inputs);
+        ciphertexts
     }
 
     pub fn generate_proof<R: Rng + CryptoRng>(
@@ -66,10 +75,61 @@ impl Transfer {
             "share_amount_r".to_string(),
             vec![self.share_amount_r[0].into(), self.share_amount_r[1].into()],
         );
+        inputs.insert("alpha".to_string(), vec![self.alpha.into()]);
 
         groth16
             .generate_proof(&inputs, rng)
             .context("while computing proof")
+    }
+
+    pub fn get_amount_commitment(&self) -> ark_bn254::Fr {
+        crate::cryptography::commit1(self.amount, self.amount_r)
+    }
+
+    pub fn get_encrypt_pk(&self) -> ark_babyjubjub::EdwardsAffine {
+        crate::cryptography::get_pk(self.encrypt_sk)
+    }
+
+    pub fn get_ciphertextexts(&self) -> [[ark_bn254::Fr; 2]; 3] {
+        let amount_shares = [
+            self.share_amount[0],
+            self.share_amount[1],
+            ark_bn254::Fr::from(self.amount) - self.share_amount[0] - self.share_amount[1],
+        ];
+        let amount_r_shares = [
+            self.share_amount_r[0],
+            self.share_amount_r[1],
+            self.amount_r - self.share_amount_r[0] - self.share_amount_r[1],
+        ];
+
+        array::from_fn(|i| {
+            let sk = crate::cryptography::dh_key_derivation(&self.encrypt_sk, self.mpc_pks[i]);
+            crate::cryptography::sym_encrypt2(
+                sk,
+                [amount_shares[i], amount_r_shares[i]],
+                Default::default(),
+            )
+        })
+    }
+
+    pub fn get_sha_inputs(&self) -> (Vec<ark_bn254::Fr>, [[ark_bn254::Fr; 2]; 3]) {
+        let encrypt_pk = self.get_encrypt_pk();
+        let amount_commitment = self.get_amount_commitment();
+        let ciphertexts = self.get_ciphertextexts();
+
+        let mut hash_inputs = Vec::with_capacity(15);
+        hash_inputs.push(encrypt_pk.x);
+        hash_inputs.push(encrypt_pk.y);
+        hash_inputs.push(amount_commitment);
+        for ctxt in ciphertexts.iter() {
+            hash_inputs.push(ctxt[0]);
+            hash_inputs.push(ctxt[1]);
+        }
+        for pk in self.mpc_pks.iter() {
+            hash_inputs.push(pk.x);
+            hash_inputs.push(pk.y);
+        }
+        (hash_inputs, ciphertexts)
     }
 }
 
@@ -80,74 +140,18 @@ mod tests {
     use rand::thread_rng;
 
     #[test]
-    #[ignore = "Compression is active, this test will fail"]
     fn test_transfer_proof_generation() {
         let mut rng = thread_rng();
 
         let groth16 = CircomConfig::get_transfer_key_material(&mut rng).unwrap();
 
-        let transfer = Transfer::random(&mut rng);
+        let mut transfer = TransferCompressed::random(&mut rng);
+        transfer.compute_alpha();
 
         let (proof, public_inputs) = transfer.generate_proof(&groth16, &mut rng).unwrap();
 
         groth16
             .verify_proof(&proof, &public_inputs)
             .expect("Proof verification failed");
-
-        // Check the public inputs are correct
-        let encrypt_pk = crate::cryptography::get_pk(transfer.encrypt_sk);
-        let amount_c = crate::cryptography::commit1(transfer.amount, transfer.amount_r);
-
-        let amount_shares = [
-            transfer.share_amount[0],
-            transfer.share_amount[1],
-            ark_bn254::Fr::from(transfer.amount)
-                - transfer.share_amount[0]
-                - transfer.share_amount[1],
-        ];
-        let amount_r_shares = [
-            transfer.share_amount_r[0],
-            transfer.share_amount_r[1],
-            transfer.amount_r - transfer.share_amount_r[0] - transfer.share_amount_r[1],
-        ];
-
-        let mut ciphertexts = Vec::with_capacity(3);
-        for i in 0..3 {
-            let sk =
-                crate::cryptography::dh_key_derivation(&transfer.encrypt_sk, transfer.mpc_pks[i]);
-            let ctxt = crate::cryptography::sym_encrypt2(
-                sk,
-                [amount_shares[i], amount_r_shares[i]],
-                Default::default(),
-            );
-            ciphertexts.push(ctxt);
-        }
-
-        let public_inputs_expected = [
-            encrypt_pk.x,
-            encrypt_pk.y,
-            amount_c,
-            ciphertexts[0][0],
-            ciphertexts[0][1],
-            ciphertexts[1][0],
-            ciphertexts[1][1],
-            ciphertexts[2][0],
-            ciphertexts[2][1],
-            transfer.mpc_pks[0].x,
-            transfer.mpc_pks[0].y,
-            transfer.mpc_pks[1].x,
-            transfer.mpc_pks[1].y,
-            transfer.mpc_pks[2].x,
-            transfer.mpc_pks[2].y,
-        ];
-
-        for i in 0..public_inputs_expected.len() {
-            assert_eq!(
-                public_inputs[i], public_inputs_expected[i],
-                "Mismatch at index {}",
-                i
-            );
-        }
-        assert_eq!(public_inputs, public_inputs_expected);
     }
 }

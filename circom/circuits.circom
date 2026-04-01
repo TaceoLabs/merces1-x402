@@ -132,3 +132,54 @@ template transfer_client(AMOUNT_BITSIZE) {
     encrypt_pk[0] <== pk_calc.out.x;
     encrypt_pk[1] <== pk_calc.out.y;
 }
+
+
+
+template transfer_client_compressed(AMOUNT_BITSIZE, T) {
+    // Transaction amount and randomness used for commitment
+    signal input amount;
+    signal input amount_r;
+    // Encryptions
+    signal input encrypt_sk;
+    signal input mpc_pks[3][2]; // Public, but private due to compression
+    // Secret shares
+    signal input share_amount[2];
+    signal input share_amount_r[2];
+    // Compression
+    signal input alpha; // Public input for compression
+    signal output beta;
+    signal output gamma;
+
+    // Calling the old component
+    component transaction_client = transfer_client(AMOUNT_BITSIZE);
+    transaction_client.amount <== amount;
+    transaction_client.amount_r <== amount_r;
+    transaction_client.encrypt_sk <== encrypt_sk;
+    transaction_client.mpc_pks <== mpc_pks;
+    transaction_client.share_amount <== share_amount;
+    transaction_client.share_amount_r <== share_amount_r;
+
+    // Compressing the outputs
+    var q[15];
+    q[0] = transaction_client.encrypt_pk[0];
+    q[1] = transaction_client.encrypt_pk[1];
+    q[2] = transaction_client.amount_c;
+    q[3] = transaction_client.ciphertexts[0][0];
+    q[4] = transaction_client.ciphertexts[0][1];
+    q[5] = transaction_client.ciphertexts[1][0];
+    q[6] = transaction_client.ciphertexts[1][1];
+    q[7] = transaction_client.ciphertexts[2][0];
+    q[8] = transaction_client.ciphertexts[2][1];
+    q[9] = mpc_pks[0][0];
+    q[10] = mpc_pks[0][1];
+    q[11] = mpc_pks[1][0];
+    q[12] = mpc_pks[1][1];
+    q[13] = mpc_pks[2][0];
+    q[14] = mpc_pks[2][1];
+
+    component compression = Compression(15, T);
+    compression.q <== q;
+    compression.alpha <== alpha;
+    beta <== compression.beta;
+    gamma <== compression.gamma;
+}
