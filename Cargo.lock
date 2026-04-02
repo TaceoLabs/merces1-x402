@@ -4376,12 +4376,18 @@ dependencies = [
  "ark-bn254",
  "ark-ff 0.5.0",
  "ark-groth16",
+ "ark-serialize 0.5.0",
  "circom-mpc-vm",
  "co-circom",
  "co-noir-to-r1cs",
  "eyre",
+ "itertools 0.14.0",
+ "mpc-core",
  "mpc-net",
+ "num-bigint 0.4.6",
  "rand 0.8.5",
+ "serde",
+ "sha2",
  "tracing",
 ]
 

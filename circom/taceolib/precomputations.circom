@@ -7,7 +7,7 @@ template TACEO_PRECOMPUTATION_Poseidon2(T) {
     signal input in[T];
     signal output out[T];
 
-    out <== Poseidon2(T)(in);
+    out <== Poseidon2NoAccelerator(T)(in);
 }
 
 template TACEO_PRECOMPUTATION_Num2Bits(n) {

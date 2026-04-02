@@ -52,7 +52,7 @@ template withdraw(BALANCE_BITSIZE) {
     signal output valid;
 
     signal new_balance <== old_balance - amount;
-    component new_balance_range_check = range_check_with_output_flag(125);
+    component new_balance_range_check = range_check_with_output_flag(BALANCE_BITSIZE);
     new_balance_range_check.in <== new_balance;
     valid <== new_balance_range_check.valid;
     var old_commitment = commit1()(old_balance, old_r);

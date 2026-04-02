@@ -279,7 +279,7 @@ contract Merces is ERC165, IMercesMpc {
             ActionItem({action: Action.Transfer, sender: sender, receiver: receiver, amount: amountCommitment});
         uint256 index = actionQueue.push(aq);
 
-        _verifyUserTxClient(
+        _verifyTxClient(
             beta,
             proof,
             [
@@ -418,7 +418,7 @@ contract Merces is ERC165, IMercesMpc {
             // indices[i] = 0; // Dummy index
         }
 
-        _verifyUserTxServer(beta, proof, publicInputs);
+        _verifyTxServer(beta, proof, publicInputs);
         emit ProcessedMPC(indices, valid);
         return indices;
     }
@@ -537,7 +537,7 @@ contract Merces is ERC165, IMercesMpc {
     /// @param beta Random challenge provided by the user.
     /// @param proof The client proof array to verify.
     /// @param publicInputs The full set of public inputs of the circuit.
-    function _verifyUserTxClient(uint256 beta, uint256[4] calldata proof, uint256[15] memory publicInputs)
+    function _verifyTxClient(uint256 beta, uint256[4] calldata proof, uint256[15] memory publicInputs)
         internal
         view
         virtual
@@ -547,7 +547,7 @@ contract Merces is ERC165, IMercesMpc {
         clientVerifier.verifyCompressedProof(proof, [beta, gamma, alpha]);
     }
 
-    function _verifyUserTxServer(uint256 beta, uint256[4] calldata proof, uint256[BATCH_SIZE * 6] memory publicInputs)
+    function _verifyTxServer(uint256 beta, uint256[4] calldata proof, uint256[BATCH_SIZE * 6] memory publicInputs)
         internal
         view
         virtual

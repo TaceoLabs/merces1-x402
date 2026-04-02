@@ -15,6 +15,14 @@ impl CircomConfig {
     const TRANSFER_CIRCUIT: &str = "/../circom/main/server.circom";
     const TRANSFER_R1CS: &str = "/../circom/r1cs/server.r1cs";
 
+    pub const NUM_TRANSACTIONS: usize = 50;
+    pub const NUM_COMMITMENTS: usize = 5;
+    pub const NUM_TOTAL_COMMITMENTS: usize = Self::NUM_TRANSACTIONS * Self::NUM_COMMITMENTS;
+    pub const NUM_PUBLIC_INPUTS: usize = Self::NUM_TOTAL_COMMITMENTS + Self::NUM_TRANSACTIONS;
+    pub const DOMAIN_SEPARATOR: u64 = 0xDEADBEEFu64;
+    pub const TRANSFER_BALANCE_BITSIZE: usize = 100;
+    pub const POSEIDON2_SPONGE_T: usize = 16;
+
     pub fn get_transfer_circom() -> eyre::Result<CoCircomCompilerParsed<ark_bn254::Fr>> {
         let lib = format!("{}{}", Self::ROOT, Self::CIRCOM_LIB);
         let circuit = format!("{}{}", Self::ROOT, Self::TRANSFER_CIRCUIT);

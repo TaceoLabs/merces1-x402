@@ -190,7 +190,7 @@ template PartialRound(t) {
     out <== internal_mm.out;
 }
 
-template Poseidon2(t) {
+template Poseidon2NoAccelerator(t) {
     // sanity check that we only have valid state sizes
     assert(t == 2 || t == 3 || t == 4 || t == 8 || t == 12 || t == 16);
 

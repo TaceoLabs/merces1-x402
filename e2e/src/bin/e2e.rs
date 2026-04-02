@@ -162,7 +162,17 @@ async fn run_test(
     tracing::info!("Bob withdraws on chain...");
     users[1].withdraw(amount, &merces_contract).await?;
 
-    e2e::check_action_queue_size(&merces_contract, mpc.get_provider(), 3).await?;
+    tracing::info!("Alice sends again to bob, this should fail...");
+    users[0]
+        .transfer(
+            amount,
+            users[1].get_signer(),
+            mpc.public_keys(),
+            &merces_contract,
+        )
+        .await?;
+
+    e2e::check_action_queue_size(&merces_contract, mpc.get_provider(), 4).await?;
 
     todo!("Process MPC");
 
