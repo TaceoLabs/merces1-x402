@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
-import "forge-std/console.sol";
+// import "forge-std/console.sol";
 import {Action, ActionItem, ActionQueue, ActionQueueLib} from "./ActionQueue.sol";
 import {BabyJubJub} from "@taceo/babyjubjub/BabyJubJub.sol";
 import {ERC165} from "@openzeppelin/contracts/utils/introspection/ERC165.sol";
@@ -364,8 +364,8 @@ contract Merces is ERC165, IMercesMpc {
 
                 // Update the commitments on-chain and send the actual tokens
                 if (valid[i]) {
-                    balanceCommitments[aq.receiver] = commitments[i * 2];
-                    _sendFunds(address(uint160(aq.receiver)), aq.amount);
+                    balanceCommitments[aq.sender] = commitments[i * 2];
+                    _sendFunds(address(uint160(aq.sender)), aq.amount);
                 }
 
                 // Fill the commitments array for ZK proof verification

@@ -13,6 +13,7 @@ use alloy::{
 use ark_ff::PrimeField;
 use eyre::{Context, ContextCompat};
 
+#[derive(Clone, Debug)]
 pub struct DecodedCiphertext {
     pub amount: ark_bn254::Fr,
     pub amount_r: ark_bn254::Fr,

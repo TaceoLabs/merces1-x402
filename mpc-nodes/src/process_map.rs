@@ -28,10 +28,11 @@ where
     }
 
     #[expect(clippy::type_complexity)]
+    // TODO we should probably only update the map after proof verification...
     pub fn process_queue_with_cocircom_trace_compressed<N: Network>(
         &mut self,
         queue: Vec<Action<K>>,
-        nets: &[N; CircomConfig::NUM_TRANSACTIONS * 2],
+        nets: &[N; CircomConfig::NUM_TRANSACTIONS],
         rep3_states: &mut [Rep3State; CircomConfig::NUM_TRANSACTIONS],
     ) -> eyre::Result<(
         usize,
@@ -62,9 +63,7 @@ where
 
         let result = thread::scope(|scope| {
             let mut handles = Vec::with_capacity(num_transactions);
-            for (action, nets, rep3_state) in
-                izip!(queue.iter(), nets.chunks_exact(2), rep3_states.iter_mut())
-            {
+            for (action, net, rep3_state) in izip!(queue.iter(), nets, rep3_states.iter_mut()) {
                 match action {
                     Action::Deposit(receiver, amount) => {
                         let amount_shared =
@@ -76,7 +75,7 @@ where
                                 receiver_old,
                                 receiver_new,
                                 *amount,
-                                &nets[0],
+                                net,
                                 rep3_state,
                             )
                         });
@@ -89,7 +88,7 @@ where
                             copy_map.withdraw(sender.clone(), amount_shared, rep3_state)?;
                         let handle = scope.spawn(move || {
                             Self::process_withdraw_circom(
-                                sender_old, sender_new, *amount, &nets[0], rep3_state,
+                                sender_old, sender_new, *amount, net, rep3_state,
                             )
                         });
                         handles.push(handle);
@@ -105,7 +104,7 @@ where
                                 receiver_new,
                                 *amount,
                                 *amount_blinding,
-                                &nets[0],
+                                net,
                                 rep3_state,
                             )
                         });
@@ -181,8 +180,20 @@ where
                         }
                     }
                 }
-                new_balance_commitments.push(commitments_opened[1]); // Sender new balance commitment
-                new_balance_commitments.push(commitments_opened[3]); // Receiver new balance commitment
+                match action {
+                    Action::Deposit(_, _) => {
+                        new_balance_commitments.push(F::zero()); // Smart contract expects 0
+                        new_balance_commitments.push(commitments_opened[3]); // Receiver new balance commitment
+                    }
+                    Action::Withdraw(_, _) => {
+                        new_balance_commitments.push(commitments_opened[1]); // Sender new balance commitment
+                        new_balance_commitments.push(F::zero()); // Smart contract expects 0
+                    }
+                    Action::Transfer(_, _, _, _) => {
+                        new_balance_commitments.push(commitments_opened[1]); // Sender new balance commitment
+                        new_balance_commitments.push(commitments_opened[3]); // Receiver new balance commitment
+                    }
+                }
                 valids.push(valid);
 
                 public_inputs.extend(commitments_opened);
@@ -209,8 +220,7 @@ where
                     F::one(),
                 ];
 
-                new_balance_commitments
-                    .resize(CircomConfig::NUM_TRANSACTIONS * 2, Self::zero_commitment());
+                new_balance_commitments.resize(CircomConfig::NUM_TRANSACTIONS * 2, F::zero()); // Smart contract expects 0
                 valids.resize(CircomConfig::NUM_TRANSACTIONS, true);
 
                 for i in applied_transactions..CircomConfig::NUM_TRANSACTIONS {
@@ -549,10 +559,10 @@ mod tests {
         let groth16 = Arc::new(CircomConfig::get_transfer_key_material(&mut rng).unwrap());
 
         // Init networks
-        let mut test_networks0 = Vec::with_capacity(CircomConfig::NUM_TRANSACTIONS * 2);
-        let mut test_networks1 = Vec::with_capacity(CircomConfig::NUM_TRANSACTIONS * 2);
+        let mut test_networks0 = Vec::with_capacity(CircomConfig::NUM_TRANSACTIONS);
+        let mut test_networks1 = Vec::with_capacity(CircomConfig::NUM_TRANSACTIONS);
         let mut test_networks2 = Vec::with_capacity(CircomConfig::NUM_TRANSACTIONS);
-        for _ in 0..(CircomConfig::NUM_TRANSACTIONS * 2) {
+        for _ in 0..CircomConfig::NUM_TRANSACTIONS {
             let [net0, net1, net2] = LocalNetwork::new(3).try_into().unwrap();
             test_networks0.push(net0);
             test_networks1.push(net1);
@@ -631,8 +641,8 @@ mod tests {
                 ) {
                     let groth16 = groth16.clone();
                     let handle = scope.spawn(move || {
-                        let mut rep3_states = Vec::with_capacity(nets.len() / 2);
-                        for net in nets.iter().take(nets.len() / 2) {
+                        let mut rep3_states = Vec::with_capacity(nets.len());
+                        for net in nets.iter() {
                             rep3_states.push(Rep3State::new(net, A2BType::default()).unwrap());
                         }
 

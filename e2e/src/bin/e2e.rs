@@ -2,12 +2,7 @@ use alloy::primitives::U256;
 use clap::Parser;
 use contract_rs::{merces::MercesContract, token::USDCTokenContract};
 use e2e::{
-    SEED,
-    deployer::{self, Deployer},
-    mpc::Mpc,
-    proving_keys::ProvingKeys,
-    user::User,
-    wallets::Wallets,
+    SEED, deployer::Deployer, mpc::Mpc, proving_keys::ProvingKeys, user::User, wallets::Wallets,
 };
 use rand::SeedableRng;
 use rand_chacha::ChaCha12Rng;
@@ -118,14 +113,41 @@ async fn main() -> eyre::Result<ExitCode> {
 async fn run_test(
     users: [User; 2],
     deployer: Deployer,
-    mpc: Mpc,
+    mut mpc: Mpc,
     merces_contract: MercesContract,
     token_contract: Option<USDCTokenContract>,
 ) -> eyre::Result<()> {
-    tracing::info!("\nRunning Testcase...");
-    let decimals = e2e::get_decimals(mpc.get_provider(), &token_contract).await?;
+    testcase_inner(
+        &users,
+        &deployer,
+        &mut mpc,
+        &merces_contract,
+        &token_contract,
+    )
+    .await?;
 
-    if let Some(token_contract) = &token_contract {
+    testcase_inner(
+        &users,
+        &deployer,
+        &mut mpc,
+        &merces_contract,
+        &token_contract,
+    )
+    .await?;
+    Ok(())
+}
+
+async fn testcase_inner(
+    users: &[User; 2],
+    deployer: &Deployer,
+    mpc: &mut Mpc,
+    merces_contract: &MercesContract,
+    token_contract: &Option<USDCTokenContract>,
+) -> eyre::Result<()> {
+    tracing::info!("\nRunning Testcase...");
+    let decimals = e2e::get_decimals(mpc.get_provider(), token_contract).await?;
+
+    if let Some(token_contract) = token_contract {
         tracing::info!("Deployer sending tokens to Alice and Bob...");
         let init_amount = e2e::amount_to_wei(U256::from(10), decimals);
         deployer
@@ -139,14 +161,14 @@ async fn run_test(
 
     let amount = e2e::amount_to_wei(U256::from(1), decimals);
 
-    let alice_balance = users[0].get_balance(&token_contract).await?;
-    let bob_balance = users[1].get_balance(&token_contract).await?;
+    let alice_balance = users[0].get_balance(token_contract).await?;
+    let bob_balance = users[1].get_balance(token_contract).await?;
 
-    e2e::check_action_queue_size(&merces_contract, mpc.get_provider(), 0).await?;
+    e2e::check_action_queue_size(merces_contract, mpc.get_provider(), 0).await?;
 
     tracing::info!("Alice deposits on chain...");
     users[0]
-        .deposit(amount, &merces_contract, &token_contract)
+        .deposit(amount, merces_contract, token_contract)
         .await?;
 
     tracing::info!("Alice transfers to Bob on chain...");
@@ -155,12 +177,12 @@ async fn run_test(
             amount,
             users[1].get_signer(),
             mpc.public_keys(),
-            &merces_contract,
+            merces_contract,
         )
         .await?;
 
     tracing::info!("Bob withdraws on chain...");
-    users[1].withdraw(amount, &merces_contract).await?;
+    users[1].withdraw(amount, merces_contract).await?;
 
     tracing::info!("Alice sends again to bob, this should fail...");
     users[0]
@@ -168,24 +190,26 @@ async fn run_test(
             amount,
             users[1].get_signer(),
             mpc.public_keys(),
-            &merces_contract,
+            merces_contract,
         )
         .await?;
 
-    e2e::check_action_queue_size(&merces_contract, mpc.get_provider(), 4).await?;
+    e2e::check_action_queue_size(merces_contract, mpc.get_provider(), 4).await?;
 
-    todo!("Process MPC");
+    tracing::info!("Processing the batch in MPC...");
+    mpc.process_mpc(merces_contract).await?;
 
-    e2e::check_action_queue_size(&merces_contract, mpc.get_provider(), 0).await?;
+    e2e::check_action_queue_size(merces_contract, mpc.get_provider(), 0).await?;
 
     tracing::info!("Comparing balances with expected changes...");
 
-    let alice_balance_ = users[0].get_balance(&token_contract).await?;
-    let bob_balance_ = users[1].get_balance(&token_contract).await?;
+    let alice_balance_ = users[0].get_balance(token_contract).await?;
+    let bob_balance_ = users[1].get_balance(token_contract).await?;
 
     let diff_alice = alice_balance - alice_balance_;
     let diff_bob = bob_balance_ - bob_balance;
     e2e::cmp_balance_with_gas(diff_alice, amount, decimals)?;
     e2e::cmp_balance_with_gas(diff_bob, amount, decimals)?;
+
     Ok(())
 }

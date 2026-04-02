@@ -22,6 +22,8 @@ contract-rs.workspace = true
 eyre.workspace = true
 groth16-material.workspace = true
 groth16-sol.workspace = true
+itertools.workspace = true
+mpc-core.workspace = true
 mpc-net = { workspace = true, features = ["local"] }
 rand.workspace = true
 rand_chacha.workspace = true
