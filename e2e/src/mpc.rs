@@ -166,10 +166,11 @@ impl Mpc {
         rep3_states.push(rep3_state);
 
         let (applied_transactions, commitments, valids, inputs, traces) = map
-            .process_queue_with_cocircom_trace_compressed(
+            .process_queue_with_cocircom_trace(
                 queue,
                 nets,
                 rep3_states.as_mut_slice().try_into().unwrap(),
+                CircomConfig::COMPRESSION,
             )?;
         let (proof, public_inputs) =
             proving_key.trace_to_proof(inputs, traces, &nets[0], &nets[1])?;

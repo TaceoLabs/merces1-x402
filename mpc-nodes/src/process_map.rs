@@ -29,11 +29,12 @@ where
 
     #[expect(clippy::type_complexity)]
     // TODO we should probably only update the map after proof verification...
-    pub fn process_queue_with_cocircom_trace_compressed<N: Network>(
+    pub fn process_queue_with_cocircom_trace<N: Network>(
         &mut self,
         queue: Vec<Action<K>>,
         nets: &[N; CircomConfig::NUM_TRANSACTIONS],
         rep3_states: &mut [Rep3State; CircomConfig::NUM_TRANSACTIONS],
+        compression: bool,
     ) -> eyre::Result<(
         usize,
         Vec<F>,
@@ -240,18 +241,20 @@ where
                 CircomConfig::NUM_TOTAL_COMMITMENTS + CircomConfig::NUM_TRANSACTIONS
             );
 
-            // TODO once the Tracebuilder is fixed, we can use the compression helper again
-            // let (final_traces, alpha) =
-            //     super::compression_commitment_helper::<
-            //         { CircomConfig::POSEIDON2_SPONGE_T },
-            //         { CircomConfig::NUM_PUBLIC_INPUTS },
-            //         _,
-            //     >(public_inputs.try_into().expect("we checked lengths before"))?;
-            // traces.extend(final_traces);
-            let alpha = super::compute_alpha::<{ CircomConfig::NUM_PUBLIC_INPUTS }, _>(
-                public_inputs.try_into().expect("we checked lengths before"),
-            );
-            proof_inputs.insert("alpha".to_string(), alpha.into());
+            if compression {
+                // TODO once the Tracebuilder is fixed, we can use the compression helper again
+                // let (final_traces, alpha) =
+                //     super::compression_commitment_helper::<
+                //         { CircomConfig::POSEIDON2_SPONGE_T },
+                //         { CircomConfig::NUM_PUBLIC_INPUTS },
+                //         _,
+                //     >(public_inputs.try_into().expect("we checked lengths before"))?;
+                // traces.extend(final_traces);
+                let alpha = super::compute_alpha::<{ CircomConfig::NUM_PUBLIC_INPUTS }, _>(
+                    public_inputs.try_into().expect("we checked lengths before"),
+                );
+                proof_inputs.insert("alpha".to_string(), alpha.into());
+            }
             Result::<_, eyre::Report>::Ok(())
         });
         result?;
@@ -549,7 +552,7 @@ mod tests {
     }
 
     #[test]
-    fn process_queue_compressed() {
+    fn process_queue() {
         const NUM_ITEMS: usize = 100;
         const TEST_RUNS: usize = 10;
         const NUM_TRANSACTIONS: usize = 3; // Depost, Withdraw and Transfer
@@ -647,10 +650,11 @@ mod tests {
                         }
 
                         let (applied_transactions, commitments, valids, inputs, traces) = map
-                            .process_queue_with_cocircom_trace_compressed(
+                            .process_queue_with_cocircom_trace(
                                 transaction,
                                 nets.as_slice().try_into().unwrap(),
                                 rep3_states.as_mut_slice().try_into().unwrap(),
+                                CircomConfig::COMPRESSION,
                             )
                             .unwrap();
                         assert_eq!(applied_transactions, NUM_TRANSACTIONS);
@@ -679,10 +683,7 @@ mod tests {
             // Verifiy the results
             assert!(groth16.verify(&proof, &public_inputs).unwrap());
             for comm in commitments.into_iter().skip(NUM_TRANSACTIONS * 2) {
-                assert_eq!(
-                    comm,
-                    PrivateDeposit::<F, DepositValueShare<F>>::zero_commitment()
-                );
+                assert!(comm.is_zero());
             }
         }
 
