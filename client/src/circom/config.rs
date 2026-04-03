@@ -1,7 +1,7 @@
 use ark_bn254::Bn254;
 use ark_ec::pairing::Pairing;
 use ark_serialize::CanonicalSerialize;
-use co_noir_to_r1cs::circom::proof_schema::CircomProofSchema;
+use circom_proof_schema::proof_schema::CircomProofSchema;
 use eyre::Context;
 use groth16_material::circom::{ArkZkey, CircomGroth16Material, CircomGroth16MaterialBuilder};
 use rand::{CryptoRng, Rng};

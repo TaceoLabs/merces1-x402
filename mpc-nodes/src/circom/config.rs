@@ -1,7 +1,7 @@
 use crate::circom::groth16::Groth16Material;
 use ark_bn254::Bn254;
+use circom_proof_schema::proof_schema::CircomProofSchema;
 use co_circom::CoCircomCompilerParsed;
-use co_noir_to_r1cs::circom::proof_schema::CircomProofSchema;
 use eyre::Context;
 use rand::{CryptoRng, Rng};
 use std::path::PathBuf;

@@ -1,10 +1,10 @@
 use ark_bn254::Bn254;
 use ark_groth16::{Proof, VerifyingKey};
 use circom_mpc_vm::{ComponentAcceleratorOutput, Rep3VmType, mpc_vm::Rep3WitnessExtension};
+use circom_proof_schema::proof_schema::CircomProofSchema;
 use co_circom::{
     CircomReduction, CoCircomCompilerParsed, Rep3CoGroth16, Rep3SharedWitness, VMConfig,
 };
-use co_noir_to_r1cs::{circom::proof_schema::CircomProofSchema, noir::r1cs};
 use eyre::Context;
 use mpc_net::Network;
 use std::{collections::BTreeMap, time::Instant};
@@ -39,7 +39,7 @@ impl Groth16Material {
         proof: &Proof<Bn254>,
         public_inputs: &[ark_bn254::Fr],
     ) -> eyre::Result<bool> {
-        r1cs::verify(&self.proof_schema.pk.vk, proof, public_inputs)
+        self.proof_schema.verify(proof, public_inputs)
     }
 
     pub fn trace_to_witness<N: Network>(
