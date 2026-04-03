@@ -53,6 +53,7 @@ impl Groth16Material {
         let mut rep3_vm = Rep3WitnessExtension::new(net0, net1, &self.circuit, VMConfig::default())
             .context("while constructing MPC VM")?;
         rep3_vm.register_accelerator_function("ToPublic".to_string(), move |_, _| {
+            println!("I Am caled");
             Ok(accelerator_outputs.clone())
         });
 

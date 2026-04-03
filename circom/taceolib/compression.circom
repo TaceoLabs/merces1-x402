@@ -10,6 +10,9 @@ template Compression(N, T) {
 
     // We call this function to be able to set inputs to be public in the Circom-MPC-VM
     signal public_q[N] <== ToPublic(q);
+    for (var i = 0; i < N; i++) {
+        public_q[i] === q[i];
+    }
 
     // Compute beta using Poseidon2 sponge
     beta <== Poseidon2Sponge(N, T)(public_q);
