@@ -38,6 +38,7 @@ where
         usize,
         Vec<F>,
         Vec<bool>,
+        Vec<Rep3VmType<F>>,
         BTreeMap<String, Rep3VmType<F>>,
         Vec<ComponentAcceleratorOutput<Rep3VmType<F>>>,
     )> {
@@ -240,7 +241,7 @@ where
                 CircomConfig::NUM_TOTAL_COMMITMENTS + CircomConfig::NUM_TRANSACTIONS
             );
 
-            // TODO once the Tracebuilder is fixed, we can use the compression helper again
+            // TODO once the Tracebuilder is fixed, we can use the compression helper again. Then, the accelerator for the witness extension can also be removed.
             // let (final_traces, alpha) =
             //     super::compression_commitment_helper::<
             //         { CircomConfig::POSEIDON2_SPONGE_T },
@@ -248,18 +249,24 @@ where
             //         _,
             //     >(public_inputs.try_into().expect("we checked lengths before"))?;
             // traces.extend(final_traces);
+            let public_commitment_accelerator = public_inputs
+                .iter()
+                .map(|x| (*x).into())
+                .collect::<Vec<_>>();
             let alpha = super::compute_alpha::<{ CircomConfig::NUM_PUBLIC_INPUTS }, _>(
                 public_inputs.try_into().expect("we checked lengths before"),
             );
             proof_inputs.insert("alpha".to_string(), alpha.into());
-            Result::<_, eyre::Report>::Ok(())
+
+            Result::<_, eyre::Report>::Ok(public_commitment_accelerator)
         });
-        result?;
+        let public_commitment_accelerator = result?;
 
         Ok((
             applied_transactions,
             new_balance_commitments,
             valids,
+            public_commitment_accelerator,
             proof_inputs,
             traces,
         ))
@@ -646,7 +653,14 @@ mod tests {
                             rep3_states.push(Rep3State::new(net, A2BType::default()).unwrap());
                         }
 
-                        let (applied_transactions, commitments, valids, inputs, traces) = map
+                        let (
+                            applied_transactions,
+                            commitments,
+                            valids,
+                            public_input_commitments,
+                            inputs,
+                            traces,
+                        ) = map
                             .process_queue_with_cocircom_trace_compressed(
                                 transaction,
                                 nets.as_slice().try_into().unwrap(),
@@ -658,7 +672,13 @@ mod tests {
                         assert!(valids.iter().all(|&v| v)); // All transactions should be valid, including dummies
                         assert_eq!(commitments.len(), CircomConfig::NUM_TRANSACTIONS * 2); // We have two commitments per transaction
                         let (proof, public_inputs) = groth16
-                            .trace_to_proof(inputs, traces, &nets[0], &nets[1])
+                            .trace_to_proof(
+                                inputs,
+                                traces,
+                                public_input_commitments,
+                                &nets[0],
+                                &nets[1],
+                            )
                             .unwrap();
 
                         (proof, public_inputs, commitments)
@@ -679,10 +699,7 @@ mod tests {
             // Verifiy the results
             assert!(groth16.verify(&proof, &public_inputs).unwrap());
             for comm in commitments.into_iter().skip(NUM_TRANSACTIONS * 2) {
-                assert_eq!(
-                    comm,
-                    PrivateDeposit::<F, DepositValueShare<F>>::zero_commitment()
-                );
+                assert!(comm.is_zero());
             }
         }
 

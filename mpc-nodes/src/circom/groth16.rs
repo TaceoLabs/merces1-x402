@@ -46,11 +46,15 @@ impl Groth16Material {
         &self,
         inputs: BTreeMap<String, Rep3VmType<ark_bn254::Fr>>,
         traces: Vec<ComponentAcceleratorOutput<Rep3VmType<ark_bn254::Fr>>>,
+        accelerator_outputs: Vec<Rep3VmType<ark_bn254::Fr>>,
         net0: &N,
         net1: &N,
     ) -> eyre::Result<Rep3SharedWitness<ark_bn254::Fr>> {
-        let rep3_vm = Rep3WitnessExtension::new(net0, net1, &self.circuit, VMConfig::default())
+        let mut rep3_vm = Rep3WitnessExtension::new(net0, net1, &self.circuit, VMConfig::default())
             .context("while constructing MPC VM")?;
+        rep3_vm.register_accelerator_function("ToPublic".to_string(), move |_, _| {
+            Ok(accelerator_outputs.clone())
+        });
 
         let mut traces = Some(traces);
         // execute witness generation in MPC
@@ -58,7 +62,7 @@ impl Groth16Material {
             .run_with_helper_trace(inputs, self.circuit.public_inputs().len(), &mut traces)
             .context("while running witness generation")?
             .into_shared_witness();
-        debug_assert!(traces.unwrap().is_empty(), "Traces were not fully consumed");
+        assert!(traces.unwrap().is_empty(), "Traces were not fully consumed");
         Ok(witness)
     }
 
@@ -89,12 +93,13 @@ impl Groth16Material {
         &self,
         inputs: BTreeMap<String, Rep3VmType<ark_bn254::Fr>>,
         traces: Vec<ComponentAcceleratorOutput<Rep3VmType<ark_bn254::Fr>>>,
+        accelerator_outputs: Vec<Rep3VmType<ark_bn254::Fr>>,
         net0: &N,
         net1: &N,
     ) -> eyre::Result<(Proof<Bn254>, Vec<ark_bn254::Fr>)> {
         let start = Instant::now();
-        let witness = self.trace_to_witness(inputs, traces, net0, net1)?;
-        let elapsed = start.elapsed();
+        let witness = self.trace_to_witness(inputs, traces, accelerator_outputs, net0, net1)?;
+        let elapsed: std::time::Duration = start.elapsed();
         tracing::info!(
             "WitExt: {}.{:03}s",
             elapsed.as_secs(),
