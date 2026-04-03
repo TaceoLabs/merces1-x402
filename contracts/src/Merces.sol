@@ -14,7 +14,7 @@ interface IVerifierClient {
 }
 
 interface IVerifierServer {
-    function verifyCompressedProof(uint256[4] calldata compressedProof, uint256[3] calldata input) external view;
+    function verifyCompressedProof(uint256[4] calldata compressedProof, uint256[300] calldata input) external view;
 }
 
 interface IMercesMpc {
@@ -24,7 +24,6 @@ interface IMercesMpc {
         uint256 num_transactions,
         uint256[100] calldata commitments,
         bool[50] calldata valid,
-        uint256 beta,
         uint256[4] calldata proof
     ) external returns (uint256[50] memory);
     function readQueue(uint256 num_items)
@@ -313,7 +312,6 @@ contract Merces is ERC165, IMercesMpc {
         uint256 num_transactions,
         uint256[BATCH_SIZE * 2] calldata commitments,
         bool[BATCH_SIZE] calldata valid,
-        uint256 beta,
         uint256[4] calldata proof
     ) public onlyMpc returns (uint256[BATCH_SIZE] memory) {
         if (num_transactions > BATCH_SIZE) {
@@ -346,12 +344,12 @@ contract Merces is ERC165, IMercesMpc {
                 }
 
                 // Fill the publicInputs array for ZK proof verification
-                publicInputs[i * 6] = amountCommitment; // sender_old_commitment
-                publicInputs[i * 6 + 1] = ZERO_COMMITMENT; // sender_new_commitment
-                publicInputs[i * 6 + 2] = receiverOldCommitment;
-                publicInputs[i * 6 + 3] = commitments[i * 2 + 1]; // receiver_new_commitment
-                publicInputs[i * 6 + 4] = amountCommitment;
-                publicInputs[i * 6 + 5] = validElement;
+                publicInputs[i] = amountCommitment; // sender_old_commitment
+                publicInputs[i + BATCH_SIZE] = ZERO_COMMITMENT; // sender_new_commitment
+                publicInputs[i + BATCH_SIZE * 2] = receiverOldCommitment;
+                publicInputs[i + BATCH_SIZE * 3] = commitments[i * 2 + 1]; // receiver_new_commitment
+                publicInputs[i + BATCH_SIZE * 4] = amountCommitment;
+                publicInputs[i + BATCH_SIZE * 5] = validElement;
             } else if (aq.action == Action.Withdraw) {
                 uint256 senderOldCommitment = balanceCommitments[aq.sender];
                 if (commitments[i * 2 + 1] != 0) {
@@ -369,12 +367,12 @@ contract Merces is ERC165, IMercesMpc {
                 }
 
                 // Fill the commitments array for ZK proof verification
-                publicInputs[i * 6] = senderOldCommitment;
-                publicInputs[i * 6 + 1] = commitments[i * 2]; // sender_new_commitment
-                publicInputs[i * 6 + 2] = ZERO_COMMITMENT; // receiver_old_commitment
-                publicInputs[i * 6 + 3] = amountCommitment; // receiver_new_commitment
-                publicInputs[i * 6 + 4] = amountCommitment;
-                publicInputs[i * 6 + 5] = validElement;
+                publicInputs[i] = senderOldCommitment;
+                publicInputs[i + BATCH_SIZE] = commitments[i * 2]; // sender_new_commitment
+                publicInputs[i + BATCH_SIZE * 2] = ZERO_COMMITMENT; // receiver_old_commitment
+                publicInputs[i + BATCH_SIZE * 3] = amountCommitment; // receiver_new_commitment
+                publicInputs[i + BATCH_SIZE * 4] = amountCommitment;
+                publicInputs[i + BATCH_SIZE * 5] = validElement;
             } else if (aq.action == Action.Transfer) {
                 uint256 senderOldCommitment = balanceCommitments[aq.sender];
                 uint256 receiverOldCommitment = getBalanceCommitment(aq.receiver);
@@ -388,12 +386,12 @@ contract Merces is ERC165, IMercesMpc {
                 }
 
                 // Fill the commitments array for ZK proof verification
-                publicInputs[i * 6] = senderOldCommitment;
-                publicInputs[i * 6 + 1] = commitments[i * 2]; // sender_new_commitment
-                publicInputs[i * 6 + 2] = receiverOldCommitment;
-                publicInputs[i * 6 + 3] = commitments[i * 2 + 1]; // receiver_new_commitment
-                publicInputs[i * 6 + 4] = amount; // Is already a commitment
-                publicInputs[i * 6 + 5] = validElement;
+                publicInputs[i] = senderOldCommitment;
+                publicInputs[i + BATCH_SIZE] = commitments[i * 2]; // sender_new_commitment
+                publicInputs[i + BATCH_SIZE * 2] = receiverOldCommitment;
+                publicInputs[i + BATCH_SIZE * 3] = commitments[i * 2 + 1]; // receiver_new_commitment
+                publicInputs[i + BATCH_SIZE * 4] = amount; // Is already a commitment
+                publicInputs[i + BATCH_SIZE * 5] = validElement;
 
                 // delete shares[index]; // Actually costs more gas
             } else {
@@ -409,16 +407,16 @@ contract Merces is ERC165, IMercesMpc {
             if (commitments[i * 2 + 1] != 0) {
                 revert InvalidCommitment();
             }
-            publicInputs[i * 6] = ZERO_COMMITMENT;
-            publicInputs[i * 6 + 1] = ZERO_COMMITMENT;
-            publicInputs[i * 6 + 2] = ZERO_COMMITMENT;
-            publicInputs[i * 6 + 3] = ZERO_COMMITMENT;
-            publicInputs[i * 6 + 4] = ZERO_COMMITMENT;
-            publicInputs[i * 6 + 5] = valid[i] ? 1 : 0;
+            publicInputs[i] = ZERO_COMMITMENT;
+            publicInputs[i + BATCH_SIZE] = ZERO_COMMITMENT;
+            publicInputs[i + BATCH_SIZE * 2] = ZERO_COMMITMENT;
+            publicInputs[i + BATCH_SIZE * 3] = ZERO_COMMITMENT;
+            publicInputs[i + BATCH_SIZE * 4] = ZERO_COMMITMENT;
+            publicInputs[i + BATCH_SIZE * 5] = valid[i] ? 1 : 0;
             // indices[i] = 0; // Dummy index
         }
 
-        _verifyTxServer(beta, proof, publicInputs);
+        serverVerifier.verifyCompressedProof(proof, publicInputs);
         emit ProcessedMPC(indices, valid);
         return indices;
     }
@@ -487,24 +485,6 @@ contract Merces is ERC165, IMercesMpc {
         alpha = (alpha << 3) >> 3; // Drop three bits from the calculated hash
     }
 
-    function _computeUhfServer(uint256 alphaParam, uint256 beta, uint256[BATCH_SIZE * 6] memory x)
-        internal
-        pure
-        returns (uint256 gamma)
-    {
-        uint256 seed = alphaParam;
-        unchecked {
-            seed += beta;
-        }
-
-        uint256 mul = 0;
-        for (uint256 i = x.length - 1; i > 0; i--) {
-            mul = mulmod(seed, mul + x[i], PRIME);
-        }
-
-        gamma = addmod(mul, x[0], PRIME);
-    }
-
     function _computeUhfClient(uint256 alphaParam, uint256 beta, uint256[15] memory x)
         internal
         pure
@@ -545,15 +525,5 @@ contract Merces is ERC165, IMercesMpc {
         uint256 alpha = _computeSha256(abi.encodePacked(publicInputs));
         uint256 gamma = _computeUhfClient(alpha, beta, publicInputs);
         clientVerifier.verifyCompressedProof(proof, [beta, gamma, alpha]);
-    }
-
-    function _verifyTxServer(uint256 beta, uint256[4] calldata proof, uint256[BATCH_SIZE * 6] memory publicInputs)
-        internal
-        view
-        virtual
-    {
-        uint256 alpha = _computeSha256(abi.encodePacked(publicInputs));
-        uint256 gamma = _computeUhfServer(alpha, beta, publicInputs);
-        serverVerifier.verifyCompressedProof(proof, [beta, gamma, alpha]);
     }
 }

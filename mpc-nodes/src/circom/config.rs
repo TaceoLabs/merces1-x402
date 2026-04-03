@@ -22,7 +22,7 @@ impl CircomConfig {
     pub const DOMAIN_SEPARATOR: u64 = 0xDEADBEEFu64;
     pub const TRANSFER_BALANCE_BITSIZE: usize = 100;
     pub const POSEIDON2_SPONGE_T: usize = 16;
-    pub const COMPRESSION: bool = true;
+    pub const COMPRESSION: bool = false;
 
     pub fn get_transfer_circom() -> eyre::Result<CoCircomCompilerParsed<ark_bn254::Fr>> {
         let lib = format!("{}{}", Self::ROOT, Self::CIRCOM_LIB);

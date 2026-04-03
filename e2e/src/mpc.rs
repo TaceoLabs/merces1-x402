@@ -249,7 +249,7 @@ impl Mpc {
             .into_iter()
             .map(contract_rs::bn254_fr_to_u256)
             .collect::<Vec<_>>();
-        let beta = proof.4[0];
+        // let beta = proof.4[0];
 
         let res = contract
             .process_mpc(
@@ -257,7 +257,7 @@ impl Mpc {
                 proof.0,
                 commitments.try_into().unwrap(),
                 proof.2.try_into().unwrap(),
-                beta,
+                // beta,
                 proof.3,
             )
             .await?;

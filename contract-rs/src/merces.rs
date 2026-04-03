@@ -431,22 +431,14 @@ impl MercesContract {
         num_transactions: usize,
         commitments: [U256; Self::BATCH_SIZE * 2],
         valid: [bool; Self::BATCH_SIZE],
-        beta: ark_bn254::Fr,
         proof: Proof<Bn254>,
     ) -> eyre::Result<(Vec<usize>, TransactionReceipt)> {
         let contract = Merces::new(self.contract_address, provider);
 
-        let beta = super::bn254_fr_to_u256(beta);
         let proof = Self::compress_proof(&proof);
 
         let receipt = contract
-            .processMPC(
-                U256::from(num_transactions),
-                commitments,
-                valid,
-                beta,
-                proof,
-            )
+            .processMPC(U256::from(num_transactions), commitments, valid, proof)
             .send()
             .await
             .context("while broadcasting to network")?
