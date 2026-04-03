@@ -8,13 +8,19 @@ template Compression(N, T) {
     signal output beta;
     signal output gamma;
 
+    // We call this function to be able to set inputs to be public in the Circom-MPC-VM
+    signal public_q[N] <== ToPublic(q);
+
     // Compute beta using Poseidon2 sponge
-    beta <== Poseidon2Sponge(N, T)(q);
+    beta <== Poseidon2Sponge(N, T)(public_q);
 
     // Compute gamma using UHF
-    gamma <== UHF(N)(alpha, beta, q);
+    gamma <== UHF(N)(alpha, beta, public_q);
 }
 
+function ToPublic(in) {
+    return in;
+}
 
 template Poseidon2Sponge(N, T) {
     signal input in[N];
