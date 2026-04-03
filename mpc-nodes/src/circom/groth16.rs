@@ -92,7 +92,14 @@ impl Groth16Material {
         net0: &N,
         net1: &N,
     ) -> eyre::Result<(Proof<Bn254>, Vec<ark_bn254::Fr>)> {
+        let start = Instant::now();
         let witness = self.trace_to_witness(inputs, traces, net0, net1)?;
+        let elapsed = start.elapsed();
+        tracing::info!(
+            "WitExt: {}.{:03}s",
+            elapsed.as_secs(),
+            elapsed.subsec_millis()
+        );
         self.prove(witness, net0, net1)
     }
 }

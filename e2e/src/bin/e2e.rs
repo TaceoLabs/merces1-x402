@@ -31,7 +31,7 @@ pub fn install_tracing() {
         .with_line_number(false)
         .with_span_events(FmtSpan::CLOSE | FmtSpan::ENTER);
     let filter_layer = EnvFilter::try_from_default_env()
-        .or_else(|_| EnvFilter::try_new("e2e=info,contract_rs=info"))
+        .or_else(|_| EnvFilter::try_new("e2e=info,contract_rs=info,mpc_nodes=info"))
         .unwrap();
 
     tracing_subscriber::registry()
