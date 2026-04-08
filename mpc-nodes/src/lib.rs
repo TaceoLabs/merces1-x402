@@ -354,7 +354,6 @@ pub(crate) fn compute_alpha<const I: usize, F: PrimeField>(public_inputs: [F; I]
     F::from(alpha)
 }
 
-#[expect(unused)]
 pub(crate) fn compression_commitment_helper<
     const T_SPONGE: usize,
     const I: usize,

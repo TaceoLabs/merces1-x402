@@ -1,6 +1,6 @@
 pragma circom 2.2.2;
 
-include "precomputations.circom";
+include "poseidon2.circom";
 include "babyjubjub.circom";
 
 // Derive the symmetric keys for encryption
@@ -52,7 +52,7 @@ template encrypt1() {
     // Absorb 2, squeeze 1,  domainsep = 0x4142
     // [0x80000002, 0x00000001, 0x4142]
     var DS = 0x80000002000000014142;
-    var poseidon2_cipher_state[3] = TACEO_PRECOMPUTATION_Poseidon2(3)([key, nonce, DS]);
+    var poseidon2_cipher_state[3] = Poseidon2(3)([key, nonce, DS]);
     cipher <== poseidon2_cipher_state[0] + message;
 }
 
@@ -66,7 +66,7 @@ template decrypt1() {
     // Absorb 2, squeeze 1,  domainsep = 0x4142
     // [0x80000002, 0x00000001, 0x4142]
     var DS = 0x80000002000000014142;
-    var poseidon2_cipher_state[3] = TACEO_PRECOMPUTATION_Poseidon2(3)([key, nonce, DS]);
+    var poseidon2_cipher_state[3] = Poseidon2(3)([key, nonce, DS]);
     message <== cipher - poseidon2_cipher_state[0];
 }
 
@@ -80,7 +80,7 @@ template encrypt2() {
     // Absorb 2, squeeze 2,  domainsep = 0x4142
     // [0x80000002, 0x00000002, 0x4142]
     var DS = 0x80000002000000024142;
-    var poseidon2_cipher_state[3] = TACEO_PRECOMPUTATION_Poseidon2(3)([key, nonce, DS]);
+    var poseidon2_cipher_state[3] = Poseidon2(3)([key, nonce, DS]);
     for (var i = 0; i < 2; i++) {
         cipher[i] <== poseidon2_cipher_state[i] + message[i];
     }
@@ -96,7 +96,7 @@ template decrypt2() {
     // Absorb 2, squeeze 2,  domainsep = 0x4142
     // [0x80000002, 0x00000002, 0x4142]
     var DS = 0x80000002000000024142;
-    var poseidon2_cipher_state[3] = TACEO_PRECOMPUTATION_Poseidon2(3)([key, nonce, DS]);
+    var poseidon2_cipher_state[3] = Poseidon2(3)([key, nonce, DS]);
     for (var i = 0; i < 2; i++) {
         message[i] <== cipher[i] - poseidon2_cipher_state[i];
     }
@@ -112,7 +112,7 @@ template encrypt3() {
     // Absorb 2, squeeze 3,  domainsep = 0x4142
     // [0x80000002, 0x00000003, 0x4142]
     var DS = 0x80000002000000034142;
-    var poseidon2_cipher_state[4] = TACEO_PRECOMPUTATION_Poseidon2(4)([key, nonce, 0, DS]);
+    var poseidon2_cipher_state[4] = Poseidon2(4)([key, nonce, 0, DS]);
     for (var i = 0; i < 3; i++) {
         cipher[i] <== poseidon2_cipher_state[i] + message[i];
     }
@@ -128,7 +128,7 @@ template decrypt3() {
     // Absorb 2, squeeze 3,  domainsep = 0x4142
     // [0x80000002, 0x00000003, 0x4142]
     var DS = 0x80000002000000034142;
-    var poseidon2_cipher_state[4] = TACEO_PRECOMPUTATION_Poseidon2(4)([key, nonce, 0, DS]);
+    var poseidon2_cipher_state[4] = Poseidon2(4)([key, nonce, 0, DS]);
     for (var i = 0; i < 3; i++) {
         message[i] <== cipher[i] - poseidon2_cipher_state[i];
     }

@@ -44,7 +44,7 @@ template Poseidon2Sponge(N, T) {
             states[p][i] = states[p][i] + in[absorbed + i];
         }
         absorbed += remaining;
-        states[p + 1] = Poseidon2NoAccelerator(T)(states[p]);
+        states[p + 1] = TACEO_PRECOMPUTATION_Poseidon2(T)(states[p]);
     }
     out <== states[permutations][0];
 }

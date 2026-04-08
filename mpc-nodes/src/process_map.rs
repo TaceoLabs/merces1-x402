@@ -242,17 +242,14 @@ where
             );
 
             if compression {
-                // TODO once the Tracebuilder is fixed, we can use the compression helper again
-                // let (final_traces, alpha) =
-                //     super::compression_commitment_helper::<
-                //         { CircomConfig::POSEIDON2_SPONGE_T },
-                //         { CircomConfig::NUM_PUBLIC_INPUTS },
-                //         _,
-                //     >(public_inputs.try_into().expect("we checked lengths before"))?;
-                // traces.extend(final_traces);
-                let alpha = super::compute_alpha::<{ CircomConfig::NUM_PUBLIC_INPUTS }, _>(
+                let (final_traces, alpha) = super::compression_commitment_helper::<
+                    { CircomConfig::POSEIDON2_SPONGE_T },
+                    { CircomConfig::NUM_PUBLIC_INPUTS },
+                    _,
+                >(
                     public_inputs.try_into().expect("we checked lengths before"),
                 );
+                traces.extend(final_traces);
                 proof_inputs.insert("alpha".to_string(), alpha.into());
             }
             Result::<_, eyre::Report>::Ok(())
