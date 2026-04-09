@@ -45,6 +45,15 @@ async fn connect_rpc(rpc: &str, wallet: EthereumWallet) -> eyre::Result<DynProvi
     Ok(provider)
 }
 
+/// Public wrapper around `connect_rpc` so test binaries can build arbitrary wallet-connected
+/// providers (e.g. for a standalone facilitator EOA).
+pub async fn connect_rpc_public(
+    rpc: &str,
+    wallet: EthereumWallet,
+) -> eyre::Result<DynProvider> {
+    connect_rpc(rpc, wallet).await
+}
+
 pub fn write_solidity_verifiers(keys: &ProvingKeys) -> eyre::Result<()> {
     let config = SolidityVerifierConfig::default();
     keys.write_solidity_verifiers(config)?;
