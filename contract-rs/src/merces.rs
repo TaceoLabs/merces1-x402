@@ -7,11 +7,11 @@ use crate::{
 };
 use alloy::{
     hex,
-    primitives::{Address, B256, Bytes, FixedBytes, Log, U256, keccak256},
+    primitives::{Address, Bytes, FixedBytes, Log, U256},
     providers::{DynProvider, Provider},
     rpc::types::{Filter, TransactionReceipt},
     sol,
-    sol_types::{Eip712Domain, SolCall, SolConstructor, SolEvent, SolStruct, SolValue, eip712_domain},
+    sol_types::{SolCall, SolConstructor, SolEvent},
 };
 use ark_bn254::Bn254;
 use ark_ff::PrimeField;
@@ -26,30 +26,6 @@ sol!(
     Merces,
     concat!(env!("CARGO_MANIFEST_DIR"), "/../contracts/json/Merces.json")
 );
-
-// EIP-712 typed data struct for transferFrom — must match TRANSFER_FROM_TYPEHASH in Merces.sol.
-// Used by the client to sign an authorization that a facilitator can later submit on their behalf.
-sol! {
-    struct TransferFromAuthorization {
-        address sender;
-        address receiver;
-        uint256 amountCommitment;
-        bytes32 ciphertextHash;
-        uint256 beta;
-        uint256 nonce;
-        uint256 deadline;
-    }
-}
-
-/// EIP-712 domain matching the contract's constructor: EIP712("Merces", "1").
-pub fn merces_eip712_domain(chain_id: u64, verifying_contract: Address) -> Eip712Domain {
-    eip712_domain! {
-        name: "Merces",
-        version: "1",
-        chain_id: chain_id,
-        verifying_contract: verifying_contract,
-    }
-}
 
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub struct MercesContract {
@@ -444,104 +420,6 @@ impl MercesContract {
         let result = receipt
             .decoded_log::<Merces::Transfer>()
             .ok_or_else(|| eyre::eyre!("no Transfer event found in transaction receipt logs"))?;
-        let action_index = crate::u256_to_usize(result.actionIndex)?;
-
-        Ok((action_index, receipt))
-    }
-
-    /// Computes the EIP-712 digest that the sender must sign to authorize a facilitator-submitted
-    /// transferFrom. Returns the 32-byte digest ready to pass into `Signer::sign_hash`.
-    ///
-    /// Callers should construct the same `Ciphertext` they'll submit on-chain, hash it here with
-    /// `abi.encode + keccak256` (matching `Merces.sol`), and then sign the returned digest.
-    #[expect(clippy::too_many_arguments)]
-    pub fn transfer_from_signing_hash(
-        chain_id: u64,
-        verifying_contract: Address,
-        sender: Address,
-        receiver: Address,
-        amount_commitment: ark_bn254::Fr,
-        ciphertexts: [[ark_bn254::Fr; 2]; 3],
-        sender_pk: ark_babyjubjub::EdwardsAffine,
-        beta: ark_bn254::Fr,
-        nonce: U256,
-        deadline: U256,
-    ) -> B256 {
-        let ciphertext = Self::encode_ciphertext(ciphertexts, sender_pk);
-        // Match the contract: bytes32 ciphertextHash = keccak256(abi.encode(ciphertext));
-        let ciphertext_hash = keccak256(ciphertext.abi_encode());
-
-        let authorization = TransferFromAuthorization {
-            sender,
-            receiver,
-            amountCommitment: super::bn254_fr_to_u256(amount_commitment),
-            ciphertextHash: FixedBytes::from(ciphertext_hash),
-            beta: super::bn254_fr_to_u256(beta),
-            nonce,
-            deadline,
-        };
-
-        let domain = merces_eip712_domain(chain_id, verifying_contract);
-        authorization.eip712_signing_hash(&domain)
-    }
-
-    /// Facilitator-submitted transfer. The `provider` is the facilitator's wallet-connected
-    /// provider (i.e. it pays gas and is the `msg.sender`). The `signature` must be an EIP-712
-    /// signature over the TransferFromAuthorization struct produced by `transfer_from_signing_hash`,
-    /// signed by `sender`.
-    #[expect(clippy::too_many_arguments)]
-    pub async fn transfer_from(
-        &self,
-        provider: &DynProvider,
-        sender: Address,
-        receiver: Address,
-        amount_commitment: ark_bn254::Fr,
-        ciphertexts: [[ark_bn254::Fr; 2]; 3],
-        sender_pk: ark_babyjubjub::EdwardsAffine,
-        beta: ark_bn254::Fr,
-        proof: Proof<Bn254>,
-        nonce: U256,
-        deadline: U256,
-        signature: Bytes,
-    ) -> eyre::Result<(usize, TransactionReceipt)> {
-        let contract = Merces::new(self.contract_address, provider);
-
-        let ciphertext = Self::encode_ciphertext(ciphertexts, sender_pk);
-        let amount_commitment = super::bn254_fr_to_u256(amount_commitment);
-        let beta = super::bn254_fr_to_u256(beta);
-        let proof = Self::compress_proof(&proof);
-
-        let receipt = contract
-            .transferFrom(
-                sender,
-                receiver,
-                amount_commitment,
-                beta,
-                ciphertext,
-                proof,
-                nonce,
-                deadline,
-                signature,
-            )
-            .send()
-            .await
-            .context("while broadcasting transferFrom to network")?
-            .get_receipt()
-            .await
-            .context("while receiving receipt for transferFrom")?;
-
-        if receipt.status() {
-            tracing::info!(
-                "transferFrom done with transaction hash: {}",
-                receipt.transaction_hash
-            );
-        } else {
-            eyre::bail!("cannot finish transferFrom: {receipt:?}");
-        }
-
-        let result = receipt
-            .decoded_log::<Merces::Transfer>()
-            .ok_or_else(|| eyre::eyre!("no Transfer event found in transferFrom receipt logs"))?;
         let action_index = crate::u256_to_usize(result.actionIndex)?;
 
         Ok((action_index, receipt))

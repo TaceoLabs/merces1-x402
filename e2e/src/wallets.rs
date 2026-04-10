@@ -4,7 +4,6 @@ use std::str::FromStr;
 
 pub struct Wallets {
     pub wallets: Vec<EthereumWallet>,
-    pub signers: Vec<PrivateKeySigner>,
 }
 
 impl Wallets {
@@ -17,25 +16,21 @@ impl Wallets {
         }
 
         let mut wallets = Vec::with_capacity(num);
-        let mut signers = Vec::with_capacity(num);
         for i in 0..num {
             let key = PrivateKeySigner::from_str(crate::ANVIL_SKS[i])?;
-            let wallet = EthereumWallet::from(key.clone());
+            let wallet = EthereumWallet::from(key);
             wallets.push(wallet);
-            signers.push(key);
         }
-        Ok(Self { wallets, signers })
+        Ok(Self { wallets })
     }
 
     pub fn from_strings(secret_keys: Vec<SecretString>) -> eyre::Result<Self> {
         let mut wallets = Vec::with_capacity(secret_keys.len());
-        let mut signers = Vec::with_capacity(secret_keys.len());
         for key in secret_keys {
             let key = PrivateKeySigner::from_str(key.expose_secret())?;
-            let wallet = EthereumWallet::from(key.clone());
+            let wallet = EthereumWallet::from(key);
             wallets.push(wallet);
-            signers.push(key);
         }
-        Ok(Self { wallets, signers })
+        Ok(Self { wallets })
     }
 }
