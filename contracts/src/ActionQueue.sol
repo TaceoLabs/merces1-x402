@@ -9,6 +9,7 @@ enum Action {
     Withdraw,
     Transfer,
     Dummy // A no-op action used to initialize the queue with a non-NotPresent value at index 0
+
 }
 
 /// @notice A single queued action.

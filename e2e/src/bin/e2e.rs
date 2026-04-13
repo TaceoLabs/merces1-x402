@@ -97,7 +97,8 @@ async fn main() -> eyre::Result<ExitCode> {
     .await?;
     // Facilitator: a third-party EOA that submits transferFrom on behalf of a client.
     // It pays gas and is msg.sender, but the client authorizes via EIP-712 signature.
-    let facilitator_provider: DynProvider = e2e::connect_rpc_public(anvil_rpc.expose_secret(), wallets.wallets[4].clone()).await?;
+    let facilitator_provider: DynProvider =
+        e2e::connect_rpc(anvil_rpc.expose_secret(), wallets.wallets[4].clone()).await?;
 
     tracing::info!("Deploying contracts...");
     let deploytoken = if cli.erc20_token {
@@ -172,7 +173,8 @@ async fn testcase_inner(
     merces_contract: &MercesContract,
     token_contract: &Option<USDCTokenContract>,
 ) -> eyre::Result<()> {
-    tracing::info!("\nRunning Testcase...");
+    tracing::info!("\n");
+    tracing::info!("Running Testcase...");
     let decimals = e2e::get_decimals(mpc.get_provider(), token_contract).await?;
 
     if let Some(token_contract) = token_contract {
@@ -253,7 +255,8 @@ async fn testcase_transfer_from(
     merces_contract: &MercesContract,
     token_contract: &Option<USDCTokenContract>,
 ) -> eyre::Result<()> {
-    tracing::info!("\nRunning TransferFrom Testcase (x402 facilitator path)...");
+    tracing::info!("\n");
+    tracing::info!("Running TransferFrom Testcase (x402 facilitator path)...");
     let decimals = e2e::get_decimals(mpc.get_provider(), token_contract).await?;
     let amount = e2e::amount_to_wei(U256::from(1), decimals);
 

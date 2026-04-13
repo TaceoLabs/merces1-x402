@@ -11,7 +11,9 @@ use alloy::{
     providers::{DynProvider, Provider},
     rpc::types::{Filter, TransactionReceipt},
     sol,
-    sol_types::{Eip712Domain, SolCall, SolConstructor, SolEvent, SolStruct, SolValue, eip712_domain},
+    sol_types::{
+        Eip712Domain, SolCall, SolConstructor, SolEvent, SolStruct, SolValue, eip712_domain,
+    },
 };
 use ark_bn254::Bn254;
 use ark_ff::PrimeField;
@@ -41,16 +43,6 @@ sol! {
     }
 }
 
-/// EIP-712 domain matching the contract's constructor: EIP712("Merces", "1").
-pub fn merces_eip712_domain(chain_id: u64, verifying_contract: Address) -> Eip712Domain {
-    eip712_domain! {
-        name: "Merces",
-        version: "1",
-        chain_id: chain_id,
-        verifying_contract: verifying_contract,
-    }
-}
-
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub struct MercesContract {
     pub contract_address: Address,
@@ -76,6 +68,16 @@ fn merces_interface_id() -> [u8; 4] {
 
 impl MercesContract {
     pub const BATCH_SIZE: usize = 50;
+
+    /// EIP-712 domain matching the contract's constructor: EIP712("Merces", "1").
+    pub fn eip712_domain(chain_id: u64, verifying_contract: Address) -> Eip712Domain {
+        eip712_domain! {
+            name: "Merces",
+            version: "1",
+            chain_id: chain_id,
+            verifying_contract: verifying_contract,
+        }
+    }
 
     pub fn get_address(&self) -> Address {
         self.contract_address
@@ -475,13 +477,13 @@ impl MercesContract {
             sender,
             receiver,
             amountCommitment: super::bn254_fr_to_u256(amount_commitment),
-            ciphertextHash: FixedBytes::from(ciphertext_hash),
+            ciphertextHash: ciphertext_hash,
             beta: super::bn254_fr_to_u256(beta),
             nonce,
             deadline,
         };
 
-        let domain = merces_eip712_domain(chain_id, verifying_contract);
+        let domain = Self::eip712_domain(chain_id, verifying_contract);
         authorization.eip712_signing_hash(&domain)
     }
 
@@ -540,8 +542,10 @@ impl MercesContract {
         }
 
         let result = receipt
-            .decoded_log::<Merces::Transfer>()
-            .ok_or_else(|| eyre::eyre!("no Transfer event found in transferFrom receipt logs"))?;
+            .decoded_log::<Merces::TransferFrom>()
+            .ok_or_else(|| {
+                eyre::eyre!("no TransferFrom event found in transferFrom receipt logs")
+            })?;
         let action_index = crate::u256_to_usize(result.actionIndex)?;
 
         Ok((action_index, receipt))

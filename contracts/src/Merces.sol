@@ -107,6 +107,7 @@ contract Merces is ERC165, EIP712, IMercesMpc {
     event Deposit(uint256 actionIndex);
     event Withdraw(uint256 actionIndex);
     event Transfer(uint256 actionIndex);
+    event TransferFrom(uint256 actionIndex, address indexed sender, address indexed receiver);
     // We emit the location of the registered action indices which have been processed, as well as whether they were valid or not
     event ProcessedMPC(uint256[BATCH_SIZE] actionIndices, bool[BATCH_SIZE] valid);
 
@@ -363,14 +364,7 @@ contract Merces is ERC165, EIP712, IMercesMpc {
         bytes32 ciphertextHash = keccak256(abi.encode(ciphertext));
         bytes32 structHash = keccak256(
             abi.encode(
-                TRANSFER_FROM_TYPEHASH,
-                sender,
-                receiver,
-                amountCommitment,
-                ciphertextHash,
-                beta,
-                nonce,
-                deadline
+                TRANSFER_FROM_TYPEHASH, sender, receiver, amountCommitment, ciphertextHash, beta, nonce, deadline
             )
         );
         bytes32 digest = _hashTypedDataV4(structHash);
@@ -410,7 +404,7 @@ contract Merces is ERC165, EIP712, IMercesMpc {
         );
 
         shares[index] = ciphertext;
-        emit Transfer(index);
+        emit TransferFrom(index, sender, receiver);
         return index;
     }
 

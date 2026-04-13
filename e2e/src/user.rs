@@ -126,6 +126,7 @@ impl User {
     /// The user generates the ZK proof, computes the ciphertext + commitment, and then signs the
     /// EIP-712 `TransferFromAuthorization` with its private key. The resulting `SignedTransferFrom`
     /// bundles everything the facilitator needs to call `MercesContract::transfer_from`.
+    #[expect(clippy::too_many_arguments)]
     pub async fn authorize_transfer_from(
         &self,
         amount: U256,

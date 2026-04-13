@@ -13,12 +13,12 @@
 //!   prove --port 4024        # explicit port
 //!   PROVE_PORT=4024 prove    # env var
 
+use alloy::primitives::U256;
 use ark_babyjubjub::EdwardsAffine;
 use ark_bn254::Fr;
 use ark_ff::PrimeField;
 use client::transfer_compressed::TransferCompressed;
 use groth16_material::circom::CircomGroth16Material;
-use alloy::primitives::U256;
 use groth16_sol::prepare_compressed_proof;
 use rand::SeedableRng;
 use rand_chacha::ChaCha12Rng;
@@ -36,9 +36,12 @@ struct ProveRequest {
 
 #[derive(Deserialize)]
 struct MpcPks {
-    x1: String, y1: String,
-    x2: String, y2: String,
-    x3: String, y3: String,
+    x1: String,
+    y1: String,
+    x2: String,
+    y2: String,
+    x3: String,
+    y3: String,
 }
 
 #[derive(Serialize)]
@@ -76,7 +79,11 @@ fn parse_fr(s: &str) -> eyre::Result<Fr> {
 fn fr_to_decimal(f: Fr) -> String {
     let bigint = f.into_bigint();
     let n = num_bigint::BigUint::new(
-        bigint.0.iter().flat_map(|limb| vec![*limb as u32, (*limb >> 32) as u32]).collect(),
+        bigint
+            .0
+            .iter()
+            .flat_map(|limb| vec![*limb as u32, (*limb >> 32) as u32])
+            .collect(),
     );
     n.to_string()
 }
@@ -166,7 +173,10 @@ fn handle_request(
 
         match generate_proof(proving_key, amount, mpc_pks) {
             Ok(resp) => (200, serde_json::to_string(&resp).unwrap()),
-            Err(e) => (500, format!(r#"{{"error":"proof generation failed: {e}"}}"#)),
+            Err(e) => (
+                500,
+                format!(r#"{{"error":"proof generation failed: {e}"}}"#),
+            ),
         }
     } else {
         (404, r#"{"error":"not found"}"#.to_string())
@@ -185,9 +195,8 @@ fn main() -> eyre::Result<()> {
     let mut rng = ChaCha12Rng::from_seed(seed);
 
     eprintln!("[prove] Loading proving key...");
-    let proving_key: Arc<CircomGroth16Material> = Arc::new(
-        client::circom::config::CircomConfig::get_transfer_key_material(&mut rng)?,
-    );
+    let proving_key: Arc<CircomGroth16Material> =
+        Arc::new(client::circom::config::CircomConfig::get_transfer_key_material(&mut rng)?);
     eprintln!("[prove] Proving key loaded.");
 
     let listener = TcpListener::bind(format!("127.0.0.1:{port}"))?;
@@ -218,7 +227,13 @@ fn main() -> eyre::Result<()> {
                 break;
             }
             if header.to_lowercase().starts_with("content-length:") {
-                content_length = header.split(':').nth(1).unwrap_or("0").trim().parse().unwrap_or(0);
+                content_length = header
+                    .split(':')
+                    .nth(1)
+                    .unwrap_or("0")
+                    .trim()
+                    .parse()
+                    .unwrap_or(0);
             }
         }
 
