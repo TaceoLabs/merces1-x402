@@ -3,7 +3,6 @@ use crate::{
     circom::config::CircomConfig,
     map::{DepositValueShare, PrivateDeposit},
 };
-use ark_ff::{One, PrimeField, Zero};
 use circom_mpc_vm::{ComponentAcceleratorOutput, Rep3VmType};
 use itertools::izip;
 use mpc_core::{
@@ -34,7 +33,7 @@ where
         queue: Vec<Action<K>>,
         nets: &[N; CircomConfig::NUM_TRANSACTIONS],
         rep3_states: &mut [Rep3State; CircomConfig::NUM_TRANSACTIONS],
-        compression: bool,
+        _compression: bool,
     ) -> eyre::Result<(
         usize,
         Vec<F>,
@@ -49,12 +48,8 @@ where
         );
 
         let mut proof_inputs = BTreeMap::new();
-        let mut traces = Vec::with_capacity(
-            CircomConfig::NUM_TOTAL_COMMITMENTS + CircomConfig::NUM_TRANSACTIONS,
-        ); // Commitments and range checks
-        let mut new_balance_commitments = Vec::with_capacity(CircomConfig::NUM_TRANSACTIONS * 2);
+        let mut traces = Vec::new();
         let mut valids = Vec::with_capacity(CircomConfig::NUM_TRANSACTIONS);
-        let mut public_inputs = Vec::with_capacity(CircomConfig::NUM_PUBLIC_INPUTS);
         let mut applied_transactions = 0;
 
         let my_id = PartyID::try_from(nets[0].id())?;
@@ -118,7 +113,7 @@ where
             let mut faulty_parties = HashSet::new(); // The parties involved in invalid transactions
             let mut full_break = false; // Determines if we have to abort since the same account was accessed after an invalid transaction
             for (i, (action, handle)) in queue.iter().zip(handles).enumerate() {
-                let (valid, sender_new_, receiver_new_, inputs_, traces_, commitments_opened) =
+                let (valid, sender_new_, receiver_new_, inputs_) =
                     handle.join().map_err(|_| {
                         eyre::eyre!("A thread panicked while processing a transaction")
                     })??;
@@ -181,84 +176,32 @@ where
                         }
                     }
                 }
-                match action {
-                    Action::Deposit(_, _) => {
-                        new_balance_commitments.push(F::zero()); // Smart contract expects 0
-                        new_balance_commitments.push(commitments_opened[3]); // Receiver new balance commitment
-                    }
-                    Action::Withdraw(_, _) => {
-                        new_balance_commitments.push(commitments_opened[1]); // Sender new balance commitment
-                        new_balance_commitments.push(F::zero()); // Smart contract expects 0
-                    }
-                    Action::Transfer(_, _, _, _) => {
-                        new_balance_commitments.push(commitments_opened[1]); // Sender new balance commitment
-                        new_balance_commitments.push(commitments_opened[3]); // Receiver new balance commitment
-                    }
-                }
                 valids.push(valid);
 
-                public_inputs.extend(commitments_opened);
-                public_inputs.push(if valid { F::one() } else { F::zero() }); // Validity flag as public input
                 super::add_inputs_to_circom_map(i, inputs_, &mut proof_inputs);
-                traces.extend(traces_);
                 applied_transactions += 1;
             }
 
-            debug_assert_eq!(
-                public_inputs.len(),
-                (CircomConfig::NUM_COMMITMENTS + 1) * applied_transactions
-            );
-            // We need to pad the commitments and traces
+            // We need to pad inputs for unused transaction slots
             if applied_transactions < CircomConfig::NUM_TRANSACTIONS {
                 let (dummy_input, dummy_trace) = Self::process_dummy_circom()?;
 
-                let pad_public_inputs = [
-                    Self::zero_commitment(),
-                    Self::zero_commitment(),
-                    Self::zero_commitment(),
-                    Self::zero_commitment(),
-                    Self::zero_commitment(),
-                    F::one(),
-                ];
-
-                new_balance_commitments.resize(CircomConfig::NUM_TRANSACTIONS * 2, F::zero()); // Smart contract expects 0
                 valids.resize(CircomConfig::NUM_TRANSACTIONS, true);
 
                 for i in applied_transactions..CircomConfig::NUM_TRANSACTIONS {
                     super::add_inputs_to_circom_map(i, dummy_input.clone(), &mut proof_inputs);
                     traces.extend(dummy_trace.clone());
-                    public_inputs.extend(pad_public_inputs);
                 }
             }
-            debug_assert_eq!(public_inputs.len(), CircomConfig::NUM_PUBLIC_INPUTS);
             debug_assert_eq!(valids.len(), CircomConfig::NUM_TRANSACTIONS);
-            debug_assert_eq!(
-                new_balance_commitments.len(),
-                CircomConfig::NUM_TRANSACTIONS * 2
-            );
-            debug_assert_eq!(
-                traces.len(),
-                CircomConfig::NUM_TOTAL_COMMITMENTS + CircomConfig::NUM_TRANSACTIONS
-            );
-
-            if compression {
-                let (final_traces, alpha) = super::compression_commitment_helper::<
-                    { CircomConfig::POSEIDON2_SPONGE_T },
-                    { CircomConfig::NUM_PUBLIC_INPUTS },
-                    _,
-                >(
-                    public_inputs.try_into().expect("we checked lengths before"),
-                );
-                traces.extend(final_traces);
-                proof_inputs.insert("alpha".to_string(), alpha.into());
-            }
+            debug_assert!(traces.is_empty());
             Result::<_, eyre::Report>::Ok(())
         });
         result?;
 
         Ok((
             applied_transactions,
-            new_balance_commitments,
+            Vec::new(), // commitments are outputs of the circuit, extracted from public_inputs after proving
             valids,
             proof_inputs,
             traces,
@@ -268,11 +211,11 @@ where
     #[expect(clippy::type_complexity, clippy::too_many_arguments)]
     pub fn process_transaction_circom<N: Network>(
         sender_old: DepositValueShare<F>,
-        receiver_old: Option<DepositValueShare<F>>,
+        _receiver_old: Option<DepositValueShare<F>>,
         sender_new: DepositValueShare<F>,
         receiver_new: DepositValueShare<F>,
         amount: Rep3PrimeFieldShare<F>,
-        amount_blinding: Rep3PrimeFieldShare<F>,
+        _amount_blinding: Rep3PrimeFieldShare<F>,
         net0: &N,
         rep3_state: &mut Rep3State,
     ) -> eyre::Result<(
@@ -280,60 +223,18 @@ where
         DepositValueShare<F>,
         DepositValueShare<F>,
         Vec<Rep3VmType<F>>,
-        Vec<ComponentAcceleratorOutput<Rep3VmType<F>>>,
-        [F; CircomConfig::NUM_COMMITMENTS],
     )> {
-        let (inputs, receiver_old_amount, receiver_old_blinding) =
-            super::get_query_transaction_circom_input(
-                sender_old.to_owned(),
-                receiver_old,
-                amount,
-                amount_blinding,
-                sender_new.blinding,
-                receiver_new.blinding,
-            );
-        let input_commitment = [
+        let inputs = super::get_query_transaction_circom_input(
+            sender_old.to_owned(),
             amount,
-            amount_blinding,
-            sender_old.amount,
-            sender_old.blinding,
-            sender_new.amount,
             sender_new.blinding,
-            receiver_old_amount,
-            receiver_old_blinding,
-            receiver_new.amount,
-            receiver_new.blinding,
-        ];
-        let mut state = input_commitment;
-
-        let mut traces =
-            super::poseidon2_circom_commitment_helper::<5, _, _, _>(&mut state, net0, rep3_state)?;
-
-        let ff_commitments = super::feed_forward_shared::<
-            2,
-            { CircomConfig::NUM_COMMITMENTS },
-            { 2 * CircomConfig::NUM_COMMITMENTS },
-            _,
-        >(state, input_commitment);
-
-        let mut opened_commitments: [F; CircomConfig::NUM_COMMITMENTS] =
-            rep3::arithmetic::open_vec(&ff_commitments, net0)?
-                .try_into()
-                .expect("should fit");
-        opened_commitments.rotate_left(1); // Amount commitment is at the end for the sponge input
+        );
 
         // The bit decomposition
-        let (valid, decomp_sender) = super::decompose_compose(sender_new.amount, net0, rep3_state)?;
-        traces.insert(1, decomp_sender);
+        let (valid, _decomp_sender) =
+            super::decompose_compose(sender_new.amount, net0, rep3_state)?;
 
-        Ok((
-            valid,
-            sender_new,
-            receiver_new,
-            inputs,
-            traces,
-            opened_commitments,
-        ))
+        Ok((valid, sender_new, receiver_new, inputs))
     }
 
     #[expect(clippy::type_complexity)]
@@ -348,14 +249,11 @@ where
         DepositValueShare<F>,
         DepositValueShare<F>,
         Vec<Rep3VmType<F>>,
-        Vec<ComponentAcceleratorOutput<Rep3VmType<F>>>,
-        [F; CircomConfig::NUM_COMMITMENTS],
     )> {
         let my_id = PartyID::try_from(net0.id())?;
         let inputs = super::get_query_withdraw_circom_input_public_amount(
             sender_old.to_owned(),
             amount,
-            F::zero(),
             sender_new.blinding,
         );
 
@@ -364,139 +262,32 @@ where
             Rep3PrimeFieldShare::zero_share(),
         );
 
-        let input_commitment = [
-            sender_old.amount,
-            sender_old.blinding,
-            sender_new.amount,
-            sender_new.blinding,
-        ];
-        let mut state = input_commitment;
+        let (valid, _decomp_sender) =
+            super::decompose_compose(sender_new.amount, net0, rep3_state)?;
 
-        let mut traces =
-            super::poseidon2_circom_commitment_helper::<2, _, _, _>(&mut state, net0, rep3_state)?;
-
-        let (state_public, traces_) =
-            super::poseidon2_plain_circom_commitment_helper::<2, 2, _, _>([
-                amount,
-                F::zero(),
-                F::zero(),
-                F::zero(),
-            ])?;
-
-        let (valid, decomp_sender) = super::decompose_compose(sender_new.amount, net0, rep3_state)?;
-
-        traces.insert(0, traces_[0].clone());
-        for trace in traces_.into_iter().rev() {
-            traces.push(trace);
-        }
-
-        traces.insert(1, decomp_sender);
-
-        let ff_commmitments_shared =
-            super::feed_forward_shared::<2, 2, 4, _>(state, input_commitment);
-
-        let ff_commitment_public = state_public[0][0] + amount;
-
-        let opened_commitments = rep3::arithmetic::open_vec(&ff_commmitments_shared, net0)?;
-
-        let opened_commitments_final = [
-            opened_commitments[0],
-            opened_commitments[1],
-            state_public[1][0],
-            ff_commitment_public,
-            ff_commitment_public,
-        ];
-
-        Ok((
-            valid,
-            sender_new,
-            receiver_new,
-            inputs,
-            traces,
-            opened_commitments_final,
-        ))
+        Ok((valid, sender_new, receiver_new, inputs))
     }
 
     #[expect(clippy::type_complexity)]
     pub fn process_deposit_circom<N: Network>(
-        receiver_old: Option<DepositValueShare<F>>,
+        _receiver_old: Option<DepositValueShare<F>>,
         receiver_new: DepositValueShare<F>,
         amount: F,
-        net0: &N,
-        rep3_state: &mut Rep3State,
+        _net0: &N,
+        _rep3_state: &mut Rep3State,
     ) -> eyre::Result<(
         bool,
         DepositValueShare<F>,
         DepositValueShare<F>,
         Vec<Rep3VmType<F>>,
-        Vec<ComponentAcceleratorOutput<Rep3VmType<F>>>,
-        [F; CircomConfig::NUM_COMMITMENTS],
     )> {
-        let (inputs, receiver_old_amount, receiver_old_blinding) =
-            super::get_deposit_input_public_amount_circom(
-                receiver_old,
-                amount,
-                F::zero(),
-                receiver_new.blinding,
-            );
+        let inputs = super::get_deposit_input_public_amount_circom(amount, receiver_new.blinding);
 
         let sender_new = DepositValueShare::<F>::new(
             Rep3PrimeFieldShare::zero_share(),
             Rep3PrimeFieldShare::zero_share(),
         );
-        let input_commitment = [
-            receiver_old_amount,
-            receiver_old_blinding,
-            receiver_new.amount,
-            receiver_new.blinding,
-        ];
-        let mut state = input_commitment;
-
-        let mut traces =
-            super::poseidon2_circom_commitment_helper::<2, _, _, _>(&mut state, net0, rep3_state)?;
-
-        let (state_public, traces_) =
-            super::poseidon2_plain_circom_commitment_helper::<2, 2, _, _>([
-                amount,
-                F::zero(),
-                F::zero(),
-                F::zero(),
-            ])?;
-
-        traces.insert(0, traces_[0].clone());
-        traces.insert(0, traces_[0].clone());
-        traces.insert(2, traces_[1].clone());
-        traces.insert(
-            1,
-            ComponentAcceleratorOutput::new(
-                vec![Rep3VmType::default(); F::MODULUS_BIT_SIZE as usize],
-                Vec::new(),
-            ),
-        ); // Mimic the range check
-
-        let ff_commmitments_shared =
-            super::feed_forward_shared::<2, 2, 4, _>(state, input_commitment);
-
-        let ff_commitment_public = state_public[0][0] + amount;
-
-        let opened_commitments = rep3::arithmetic::open_vec(&ff_commmitments_shared, net0)?;
-
-        let opened_commitments_final = [
-            ff_commitment_public,
-            state_public[1][0],
-            opened_commitments[0],
-            opened_commitments[1],
-            ff_commitment_public,
-        ];
-
-        Ok((
-            true,
-            sender_new,
-            receiver_new,
-            inputs,
-            traces,
-            opened_commitments_final,
-        ))
+        Ok((true, sender_new, receiver_new, inputs))
     }
 
     #[expect(clippy::type_complexity)]
@@ -504,21 +295,8 @@ where
         Vec<Rep3VmType<F>>,
         Vec<ComponentAcceleratorOutput<Rep3VmType<F>>>,
     )> {
-        // Commitment, range check, commitment, commitment, commitment, commitment
-        let mut plain_traces =
-            super::poseidon2_plain_circom_commitment_helper::<2, 1, _, _>([F::zero(), F::zero()])?
-                .1;
-
-        plain_traces.push(ComponentAcceleratorOutput::new(
-            vec![Rep3VmType::default(); F::MODULUS_BIT_SIZE as usize],
-            Vec::new(),
-        ));
-        plain_traces.push(plain_traces[0].clone());
-        plain_traces.push(plain_traces[0].clone());
-        plain_traces.push(plain_traces[0].clone());
-        plain_traces.push(plain_traces[0].clone());
-
-        Ok((vec![Rep3VmType::default(); 8], plain_traces))
+        // 3 circuit input signals (matching CIRCOM_MAP_LABELS), all zero for dummy transactions.
+        Ok((vec![Rep3VmType::default(); 3], Vec::new()))
     }
 }
 
@@ -526,7 +304,7 @@ where
 mod tests {
     use super::*;
     use crate::map::{DepositValue, DepositValuePlain};
-    use ark_ff::UniformRand;
+    use ark_ff::{PrimeField, UniformRand, Zero};
     use mpc_core::protocols::rep3::conversion::A2BType;
     use mpc_net::local::LocalNetwork;
     use rand::{CryptoRng, Rng, thread_rng};
@@ -628,7 +406,7 @@ mod tests {
             plain_map.insert(key2, DepositValue::new(F::zero(), F::zero()));
 
             // Do the MPC work
-            let (proof, public_inputs, commitments) = thread::scope(|scope| {
+            let (proof, public_inputs, _commitments) = thread::scope(|scope| {
                 let mut handles = Vec::with_capacity(3);
                 for (nets, map, transaction) in izip!(
                     [
@@ -646,7 +424,7 @@ mod tests {
                             rep3_states.push(Rep3State::new(net, A2BType::default()).unwrap());
                         }
 
-                        let (applied_transactions, commitments, valids, inputs, traces) = map
+                        let (applied_transactions, _commitments, valids, inputs, traces) = map
                             .process_queue_with_cocircom_trace(
                                 transaction,
                                 nets.as_slice().try_into().unwrap(),
@@ -657,11 +435,17 @@ mod tests {
                         assert_eq!(applied_transactions, NUM_TRANSACTIONS);
                         assert_eq!(valids.len(), CircomConfig::NUM_TRANSACTIONS);
                         assert!(valids.iter().all(|&v| v)); // All transactions should be valid, including dummies
-                        assert_eq!(commitments.len(), CircomConfig::NUM_TRANSACTIONS * 2); // We have two commitments per transaction
                         let (proof, public_inputs) = groth16
                             .trace_to_proof(inputs, traces, &nets[0], &nets[1])
                             .unwrap();
 
+                        // Extract commitments from circuit public outputs (first 2*N values)
+                        let commitments = public_inputs
+                            .iter()
+                            .take(CircomConfig::NUM_TRANSACTIONS * 2)
+                            .copied()
+                            .collect::<Vec<_>>();
+                        assert_eq!(commitments.len(), CircomConfig::NUM_TRANSACTIONS * 2);
                         (proof, public_inputs, commitments)
                     });
                     handles.push(handle);
@@ -677,11 +461,8 @@ mod tests {
                 (proof0, public_inputs0, commitments0)
             });
 
-            // Verifiy the results
+            // Verify the results
             assert!(groth16.verify(&proof, &public_inputs).unwrap());
-            for comm in commitments.into_iter().skip(NUM_TRANSACTIONS * 2) {
-                assert!(comm.is_zero());
-            }
         }
 
         // Finally, compare the maps

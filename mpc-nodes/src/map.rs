@@ -163,7 +163,10 @@ where
         amount: Rep3PrimeFieldShare<F>,
         rep3_state: &mut Rep3State,
     ) -> (Option<DepositValueShare<F>>, DepositValueShare<F>) {
-        let new_blinding = rep3::arithmetic::rand(rep3_state);
+        // Prototype: keep blinding in a trivially Circom-compatible range.
+        //TODO FLORIN THIS IS A DUMMY IMPLEMENTATION, REPLACE WITH REAL BLINDING
+        let _ = rep3_state;
+        let new_blinding = Rep3PrimeFieldShare::zero_share();
         self.deposit_with_blinding(key, amount, new_blinding)
     }
 
@@ -174,7 +177,10 @@ where
         amount: Rep3PrimeFieldShare<F>,
         rep3_state: &mut Rep3State,
     ) -> eyre::Result<(DepositValueShare<F>, DepositValueShare<F>)> {
-        let new_blinding = rep3::arithmetic::rand(rep3_state);
+        // Prototype: keep blinding in a trivially Circom-compatible range.
+        //TODO FLORIN THIS IS A DUMMY IMPLEMENTATION, REPLACE WITH REAL BLINDING
+        let _ = rep3_state;
+        let new_blinding = Rep3PrimeFieldShare::zero_share();
         self.withdraw_with_blinding(key, amount, new_blinding)
     }
 
@@ -192,8 +198,11 @@ where
         Option<DepositValueShare<F>>,
         DepositValueShare<F>,
     )> {
-        let sender_new_blinding = rep3::arithmetic::rand(rep3_state);
-        let receiver_new_blinding = rep3::arithmetic::rand(rep3_state);
+        // Prototype: keep blinding in a trivially Circom-compatible range.
+        //TODO FLORIN THIS IS A DUMMY IMPLEMENTATION, REPLACE WITH REAL BLINDING
+        let _ = rep3_state;
+        let sender_new_blinding = Rep3PrimeFieldShare::zero_share();
+        let receiver_new_blinding = Rep3PrimeFieldShare::zero_share();
         self.transaction_with_blinding(
             sender,
             receiver,

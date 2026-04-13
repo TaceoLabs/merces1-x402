@@ -8,50 +8,28 @@ include "taceolib/compression.circom";
 
 template transfer_batched(N, BALANCE_BITSIZE) {
     signal input sender_old_balance[N];
-    signal input sender_old_r[N];
-    signal input receiver_old_balance[N];
-    signal input receiver_old_r[N];
     signal input amount[N];
-    signal input amount_r[N];
     signal input sender_new_r[N];
-    signal input receiver_new_r[N];
-    signal output sender_old_commitment[N];
-    signal output sender_new_commitment[N];
-    signal output receiver_old_commitment[N];
-    signal output receiver_new_commitment[N];
-    signal output amount_commitment[N];
+    signal output commitment[N][2];
     signal output valid[N];
 
     component transactions[N];
     for (var i=0; i<N; i++) {
         transactions[i] = transfer(BALANCE_BITSIZE);
         transactions[i].sender_old_balance <== sender_old_balance[i];
-        transactions[i].sender_old_r <== sender_old_r[i];
-        transactions[i].receiver_old_balance <== receiver_old_balance[i];
-        transactions[i].receiver_old_r <== receiver_old_r[i];
         transactions[i].amount <== amount[i];
-        transactions[i].amount_r <== amount_r[i];
         transactions[i].sender_new_r <== sender_new_r[i];
-        transactions[i].receiver_new_r <== receiver_new_r[i];
 
-        sender_old_commitment[i] <== transactions[i].sender_old_c;
-        sender_new_commitment[i] <== transactions[i].sender_new_c;
-        receiver_old_commitment[i] <== transactions[i].receiver_old_c;
-        receiver_new_commitment[i] <== transactions[i].receiver_new_c;
-        amount_commitment[i] <== transactions[i].amount_c;
+        commitment[i][0] <== transactions[i].commitment[0];
+        commitment[i][1] <== transactions[i].commitment[1];
         valid[i] <== transactions[i].valid;
     }
 }
 
 template transfer_batched_compressed(N, BALANCE_BITSIZE, T) {
     signal input sender_old_balance[N];
-    signal input sender_old_r[N];
-    signal input receiver_old_balance[N];
-    signal input receiver_old_r[N];
     signal input amount[N];
-    signal input amount_r[N];
     signal input sender_new_r[N];
-    signal input receiver_new_r[N];
     signal input alpha; // Public input for compression
     signal output beta;
     signal output gamma;
@@ -59,26 +37,18 @@ template transfer_batched_compressed(N, BALANCE_BITSIZE, T) {
     // Calling the old component
     component transaction_batched = transfer_batched(N, BALANCE_BITSIZE);
     transaction_batched.sender_old_balance <== sender_old_balance;
-    transaction_batched.sender_old_r <== sender_old_r;
-    transaction_batched.receiver_old_balance <== receiver_old_balance;
-    transaction_batched.receiver_old_r <== receiver_old_r;
     transaction_batched.amount <== amount;
-    transaction_batched.amount_r <== amount_r;
     transaction_batched.sender_new_r <== sender_new_r;
-    transaction_batched.receiver_new_r <== receiver_new_r;
 
     // Compressing the outputs
-    var q[6 * N];
+    var q[3 * N];
     for (var i = 0; i < N; i++) {
-        q[6 * i] = transaction_batched.sender_old_commitment[i];
-        q[6 * i + 1] = transaction_batched.sender_new_commitment[i];
-        q[6 * i + 2] = transaction_batched.receiver_old_commitment[i];
-        q[6 * i + 3] = transaction_batched.receiver_new_commitment[i];
-        q[6 * i + 4] = transaction_batched.amount_commitment[i];
-        q[6 * i + 5] = transaction_batched.valid[i];
+        q[3 * i] = transaction_batched.commitment[i][0];
+        q[3 * i + 1] = transaction_batched.commitment[i][1];
+        q[3 * i + 2] = transaction_batched.valid[i];
     }
 
-    component compression = Compression(6 * N, T);
+    component compression = Compression(3 * N, T);
     compression.q <== q;
     compression.alpha <== alpha;
     beta <== compression.beta;

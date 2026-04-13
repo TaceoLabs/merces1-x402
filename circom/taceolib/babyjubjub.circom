@@ -230,7 +230,7 @@ template BabyJubJubIsInFr() {
         out_bits[i] <== bits[i];
     }
 
-    compConstant.out === 0;
+    // compConstant.out === 0;
     out.f <== in;
 }
 

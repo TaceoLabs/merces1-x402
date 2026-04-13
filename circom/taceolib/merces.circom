@@ -66,37 +66,17 @@ template withdraw(BALANCE_BITSIZE) {
 // We don't include amount range checks in valid since the registration of the transfer already includes this check. So at this point the amount is already proven to be in range.
 template transfer(BALANCE_BITSIZE) {
     signal input sender_old_balance;
-    signal input sender_old_r;
-    signal input receiver_old_balance;
-    signal input receiver_old_r;
     signal input amount;
-    signal input amount_r;
     signal input sender_new_r;
-    signal input receiver_new_r;
-    signal output sender_old_c;
-    signal output sender_new_c;
-    signal output receiver_old_c;
-    signal output receiver_new_c;
-    signal output amount_c;
+    signal output commitment[2]; 
     signal output valid;
 
-    // No range check, since the registration of the transfer already includes this check. So at this point the amount is already proven to be in range.
-    amount_c <== commit1()(amount, amount_r);
-
-    component withdraw = withdraw(BALANCE_BITSIZE);
-    withdraw.old_balance <== sender_old_balance;
-    withdraw.old_r <== sender_old_r;
-    withdraw.amount <== amount;
-    withdraw.new_r <== sender_new_r;
-    sender_old_c <== withdraw.old_c;
-    sender_new_c <== withdraw.new_c;
-    valid <== withdraw.valid;
-
-    component deposit = deposit_inner();
-    deposit.old_balance <== receiver_old_balance;
-    deposit.old_r <== receiver_old_r;
-    deposit.amount <== amount;
-    deposit.new_r <== receiver_new_r;
-    receiver_old_c <== deposit.old_c;
-    receiver_new_c <== deposit.new_c;
+    signal sender_new_balance <== sender_old_balance - amount;
+    
+    component pedersen = register_pending_transaction(BALANCE_BITSIZE);
+    pedersen.amount <== sender_new_balance;
+    pedersen.amount_he_r <== sender_new_r;
+    commitment[0] <== pedersen.he_commitment[0];
+    commitment[1] <== pedersen.he_commitment[1];
+    valid <== pedersen.valid;
 }

@@ -165,7 +165,7 @@ impl Mpc {
         }
         rep3_states.push(rep3_state);
 
-        let (applied_transactions, commitments, valids, inputs, traces) = map
+        let (applied_transactions, _commitments_unused, valids, inputs, traces) = map
             .process_queue_with_cocircom_trace(
                 queue,
                 nets,
@@ -174,6 +174,13 @@ impl Mpc {
             )?;
         let (proof, public_inputs) =
             proving_key.trace_to_proof(inputs, traces, &nets[0], &nets[1])?;
+
+        // Non-compressed circuit: commitments are the first 2*N public outputs.
+        let commitments = public_inputs
+            .iter()
+            .take(CircomConfig::NUM_TRANSACTIONS * 2)
+            .copied()
+            .collect::<Vec<_>>();
 
         Ok((
             applied_transactions,

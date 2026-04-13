@@ -21,16 +21,7 @@ use std::collections::BTreeMap;
 
 pub(crate) type F = ark_bn254::Fr;
 
-pub(crate) const CIRCOM_MAP_LABELS: [&str; 8] = [
-    "sender_old_balance",
-    "sender_old_r",
-    "receiver_old_balance",
-    "receiver_old_r",
-    "amount",
-    "amount_r",
-    "sender_new_r",
-    "receiver_new_r",
-];
+pub(crate) const CIRCOM_MAP_LABELS: [&str; 3] = ["sender_old_balance", "amount", "sender_new_r"];
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize, PartialEq, Eq)]
 pub enum Action<K> {
@@ -244,80 +235,37 @@ pub(crate) fn decompose_compose<F: PrimeField, N: Network>(
 
 pub(crate) fn get_query_transaction_circom_input(
     sender_old: DepositValueShare<F>,
-    receiver_old: Option<DepositValueShare<F>>,
     amount: Rep3PrimeFieldShare<F>,
-    amount_blinding: Rep3PrimeFieldShare<F>,
     sender_new_blinding: Rep3PrimeFieldShare<F>,
-    receiver_new_blinding: Rep3PrimeFieldShare<F>,
-) -> (
-    Vec<Rep3VmType<F>>,
-    Rep3PrimeFieldShare<F>,
-    Rep3PrimeFieldShare<F>,
-) {
-    let mut inputs = Vec::with_capacity(8);
-    inputs.push(Rep3VmType::from(sender_old.amount));
-    inputs.push(Rep3VmType::from(sender_old.blinding));
-    let (receiver_old_amount, receiver_old_blinding) = if let Some(old) = receiver_old {
-        inputs.push(Rep3VmType::from(old.amount));
-        inputs.push(Rep3VmType::from(old.blinding));
-        (old.amount, old.blinding)
-    } else {
-        inputs.push(Rep3VmType::from(F::zero()));
-        inputs.push(Rep3VmType::from(F::zero()));
-        (Rep3PrimeFieldShare::zero(), Rep3PrimeFieldShare::zero())
-    };
-    inputs.push(Rep3VmType::from(amount));
-    inputs.push(Rep3VmType::from(amount_blinding));
-    inputs.push(Rep3VmType::from(sender_new_blinding));
-    inputs.push(Rep3VmType::from(receiver_new_blinding));
-    (inputs, receiver_old_amount, receiver_old_blinding)
+) -> Vec<Rep3VmType<F>> {
+    vec![
+        Rep3VmType::from(sender_old.amount),
+        Rep3VmType::from(amount),
+        Rep3VmType::from(sender_new_blinding),
+    ]
 }
 
 pub(crate) fn get_query_withdraw_circom_input_public_amount(
     sender_old: DepositValueShare<F>,
     amount: F,
-    amount_blinding: F,
     sender_new_blinding: Rep3PrimeFieldShare<F>,
 ) -> Vec<Rep3VmType<F>> {
     vec![
         Rep3VmType::from(sender_old.amount),
-        Rep3VmType::from(sender_old.blinding),
-        Rep3VmType::default(),
-        Rep3VmType::default(),
         Rep3VmType::from(amount),
-        Rep3VmType::from(amount_blinding),
         Rep3VmType::from(sender_new_blinding),
-        Rep3VmType::default(),
     ]
 }
 
 pub(crate) fn get_deposit_input_public_amount_circom(
-    receiver_old: Option<DepositValueShare<F>>,
     amount: F,
-    amount_blinding: F,
     receiver_new_blinding: Rep3PrimeFieldShare<F>,
-) -> (
-    Vec<Rep3VmType<F>>,
-    Rep3PrimeFieldShare<F>,
-    Rep3PrimeFieldShare<F>,
-) {
-    let mut inputs = Vec::with_capacity(8);
-    inputs.push(Rep3VmType::from(amount));
-    inputs.push(Rep3VmType::from(amount_blinding));
-    let (receiver_old_amount, receiver_old_blinding) = if let Some(old) = receiver_old {
-        inputs.push(Rep3VmType::from(old.amount));
-        inputs.push(Rep3VmType::from(old.blinding));
-        (old.amount, old.blinding)
-    } else {
-        inputs.push(Rep3VmType::default());
-        inputs.push(Rep3VmType::default());
-        (Rep3PrimeFieldShare::zero(), Rep3PrimeFieldShare::zero())
-    };
-    inputs.push(Rep3VmType::from(amount));
-    inputs.push(Rep3VmType::from(amount_blinding));
-    inputs.push(Rep3VmType::default());
-    inputs.push(Rep3VmType::from(receiver_new_blinding));
-    (inputs, receiver_old_amount, receiver_old_blinding)
+) -> Vec<Rep3VmType<F>> {
+    vec![
+        Rep3VmType::from(amount),
+        Rep3VmType::from(amount),
+        Rep3VmType::from(receiver_new_blinding),
+    ]
 }
 
 pub(crate) fn add_inputs_to_circom_map(
@@ -325,7 +273,7 @@ pub(crate) fn add_inputs_to_circom_map(
     inputs: Vec<Rep3VmType<F>>,
     circom_map: &mut BTreeMap<String, Rep3VmType<F>>,
 ) {
-    debug_assert!(inputs.len() == 8);
+    debug_assert!(inputs.len() == 3);
     for (inp, label) in inputs.into_iter().zip(CIRCOM_MAP_LABELS.iter()) {
         circom_map.insert(format!("{label}[{i}]").to_string(), inp.clone());
     }
