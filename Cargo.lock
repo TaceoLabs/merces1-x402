@@ -1934,6 +1934,7 @@ checksum = "c8d4a3bb8b1e0c1050499d1815f5ab16d04f0959b233085fb31653fbfc9d98f9"
 name = "client"
 version = "0.1.0"
 dependencies = [
+ "alloy",
  "ark-bn254",
  "ark-ec",
  "ark-ff 0.5.0",
@@ -1942,9 +1943,13 @@ dependencies = [
  "eyre",
  "num-bigint 0.4.6",
  "rand 0.8.5",
+ "rand_chacha 0.3.1",
+ "serde",
+ "serde_json",
  "sha2",
  "taceo-ark-babyjubjub",
  "taceo-groth16-material",
+ "taceo-groth16-sol",
  "taceo-poseidon2",
 ]
 

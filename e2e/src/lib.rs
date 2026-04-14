@@ -38,7 +38,7 @@ pub const ANVIL_SKS: [&str; 10] = [
     "0x2a871d0798f97d79848a013d4936a73bf4cc922c825d33c1cf7073dff6d409c6",
 ];
 
-async fn connect_rpc(rpc: &str, wallet: EthereumWallet) -> eyre::Result<DynProvider> {
+pub async fn connect_rpc(rpc: &str, wallet: EthereumWallet) -> eyre::Result<DynProvider> {
     let provider = ProviderBuilder::new()
         .wallet(wallet)
         .connect(rpc)

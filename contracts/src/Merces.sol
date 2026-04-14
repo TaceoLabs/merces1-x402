@@ -4,6 +4,8 @@ pragma solidity ^0.8.20;
 // import "forge-std/console.sol";
 import {Action, ActionItem, ActionQueue, ActionQueueLib} from "./ActionQueue.sol";
 import {BabyJubJub} from "@taceo/babyjubjub/BabyJubJub.sol";
+import {ECDSA} from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
+import {EIP712} from "@openzeppelin/contracts/utils/cryptography/EIP712.sol";
 import {ERC165} from "@openzeppelin/contracts/utils/introspection/ERC165.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {Poseidon2T2_BN254} from "./Poseidon2.sol";
@@ -35,7 +37,7 @@ interface IMercesMpc {
 
 string constant MERCES_TAG = "merces1";
 
-contract Merces is ERC165, IMercesMpc {
+contract Merces is ERC165, EIP712, IMercesMpc {
     using BabyJubJub for BabyJubJub.Affine;
     using ActionQueueLib for ActionQueue;
     using SafeERC20 for IERC20;
@@ -70,6 +72,15 @@ contract Merces is ERC165, IMercesMpc {
     // Stores the secret shares of the amount and randomness for a transfer
     mapping(uint256 => Ciphertext) private shares;
 
+    // Tracks used nonces per sender for transferFrom replay protection
+    mapping(address => mapping(uint256 => bool)) public usedNonces;
+
+    // EIP-712 typehash for TransferFromAuthorization
+    // Matches the struct signed by the client for a facilitator-submitted transfer.
+    bytes32 private constant TRANSFER_FROM_TYPEHASH = keccak256(
+        "TransferFromAuthorization(address sender,address receiver,uint256 amountCommitment,bytes32 ciphertextHash,uint256 beta,uint256 nonce,uint256 deadline)"
+    );
+
     // BN254 prime field
     uint256 constant PRIME = BabyJubJub.Q;
 
@@ -96,6 +107,7 @@ contract Merces is ERC165, IMercesMpc {
     event Deposit(uint256 actionIndex);
     event Withdraw(uint256 actionIndex);
     event Transfer(uint256 actionIndex);
+    event TransferFrom(uint256 actionIndex, address indexed sender, address indexed receiver);
     // We emit the location of the registered action indices which have been processed, as well as whether they were valid or not
     event ProcessedMPC(uint256[BATCH_SIZE] actionIndices, bool[BATCH_SIZE] valid);
 
@@ -108,6 +120,9 @@ contract Merces is ERC165, IMercesMpc {
     error InvalidTransfer();
     error InvalidMpcAction();
     error InvalidCommitment();
+    error ExpiredDeadline();
+    error NonceAlreadyUsed();
+    error InvalidSignature();
 
     // We do not store a nonce, since we assume that the sender_pk is randomly sampled each time
     struct Ciphertext {
@@ -125,7 +140,7 @@ contract Merces is ERC165, IMercesMpc {
         BabyJubJub.Affine memory _mpcPk2,
         BabyJubJub.Affine memory _mpcPk3,
         string memory _environmentTag
-    ) {
+    ) EIP712("Merces", "1") {
         _curveChecks(_mpcPk1);
         _curveChecks(_mpcPk2);
         _curveChecks(_mpcPk3);
@@ -304,6 +319,99 @@ contract Merces is ERC165, IMercesMpc {
         shares[index] = ciphertext;
         emit Transfer(index);
         return index;
+    }
+
+    /// @notice Facilitator-submitted transfer with EIP-712 authorization from the sender.
+    /// @dev Parallel entry point to `transfer()` — allows a third-party facilitator (e.g. x402)
+    ///      to submit a confidential transfer on behalf of the sender after verifying an off-chain
+    ///      EIP-712 signature. Same downstream logic as `transfer()`: verifies the client ZK proof,
+    ///      enqueues the action, stores the ciphertext. The MPC processes it identically — it uses
+    ///      the sender's ephemeral BabyJubJub key from the ciphertext, not the Ethereum submitter.
+    /// @param sender The authorizing payer (recovered from the EIP-712 signature).
+    /// @param receiver The recipient of the confidential transfer.
+    /// @param amountCommitment Poseidon2 commitment to the amount.
+    /// @param beta Random challenge provided by the client for proof compression.
+    /// @param ciphertext Encrypted shares of (amount, r) plus sender's ephemeral BabyJubJub pk.
+    /// @param proof Compressed Groth16 client proof (4 field elements).
+    /// @param nonce Unique nonce per sender for replay protection.
+    /// @param deadline Unix timestamp after which the signature is invalid.
+    /// @param signature EIP-712 signature over the TransferFromAuthorization struct.
+    function transferFrom(
+        address sender,
+        address receiver,
+        uint256 amountCommitment,
+        uint256 beta,
+        Ciphertext calldata ciphertext,
+        uint256[4] calldata proof,
+        uint256 nonce,
+        uint256 deadline,
+        bytes calldata signature
+    ) public returns (uint256) {
+        // 1. Deadline check
+        if (block.timestamp > deadline) revert ExpiredDeadline();
+
+        // 2. Nonce check
+        if (usedNonces[sender][nonce]) revert NonceAlreadyUsed();
+
+        // 3. Sanity checks on parties and ciphertext
+        _checkParties(sender, receiver);
+        _requireInPrimeField(amountCommitment);
+        _checkCiphertext(ciphertext);
+
+        // 4. EIP-712 signature verification.
+        //    The client signs over (sender, receiver, amountCommitment, hash(ciphertext), beta, nonce, deadline).
+        //    We hash the ciphertext separately to keep the typed-data struct small.
+        bytes32 ciphertextHash = keccak256(abi.encode(ciphertext));
+        bytes32 structHash = keccak256(
+            abi.encode(
+                TRANSFER_FROM_TYPEHASH, sender, receiver, amountCommitment, ciphertextHash, beta, nonce, deadline
+            )
+        );
+        bytes32 digest = _hashTypedDataV4(structHash);
+        address recovered = ECDSA.recover(digest, signature);
+        if (recovered != sender) revert InvalidSignature();
+
+        // 5. Mark nonce as used (prevents replay)
+        usedNonces[sender][nonce] = true;
+
+        // 6. Enqueue the transfer action and verify the client proof.
+        //    Note: sender is from the signature, NOT msg.sender — the facilitator
+        //    submits this on behalf of the client.
+        ActionItem memory aq =
+            ActionItem({action: Action.Transfer, sender: sender, receiver: receiver, amount: amountCommitment});
+        uint256 index = actionQueue.push(aq);
+
+        _verifyTxClient(
+            beta,
+            proof,
+            [
+                ciphertext.senderPk.x,
+                ciphertext.senderPk.y,
+                amountCommitment,
+                ciphertext.amount[0],
+                ciphertext.r[0],
+                ciphertext.amount[1],
+                ciphertext.r[1],
+                ciphertext.amount[2],
+                ciphertext.r[2],
+                mpcPk1.x,
+                mpcPk1.y,
+                mpcPk2.x,
+                mpcPk2.y,
+                mpcPk3.x,
+                mpcPk3.y
+            ]
+        );
+
+        shares[index] = ciphertext;
+        emit TransferFrom(index, sender, receiver);
+        return index;
+    }
+
+    /// @notice Returns whether a given (sender, nonce) has been consumed by a transferFrom.
+    /// @dev Used by the facilitator to check nonce freshness off-chain before submitting.
+    function isNonceUsed(address sender, uint256 nonce) external view returns (bool) {
+        return usedNonces[sender][nonce];
     }
 
     // This function processes a batch of actions, updates the commitments,
