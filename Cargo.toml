@@ -27,6 +27,7 @@ circom-proof-schema = { git = "https://github.com/TaceoLabs/circom_proof_schema"
 co-circom = { git = "https://github.com/TaceoLabs/co-snarks", rev = "924c886ed3d2e11ba3260f2e7f0ab9cb7546eaf2", version = "0.10.0" }
 contract-rs = { path = "./contract-rs" }
 eyre = "0.6.12"
+figment = { version = "0.10.19", features = ["toml", "env"] }
 groth16-material = { package = "taceo-groth16-material", version = "0.2" }
 groth16-sol = { package = "taceo-groth16-sol", version = "0.2" }
 itertools = "0.14.0"
@@ -37,6 +38,7 @@ num-bigint = { version = "0.4.6" }
 poseidon2 = { package = "taceo-poseidon2", version = "0.2", default-features = false }
 rand = "0.8.5"
 rand_chacha = "0.3"
+rustls = "0.23.15"
 secrecy = "0.10"
 serde_json = { version = "1" }
 serde = { version = "1", features = ["derive"] }
