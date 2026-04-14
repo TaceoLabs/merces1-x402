@@ -3,6 +3,7 @@ use crate::{
     circom::config::CircomConfig,
     map::{DepositValueShare, PrivateDeposit},
 };
+use ark_ff::PrimeField;
 use circom_mpc_vm::{ComponentAcceleratorOutput, Rep3VmType};
 use itertools::izip;
 use mpc_core::{
@@ -48,7 +49,7 @@ where
         );
 
         let mut proof_inputs = BTreeMap::new();
-        let mut traces = Vec::new();
+        let mut traces = Vec::with_capacity(CircomConfig::NUM_TRANSACTIONS); // Commitments and range checks
         let mut valids = Vec::with_capacity(CircomConfig::NUM_TRANSACTIONS);
         let mut applied_transactions = 0;
 
@@ -113,7 +114,7 @@ where
             let mut faulty_parties = HashSet::new(); // The parties involved in invalid transactions
             let mut full_break = false; // Determines if we have to abort since the same account was accessed after an invalid transaction
             for (i, (action, handle)) in queue.iter().zip(handles).enumerate() {
-                let (valid, sender_new_, receiver_new_, inputs_) =
+                let (valid, sender_new_, receiver_new_, inputs_, traces_) =
                     handle.join().map_err(|_| {
                         eyre::eyre!("A thread panicked while processing a transaction")
                     })??;
@@ -179,6 +180,7 @@ where
                 valids.push(valid);
 
                 super::add_inputs_to_circom_map(i, inputs_, &mut proof_inputs);
+                traces.push(traces_);
                 applied_transactions += 1;
             }
 
@@ -190,11 +192,10 @@ where
 
                 for i in applied_transactions..CircomConfig::NUM_TRANSACTIONS {
                     super::add_inputs_to_circom_map(i, dummy_input.clone(), &mut proof_inputs);
-                    traces.extend(dummy_trace.clone());
+                    traces.push(dummy_trace.clone());
                 }
             }
             debug_assert_eq!(valids.len(), CircomConfig::NUM_TRANSACTIONS);
-            debug_assert!(traces.is_empty());
             Result::<_, eyre::Report>::Ok(())
         });
         result?;
@@ -223,6 +224,7 @@ where
         DepositValueShare<F>,
         DepositValueShare<F>,
         Vec<Rep3VmType<F>>,
+        ComponentAcceleratorOutput<Rep3VmType<F>>,
     )> {
         let inputs = super::get_query_transaction_circom_input(
             sender_old.to_owned(),
@@ -231,10 +233,9 @@ where
         );
 
         // The bit decomposition
-        let (valid, _decomp_sender) =
-            super::decompose_compose(sender_new.amount, net0, rep3_state)?;
+        let (valid, decomp_sender) = super::decompose_compose(sender_new.amount, net0, rep3_state)?;
 
-        Ok((valid, sender_new, receiver_new, inputs))
+        Ok((valid, sender_new, receiver_new, inputs, decomp_sender))
     }
 
     #[expect(clippy::type_complexity)]
@@ -249,6 +250,7 @@ where
         DepositValueShare<F>,
         DepositValueShare<F>,
         Vec<Rep3VmType<F>>,
+        ComponentAcceleratorOutput<Rep3VmType<F>>,
     )> {
         let my_id = PartyID::try_from(net0.id())?;
         let inputs = super::get_query_withdraw_circom_input_public_amount(
@@ -262,10 +264,9 @@ where
             Rep3PrimeFieldShare::zero_share(),
         );
 
-        let (valid, _decomp_sender) =
-            super::decompose_compose(sender_new.amount, net0, rep3_state)?;
+        let (valid, decomp_sender) = super::decompose_compose(sender_new.amount, net0, rep3_state)?;
 
-        Ok((valid, sender_new, receiver_new, inputs))
+        Ok((valid, sender_new, receiver_new, inputs, decomp_sender))
     }
 
     #[expect(clippy::type_complexity)]
@@ -280,6 +281,7 @@ where
         DepositValueShare<F>,
         DepositValueShare<F>,
         Vec<Rep3VmType<F>>,
+        ComponentAcceleratorOutput<Rep3VmType<F>>,
     )> {
         let inputs = super::get_deposit_input_public_amount_circom(amount, receiver_new.blinding);
 
@@ -287,16 +289,31 @@ where
             Rep3PrimeFieldShare::zero_share(),
             Rep3PrimeFieldShare::zero_share(),
         );
-        Ok((true, sender_new, receiver_new, inputs))
+        Ok((
+            true,
+            sender_new,
+            receiver_new,
+            inputs,
+            ComponentAcceleratorOutput::new(
+                vec![Rep3VmType::default(); F::MODULUS_BIT_SIZE as usize],
+                Vec::new(),
+            ),
+        ))
     }
 
     #[expect(clippy::type_complexity)]
     pub fn process_dummy_circom() -> eyre::Result<(
         Vec<Rep3VmType<F>>,
-        Vec<ComponentAcceleratorOutput<Rep3VmType<F>>>,
+        ComponentAcceleratorOutput<Rep3VmType<F>>,
     )> {
         // 3 circuit input signals (matching CIRCOM_MAP_LABELS), all zero for dummy transactions.
-        Ok((vec![Rep3VmType::default(); 3], Vec::new()))
+        Ok((
+            vec![Rep3VmType::default(); 3],
+            ComponentAcceleratorOutput::new(
+                vec![Rep3VmType::default(); F::MODULUS_BIT_SIZE as usize],
+                Vec::new(),
+            ),
+        ))
     }
 }
 
@@ -435,6 +452,7 @@ mod tests {
                         assert_eq!(applied_transactions, NUM_TRANSACTIONS);
                         assert_eq!(valids.len(), CircomConfig::NUM_TRANSACTIONS);
                         assert!(valids.iter().all(|&v| v)); // All transactions should be valid, including dummies
+                        println!("traces length: {}", traces.len());
                         let (proof, public_inputs) = groth16
                             .trace_to_proof(inputs, traces, &nets[0], &nets[1])
                             .unwrap();

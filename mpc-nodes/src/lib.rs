@@ -36,6 +36,7 @@ pub enum Action<K> {
     Transfer(K, K, Rep3PrimeFieldShare<F>, Rep3PrimeFieldShare<F>), // Sender, Receiver, amount, amount_blinding
 }
 
+#[expect(unused)]
 pub(crate) fn poseidon2_circom_commitment_helper<
     const I: usize,
     const I2: usize,
@@ -80,7 +81,7 @@ pub(crate) fn poseidon2_circom_commitment_helper<
     Ok(result)
 }
 
-#[expect(clippy::type_complexity)]
+#[expect(clippy::type_complexity, unused)]
 pub(crate) fn poseidon2_plain_circom_commitment_helper<
     const T: usize,
     const I: usize,
@@ -146,6 +147,7 @@ fn poseidon2_plain_sponge_circom_helper<const T: usize, const I2: usize, F: Prim
     (traces, states[0])
 }
 
+#[expect(unused)]
 pub(crate) fn feed_forward_shared<
     const T: usize,
     const I: usize,
@@ -302,6 +304,7 @@ pub(crate) fn compute_alpha<const I: usize, F: PrimeField>(public_inputs: [F; I]
     F::from(alpha)
 }
 
+#[expect(unused)]
 pub(crate) fn compression_commitment_helper<
     const T_SPONGE: usize,
     const I: usize,

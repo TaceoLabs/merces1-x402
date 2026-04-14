@@ -45,17 +45,17 @@ impl Groth16Material {
     pub fn trace_to_witness<N: Network>(
         &self,
         inputs: BTreeMap<String, Rep3VmType<ark_bn254::Fr>>,
-        _traces: Vec<ComponentAcceleratorOutput<Rep3VmType<ark_bn254::Fr>>>,
+        traces: Vec<ComponentAcceleratorOutput<Rep3VmType<ark_bn254::Fr>>>,
         net0: &N,
         net1: &N,
     ) -> eyre::Result<Rep3SharedWitness<ark_bn254::Fr>> {
         let rep3_vm = Rep3WitnessExtension::new(net0, net1, &self.circuit, VMConfig::default())
             .context("while constructing MPC VM")?;
 
-        // let mut traces = Some(traces);
+        let mut traces = Some(traces);
         // execute witness generation in MPC
         let witness = rep3_vm
-            .run(inputs, self.circuit.public_inputs().len())
+            .run_with_helper_trace(inputs, self.circuit.public_inputs().len(), &mut traces)
             .context("while running witness generation")?
             .into_shared_witness();
         // debug_assert!(traces.unwrap().is_empty(), "Traces were not fully consumed");

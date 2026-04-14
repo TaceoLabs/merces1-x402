@@ -349,8 +349,8 @@ fn queue_cocircom_witext<R: Rng + CryptoRng>(
     let inputs = get_transaction_inputs(map, config.network.my_id, rng)?;
 
     // init MPC protocol
-    let mut rep3_states = Vec::with_capacity(nets.len() / 2);
-    for net in nets.iter().take(nets.len() / 2) {
+    let mut rep3_states = Vec::with_capacity(nets.len());
+    for net in nets.iter().take(nets.len()) {
         rep3_states.push(Rep3State::new(net, A2BType::default())?);
     }
 
@@ -398,8 +398,8 @@ fn queue_cocircom_proof<R: Rng + CryptoRng>(
     let inputs = get_transaction_inputs(map, config.network.my_id, rng)?;
 
     // init MPC protocol
-    let mut rep3_states = Vec::with_capacity(nets.len() / 2);
-    for net in nets.iter().take(nets.len() / 2) {
+    let mut rep3_states = Vec::with_capacity(nets.len());
+    for net in nets.iter().take(nets.len()) {
         rep3_states.push(Rep3State::new(net, A2BType::default())?);
     }
 

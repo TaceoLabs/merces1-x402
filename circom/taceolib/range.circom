@@ -13,7 +13,7 @@ template range_check_with_output_flag(BITSIZE) {
 
     // Num2Bits_strict with taceo_precomputation
     component aliasCheck = AliasCheck();
-    component n2b = NO_TACEO_PRECOMPUTATION_Num2Bits(254);
+    component n2b = TACEO_PRECOMPUTATION_Num2Bits(254);
     in ==> n2b.in;
 
     for (var i=0; i<254; i++) {
@@ -43,6 +43,6 @@ template check_amount(AMOUNT_BITSIZE) {
     signal output out;
     signal output out_bits[AMOUNT_BITSIZE];
 
-    out_bits <== NO_TACEO_PRECOMPUTATION_Num2Bits(AMOUNT_BITSIZE)(amount);
+    out_bits <== TACEO_PRECOMPUTATION_Num2Bits(AMOUNT_BITSIZE)(amount);
     out <== commit1()(amount, amount_r);
 }

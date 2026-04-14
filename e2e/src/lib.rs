@@ -120,7 +120,7 @@ impl TestConfig {
             .with_line_number(false)
             .with_span_events(FmtSpan::CLOSE | FmtSpan::ENTER);
         let filter_layer = EnvFilter::try_from_default_env()
-            .or_else(|_| EnvFilter::try_new("warn,private_deposit=info,deposit=info"))
+            .or_else(|_| EnvFilter::try_new("warn,bench=info"))
             .unwrap();
 
         tracing_subscriber::registry()
