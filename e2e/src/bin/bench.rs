@@ -174,7 +174,7 @@ fn benchmarks<R: Rng + CryptoRng>(config: &Config, rng: &mut R) -> eyre::Result<
         return Err(eyre!("my_id must be 0, 1 or 2"));
     }
 
-    let num_items = std::cmp::min(
+    let num_items = std::cmp::max(
         config.num_items,
         NUM_BATCHED_TRANSACTIONS + (NUM_BATCHED_TRANSACTIONS >> 1),
     ); // We need at least NUM_BATCHED_TRANSACTIONS items to make sure we can always find a disjoint set of senders and NUM_BATCHED_TRANSACTIONS / 2 receivers. The remaining receivers are new
@@ -433,7 +433,7 @@ fn queue_cocircom_compressed_witext<R: Rng + CryptoRng>(
     benchmark_blueprint!(
         config,
         &format!(
-            "actionqueue + witext cocircom (batch={}, n={})",
+            "compressed: actionqueue + witext cocircom (batch={}, n={})",
             NUM_BATCHED_TRANSACTIONS, config.num_items
         ),
         process_queue_with_cocircom_witext,
