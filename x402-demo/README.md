@@ -47,27 +47,37 @@ Groth16 ZK proofs verified on-chain.
 
 2. **Rust toolchain** — to build `prove` and `mpc_service`.
 
-3. **The x402 fork, checked out side-by-side with this repo.**
-   The demo imports `@x402/core`, `@x402/evm`, `@x402/axios`, `@x402/express`
-   from the fork's pnpm workspace. Expected layout:
+3. **pnpm** v10+.
 
+4. **`@taceo/x402-evm` must be published to npm.** This package is the Taceo
+   fork of `@x402/evm` with the confidential-payments scheme (`confidential/`
+   subpath) added as a sibling of `exact/`. Upstream `@x402/core`,
+   `@x402/express`, `@x402/axios` are consumed unmodified from npm at v2.10.0.
+
+   To publish `@taceo/x402-evm` for the first time:
+
+   ```bash
+   # Prereqs (one-time):
+   #  - create the `@taceo` scope on npm: https://www.npmjs.com/org/create
+   #  - npm login (or set NPM_TOKEN) with publish rights to @taceo
+
+   git clone --branch feat/real-mpc-integration https://github.com/TaceoLabs/x402
+   cd x402/typescript
+   pnpm install
+   pnpm --filter @x402/evm build
+
+   cd packages/mechanisms/evm
+   ./publish-taceo.sh --dry-run     # sanity check
+   ./publish-taceo.sh               # real publish
    ```
-   <some-parent>/
-   ├── Merces1_updated/           <-- this repo
-   │   └── x402-demo/             <-- you are here
-   └── x402/
-       └── repo/                  <-- clone of TaceoLabs/x402 at feat/real-mpc-integration
-           └── typescript/packages/...
-   ```
 
-   If your layout differs, edit the relative paths in `pnpm-workspace.yaml`.
+   The script renames the package to `@taceo/x402-evm` at publish time and
+   rewrites `workspace:~` deps to concrete versions, so the published package
+   resolves `@x402/core` + `@x402/extensions` from upstream npm.
 
-   > ⚠️  The `feat/real-mpc-integration` branch on `TaceoLabs/x402` is not yet
-   > pushed at the time this branch was cut. Ask the repo owner for the branch
-   > or regenerate it from the local working copy. TODO: push the branch and
-   > swap the workspace-link deps for git deps pinned to a commit hash.
-
-4. **pnpm** — v8+ (uses workspace protocol).
+   > After Coinbase merges the confidential scheme into upstream `@x402/evm`,
+   > this prerequisite disappears — just drop the `@taceo/x402-evm` dep and
+   > retarget the imports at `@x402/evm/confidential/*`.
 
 ## Build the Rust bins
 
@@ -83,8 +93,11 @@ cargo build --release --bin prove --bin mpc_service
 ## Install TS deps
 
 ```bash
-pnpm install      # run from this directory — resolves x402 packages via pnpm-workspace.yaml
+pnpm install      # run from this directory
 ```
+
+This resolves `@taceo/x402-evm` from npm alongside upstream `@x402/core`,
+`@x402/axios`, `@x402/express`.
 
 ## Run the demo
 
@@ -151,19 +164,24 @@ pnpm run agent
 | File                  | Role                                                                       |
 | --------------------- | -------------------------------------------------------------------------- |
 | `deploy.ts`           | Fetches MPC pubkeys from `:4025/pubkeys`, deploys Merces + verifiers + USDC, mints + deposits 100 USDC for the agent, POSTs `:4025/start`. |
-| `facilitator.ts`      | x402 facilitator. Registers the confidential scheme for chain 31337. Submits `transferFrom()` on-chain. |
+| `facilitator.ts`      | x402 facilitator. Registers the confidential scheme (imported from `@taceo/x402-evm/confidential/facilitator`) for chain 31337. Submits `transferFrom()` on-chain. |
 | `server.ts`           | Resource server exposing `/v1/sentiment`. Returns 402 with confidential paymentRequirements. |
 | `agent.ts`            | Makes 3 paid requests. Calls `prove` sidecar for each proof, signs EIP-712 transferFrom authorization. |
 | `start-local.sh`      | One-command launcher. Checks prereqs, boots services in dependency order. |
-| `pnpm-workspace.yaml` | Bridges this package to the `@x402/*` packages in the sibling x402 fork.  |
 
 ## Known issues / TODOs
 
-- **Base Sepolia deployment** — skipped for this iteration. The old
+- **Upstream the confidential scheme to Coinbase x402.** Once merged, the
+  `@taceo/x402-evm` prerequisite disappears — swap imports from
+  `@taceo/x402-evm/confidential/*` → `@x402/evm/confidential/*` and drop the
+  `@taceo/x402-evm` dep. See `TaceoLabs/x402` `feat/real-mpc-integration`
+  for the staged PR.
+- **Publish `@taceo/x402-evm` via CI.** Right now it's a manual
+  `./publish-taceo.sh` in the fork. Wire a GitHub Actions workflow that
+  publishes on tags.
+- **Base Sepolia deployment** — skipped for the handoff. The old
   `deploy-sepolia.ts` / `start.sh` in the upstream x402 example are for the
   pre-Merces stack and would need porting against the new flow.
-- **x402 fork branch not pushed** — see prerequisites. Fixing this is a
-  prerequisite to simplifying `pnpm-workspace.yaml` to git deps.
 - **Single-process MPC** — `mpc_service` runs all three MPC parties in-process
   via `mpc_net::LocalNetwork`. Spawning three separate nodes is a follow-up.
 - **No persistent state** — `mpc_service` regenerates MPC secret keys on every
@@ -175,8 +193,10 @@ pnpm run agent
 
 - Merces1_updated `feat/x402-demo`
   - `ae2a1b3` — mpc_service HTTP sidecar
-  - _(this commit)_ — TS demo port, workspace bridge, start script, README
-- TaceoLabs/x402 `feat/real-mpc-integration` (not pushed)
+  - `4cd82c3` — initial TS demo port
+  - _(this commit)_ — switch to `@taceo/x402-evm` npm dep + publish script docs
+- TaceoLabs/x402 `feat/real-mpc-integration` (pushed)
   - `df3db3ae` — `@x402/evm` updated for Merces compressed proofs
   - `f6fc6bef` — agent.ts (prove sidecar) + facilitator.ts (Merces domain, no snarkjs)
   - `b06bb4f3` — deploy.ts for Merces contracts
+  - _(this commit in fork)_ — `publish-taceo.sh` rename-and-publish script

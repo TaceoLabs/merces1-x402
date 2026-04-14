@@ -22,11 +22,11 @@ import { baseSepolia } from "viem/chains";
 import { privateKeyToAccount } from "viem/accounts";
 import { publicActions } from "viem";
 import { x402Client, wrapAxiosWithPayment, x402HTTPClient } from "@x402/axios";
-import { ConfidentialEvmScheme } from "@x402/evm/confidential/client";
-import { toClientEvmSigner } from "@x402/evm";
-import type { ProofGenerator } from "@x402/evm/confidential/client";
+import { ConfidentialEvmScheme } from "@taceo/x402-evm/confidential/client";
+import { toClientEvmSigner } from "@taceo/x402-evm";
+import type { ProofGenerator } from "@taceo/x402-evm/confidential/client";
 import type { Network } from "@x402/core/types";
-import type { BabyJubJubPoint } from "@x402/evm";
+import type { BabyJubJubPoint } from "@taceo/x402-evm";
 
 // ── Configuration ──────────────────────────────────────────────────────────────
 

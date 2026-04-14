@@ -23,9 +23,9 @@ import { baseSepolia } from "viem/chains";
 import { privateKeyToAccount } from "viem/accounts";
 import { publicActions } from "viem";
 import { x402Facilitator } from "@x402/core/facilitator";
-import { toFacilitatorEvmSigner } from "@x402/evm";
-import { ConfidentialEvmScheme } from "@x402/evm/confidential/facilitator";
-import type { BabyJubJubPoint } from "@x402/evm";
+import { toFacilitatorEvmSigner } from "@taceo/x402-evm";
+import { ConfidentialEvmScheme } from "@taceo/x402-evm/confidential/facilitator";
+import type { BabyJubJubPoint } from "@taceo/x402-evm";
 import type {
   PaymentPayload,
   PaymentRequirements,

@@ -16,7 +16,7 @@ import { defineChain } from "viem";
 import { baseSepolia } from "viem/chains";
 import { paymentMiddleware, x402ResourceServer } from "@x402/express";
 import { HTTPFacilitatorClient } from "@x402/core/server";
-import { ConfidentialEvmScheme } from "@x402/evm/confidential/server";
+import { ConfidentialEvmScheme } from "@taceo/x402-evm/confidential/server";
 import type { Network } from "@x402/core/types";
 
 // ── Configuration ──────────────────────────────────────────────────────────────
