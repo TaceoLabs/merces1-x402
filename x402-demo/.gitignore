@@ -1,0 +1,8 @@
+.env
+.demo-local-pids
+.prove.log
+.mpc_service.log
+.facilitator.log
+.server.log
+node_modules/
+dist/
