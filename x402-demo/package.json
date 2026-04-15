@@ -1,5 +1,5 @@
 {
-  "name": "@taceo/merces-x402-demo",
+  "name": "@x402/merces-demo",
   "private": true,
   "type": "module",
   "description": "End-to-end local demo of x402 confidential payments backed by Merces MPC.",
@@ -10,10 +10,10 @@
     "agent": "tsx agent.ts"
   },
   "dependencies": {
-    "@taceo/x402-evm": "^2.4.0",
-    "@x402/axios": "^2.10.0",
-    "@x402/core": "^2.10.0",
-    "@x402/express": "^2.10.0",
+    "@x402/axios": "workspace:*",
+    "@x402/core": "workspace:*",
+    "@x402/evm": "workspace:*",
+    "@x402/express": "workspace:*",
     "axios": "^1.13.2",
     "dotenv": "^16.4.7",
     "express": "^4.18.2",
