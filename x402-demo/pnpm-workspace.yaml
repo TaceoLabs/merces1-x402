@@ -1,21 +1,28 @@
 # Bridges this demo to the @x402/* packages living in the x402 fork.
 #
-# Assumed directory layout (colleague: adjust the relative paths below if your
-# checkout of the x402 fork lives somewhere else):
+# Required side-by-side layout:
 #
 #   <some-parent>/
-#   ├── Merces1_updated/                 <-- this repo
-#   │   └── x402-demo/                   <-- you are here
+#   ├── Merces1_updated/                 ← this repo
+#   │   └── x402-demo/                   ← you are here
 #   └── x402/
-#       └── repo/
-#           └── typescript/packages/*    <-- @x402/core, @x402/evm, etc.
+#       └── repo/                        ← TaceoLabs/x402 @ feat/real-mpc-integration
+#           └── typescript/packages/*    ← @x402/core, @x402/evm, etc.
 #
-# Required branch on the x402 fork: feat/real-mpc-integration
-#   (TaceoLabs/x402 — ships the Merces compressed-proof types + facilitator
-#   verify/settle. Not yet pushed at the time this branch was cut — see README.)
+# We list all @x402/* packages (including ones we don't import directly) so
+# transitive workspace:~ deps inside the x402 graph resolve. pnpm only
+# installs deps the demo's tree actually pulls in, so listing extras here
+# is cheap.
 packages:
   - "."
   - "../../x402/repo/typescript/packages/core"
+  - "../../x402/repo/typescript/packages/extensions"
   - "../../x402/repo/typescript/packages/mechanisms/evm"
+  - "../../x402/repo/typescript/packages/mechanisms/svm"
+  - "../../x402/repo/typescript/packages/mechanisms/aptos"
   - "../../x402/repo/typescript/packages/http/axios"
   - "../../x402/repo/typescript/packages/http/express"
+  - "../../x402/repo/typescript/packages/http/paywall"
+  - "../../x402/repo/typescript/packages/http/fetch"
+  - "../../x402/repo/typescript/packages/http/hono"
+  - "../../x402/repo/typescript/packages/http/next"

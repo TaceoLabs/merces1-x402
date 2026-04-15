@@ -40,59 +40,60 @@ Groth16 ZK proofs verified on-chain.
 | 4022 | `facilitator`  | TS x402 facilitator, submits `transferFrom()` on Merces           |
 | 4021 | `server`       | TS resource server exposing `/v1/sentiment` (paywalled $0.05 USDC) |
 
-## Prerequisites
+## Repositories
 
-1. **Foundry** — `anvil` must be on your path.
-   <https://book.getfoundry.sh>
+This demo spans **two** repos — they must be checked out side-by-side.
 
-2. **Rust toolchain** — to build `prove` and `mpc_service`.
+1. **`TaceoLabs/Merces1_updated`** — Merces contract + 3-party MPC (Rust) +
+   this demo's glue (TypeScript + scripts). Branch **`feat/x402-demo`**.
+2. **`TaceoLabs/x402`** — Taceo's fork of Coinbase's x402 TS stack, adding the
+   confidential-payments scheme as a sibling of `exact/` inside
+   `@x402/evm`. Branch **`feat/real-mpc-integration`**.
 
-3. **The x402 fork, checked out side-by-side with this repo.**
-   The demo imports `@x402/core`, `@x402/evm`, `@x402/axios`, `@x402/express`
-   from the fork's pnpm workspace. Expected layout:
+The demo's `pnpm-workspace.yaml` links to the x402 fork via relative paths, so
+the filesystem layout matters:
 
-   ```
-   <some-parent>/
-   ├── Merces1_updated/           <-- this repo
-   │   └── x402-demo/             <-- you are here
-   └── x402/
-       └── repo/                  <-- clone of TaceoLabs/x402 at feat/real-mpc-integration
-           └── typescript/packages/...
-   ```
+```
+<some-parent>/
+├── Merces1_updated/        ← TaceoLabs/Merces1_updated @ feat/x402-demo
+│   └── x402-demo/          ← you are here
+└── x402/
+    └── repo/               ← TaceoLabs/x402 @ feat/real-mpc-integration
+        └── typescript/packages/*
+```
 
-   If your layout differs, edit the relative paths in `pnpm-workspace.yaml`.
+If your layout differs, adjust the relative paths in `pnpm-workspace.yaml`.
 
-   > ⚠️  The `feat/real-mpc-integration` branch on `TaceoLabs/x402` is not yet
-   > pushed at the time this branch was cut. Ask the repo owner for the branch
-   > or regenerate it from the local working copy. TODO: push the branch and
-   > swap the workspace-link deps for git deps pinned to a commit hash.
-
-4. **pnpm** — v8+ (uses workspace protocol).
-
-## Build the Rust bins
-
-From the repo root (not this directory):
+## One-time setup
 
 ```bash
+# 1. Get the two repos side-by-side
+mkdir -p ~/taceo && cd ~/taceo
+git clone -b feat/x402-demo            git@github.com:TaceoLabs/Merces1_updated.git
+mkdir -p x402 && cd x402
+git clone -b feat/real-mpc-integration git@github.com:TaceoLabs/x402.git repo
 cd ..
+
+# 2. Build the Rust bins (prove + mpc_service)
+cd Merces1_updated
 cargo build --release --bin prove --bin mpc_service
-# Also make sure contract JSONs exist (these are checked in, but if you touch Merces.sol
-# run forge build + cp out/Merces.sol/Merces.json contracts/json/Merces.json)
+
+# 3. Install TS deps for the demo (resolves @x402/* from the sibling x402 fork)
+cd x402-demo
+pnpm install
 ```
 
-## Install TS deps
+Prereqs on the host: Foundry (for `anvil`), a Rust toolchain, Node 20+, pnpm 10+.
 
-```bash
-pnpm install      # run from this directory — resolves x402 packages via pnpm-workspace.yaml
-```
+## Running the demo
 
-## Run the demo
+From `Merces1_updated/x402-demo/`:
 
 ```bash
 ./start-local.sh
 ```
 
-You should see:
+Output you should see:
 
 ```
 [demo] Anvil ready (chain 31337)
@@ -115,34 +116,38 @@ You should see:
 ... (×3)
 ```
 
-### Stop everything
+Stop everything with:
 
 ```bash
 ./start-local.sh --stop
 ```
 
-## Manual run (without start-local.sh)
+## Manual run (skipping start-local.sh)
+
+If you want to tail each service's logs in its own terminal, run them in this
+order (each waits for the previous to be ready):
 
 ```bash
 # Terminal 1
 anvil --silent
 
 # Terminal 2
-../target/release/prove
+../target/release/prove              # loads proving key ~10 s, then :4024
 
 # Terminal 3
-../target/release/mpc_service
+../target/release/mpc_service        # loads proving keys ~10 s, then :4025
 
-# Terminal 4 — deploy (fetches pubkeys from :4025, seeds 100 USDC, calls /start)
+# Terminal 4 — deploys 7 Merces contracts, mints + deposits 100 USDC,
+#             fetches MPC pubkeys from :4025/pubkeys, POSTs :4025/start
 pnpm run deploy
 
 # Terminal 5
-pnpm run facilitator
+pnpm run facilitator                 # :4022
 
 # Terminal 6
-pnpm run server
+pnpm run server                      # :4021
 
-# Terminal 7
+# Terminal 7 — 3 paid requests, each triggers a prove→facilitator→MPC cycle
 pnpm run agent
 ```
 
@@ -150,33 +155,51 @@ pnpm run agent
 
 | File                  | Role                                                                       |
 | --------------------- | -------------------------------------------------------------------------- |
-| `deploy.ts`           | Fetches MPC pubkeys from `:4025/pubkeys`, deploys Merces + verifiers + USDC, mints + deposits 100 USDC for the agent, POSTs `:4025/start`. |
-| `facilitator.ts`      | x402 facilitator. Registers the confidential scheme for chain 31337. Submits `transferFrom()` on-chain. |
+| `deploy.ts`           | Fetches MPC pubkeys from `:4025/pubkeys`, deploys Merces + verifiers + USDC, mints + deposits 100 USDC for the agent, POSTs `:4025/start` so the MPC begins polling. |
+| `facilitator.ts`      | x402 facilitator. Registers the confidential scheme for chain 31337, verifies payloads, submits `transferFrom()` on-chain. |
 | `server.ts`           | Resource server exposing `/v1/sentiment`. Returns 402 with confidential paymentRequirements. |
-| `agent.ts`            | Makes 3 paid requests. Calls `prove` sidecar for each proof, signs EIP-712 transferFrom authorization. |
-| `start-local.sh`      | One-command launcher. Checks prereqs, boots services in dependency order. |
-| `pnpm-workspace.yaml` | Bridges this package to the `@x402/*` packages in the sibling x402 fork.  |
+| `agent.ts`            | Client. Makes 3 paid requests. Calls the `prove` sidecar for each proof, signs the EIP-712 `TransferFromAuthorization`. |
+| `start-local.sh`      | One-command launcher. Checks prereqs, boots services in dependency order, runs the agent. |
+| `pnpm-workspace.yaml` | Bridges this package to the `@x402/*` packages in the sibling x402 fork via relative paths. |
 
-## Known issues / TODOs
+## Where the TypeScript dependencies come from
 
-- **Base Sepolia deployment** — skipped for this iteration. The old
-  `deploy-sepolia.ts` / `start.sh` in the upstream x402 example are for the
-  pre-Merces stack and would need porting against the new flow.
-- **x402 fork branch not pushed** — see prerequisites. Fixing this is a
-  prerequisite to simplifying `pnpm-workspace.yaml` to git deps.
-- **Single-process MPC** — `mpc_service` runs all three MPC parties in-process
-  via `mpc_net::LocalNetwork`. Spawning three separate nodes is a follow-up.
-- **No persistent state** — `mpc_service` regenerates MPC secret keys on every
-  boot. After a restart the agent's confidential balance becomes irrecoverable
-  since the on-chain balance commitment no longer decrypts. Acceptable for a
-  demo; a production deployment needs key persistence.
+```
+@x402/core       → TaceoLabs/x402 @ feat/real-mpc-integration · typescript/packages/core
+@x402/evm        → TaceoLabs/x402 @ feat/real-mpc-integration · typescript/packages/mechanisms/evm
+                   (this is the fork's version — adds confidential/ scheme)
+@x402/axios      → TaceoLabs/x402 @ feat/real-mpc-integration · typescript/packages/http/axios
+@x402/express    → TaceoLabs/x402 @ feat/real-mpc-integration · typescript/packages/http/express
+```
+
+All four are consumed via pnpm's `workspace:*` protocol; `pnpm install` in
+this directory reads `pnpm-workspace.yaml`, discovers the packages at those
+relative paths, and symlinks them into `node_modules/`.
+
+## Known issues / future work
+
+- **Upstream the confidential scheme to Coinbase.** The fork only *adds* a new
+  scheme (`confidential/`) alongside `exact/` — no upstream files are modified.
+  The eventual PR is additive. Once merged, this demo can drop the fork and
+  consume `@x402/evm` from npm directly.
+- **Publish `@taceo/x402-evm` to npm.** Once published, consumers wouldn't
+  need the x402 fork checkout at all. Deferred — colleague's call.
+- **Base Sepolia deployment.** The old `deploy-sepolia.ts` / `start.sh` in the
+  pre-Merces demo would need porting against this new flow.
+- **Single-process MPC.** `mpc_service` runs all three MPC parties in-process
+  via `mpc_net::LocalNetwork`. Splitting into three separate processes is a
+  follow-up.
+- **No persistent state.** `mpc_service` regenerates MPC secret keys on every
+  boot. After a restart the agent's confidential balance becomes
+  irrecoverable, since the on-chain balance commitment no longer decrypts.
+  Acceptable for a demo; a production deployment needs key persistence.
 
 ## Related commits
 
-- Merces1_updated `feat/x402-demo`
-  - `ae2a1b3` — mpc_service HTTP sidecar
-  - _(this commit)_ — TS demo port, workspace bridge, start script, README
-- TaceoLabs/x402 `feat/real-mpc-integration` (not pushed)
-  - `df3db3ae` — `@x402/evm` updated for Merces compressed proofs
-  - `f6fc6bef` — agent.ts (prove sidecar) + facilitator.ts (Merces domain, no snarkjs)
-  - `b06bb4f3` — deploy.ts for Merces contracts
+- `TaceoLabs/Merces1_updated` `feat/x402-demo`
+  - `ae2a1b3` — `mpc_service` HTTP sidecar
+  - `4cd82c3` — TS demo port + start-local.sh + README
+- `TaceoLabs/x402` `feat/real-mpc-integration`
+  - `df3db3ae` — `@x402/evm`: confidential scheme (types, ABI, verify, settle)
+  - `f6fc6bef` — `examples/` agent.ts + facilitator.ts (superseded by Merces1_updated/x402-demo, kept for history)
+  - `b06bb4f3` — `examples/` deploy.ts for Merces (superseded, kept for history)
