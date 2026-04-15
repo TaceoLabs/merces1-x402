@@ -64,6 +64,12 @@ the filesystem layout matters:
 
 If your layout differs, adjust the relative paths in `pnpm-workspace.yaml`.
 
+## Prerequisites on the host
+
+- **Foundry** (for `anvil`) — <https://book.getfoundry.sh>
+- **Rust toolchain** — stable
+- **Node 20+** and **pnpm 10+**
+
 ## One-time setup
 
 ```bash
@@ -75,6 +81,8 @@ git clone -b feat/real-mpc-integration git@github.com:TaceoLabs/x402.git repo
 cd ..
 
 # 2. Build the Rust bins (prove + mpc_service)
+#    First-time build pulls all crates and compiles ~600 deps — expect 5–10 min.
+#    Subsequent builds are seconds. Output goes to ../target/release/.
 cd Merces1_updated
 cargo build --release --bin prove --bin mpc_service
 
@@ -82,8 +90,6 @@ cargo build --release --bin prove --bin mpc_service
 cd x402-demo
 pnpm install
 ```
-
-Prereqs on the host: Foundry (for `anvil`), a Rust toolchain, Node 20+, pnpm 10+.
 
 ## Running the demo
 
@@ -116,36 +122,48 @@ Output you should see:
 ... (×3)
 ```
 
-Stop everything with:
+Note: `start-local.sh` exits after the agent finishes its 3 requests, but
+the background services (anvil, prove, mpc_service, facilitator, server)
+keep running so you can poke at the contract state, replay the agent, etc.
+When you're done:
 
 ```bash
 ./start-local.sh --stop
 ```
 
+While the demo is running, per-service logs are tailable from this directory:
+
+```
+.prove.log            prove sidecar (proof generation timings)
+.mpc_service.log      mpc_service (queue polling + processMPC calls + tx hashes)
+.facilitator.log      facilitator (verify + settle results per request)
+.server.log           resource server (incoming requests)
+```
+
 ## Manual run (skipping start-local.sh)
 
-If you want to tail each service's logs in its own terminal, run them in this
-order (each waits for the previous to be ready):
+If you want each service in its own terminal so you can tail its output
+directly, run them in this order (each waits for the previous to be ready):
 
 ```bash
 # Terminal 1
 anvil --silent
 
-# Terminal 2
-../target/release/prove              # loads proving key ~10 s, then :4024
+# Terminal 2 — loads proving key ~10 s, then :4024
+../target/release/prove
 
-# Terminal 3
-../target/release/mpc_service        # loads proving keys ~10 s, then :4025
+# Terminal 3 — loads proving keys ~10 s, then :4025
+../target/release/mpc_service
 
 # Terminal 4 — deploys 7 Merces contracts, mints + deposits 100 USDC,
 #             fetches MPC pubkeys from :4025/pubkeys, POSTs :4025/start
 pnpm run deploy
 
-# Terminal 5
-pnpm run facilitator                 # :4022
+# Terminal 5 — :4022
+pnpm run facilitator
 
-# Terminal 6
-pnpm run server                      # :4021
+# Terminal 6 — :4021
+pnpm run server
 
 # Terminal 7 — 3 paid requests, each triggers a prove→facilitator→MPC cycle
 pnpm run agent
@@ -184,8 +202,10 @@ relative paths, and symlinks them into `node_modules/`.
   consume `@x402/evm` from npm directly.
 - **Publish `@taceo/x402-evm` to npm.** Once published, consumers wouldn't
   need the x402 fork checkout at all. Deferred — colleague's call.
-- **Base Sepolia deployment.** The old `deploy-sepolia.ts` / `start.sh` in the
-  pre-Merces demo would need porting against this new flow.
+- **Base Sepolia deployment.** Local-anvil only for now. The pre-Merces
+  Sepolia path (`deploy-sepolia.ts` etc., still in the x402 fork's
+  `examples/typescript/agent-confidential/` for history) would need porting
+  against this new flow.
 - **Single-process MPC.** `mpc_service` runs all three MPC parties in-process
   via `mpc_net::LocalNetwork`. Splitting into three separate processes is a
   follow-up.
@@ -194,12 +214,8 @@ relative paths, and symlinks them into `node_modules/`.
   irrecoverable, since the on-chain balance commitment no longer decrypts.
   Acceptable for a demo; a production deployment needs key persistence.
 
-## Related commits
+## Branch tips for the handoff
 
-- `TaceoLabs/Merces1_updated` `feat/x402-demo`
-  - `ae2a1b3` — `mpc_service` HTTP sidecar
-  - `4cd82c3` — TS demo port + start-local.sh + README
-- `TaceoLabs/x402` `feat/real-mpc-integration`
-  - `df3db3ae` — `@x402/evm`: confidential scheme (types, ABI, verify, settle)
-  - `f6fc6bef` — `examples/` agent.ts + facilitator.ts (superseded by Merces1_updated/x402-demo, kept for history)
-  - `b06bb4f3` — `examples/` deploy.ts for Merces (superseded, kept for history)
+- `TaceoLabs/Merces1_updated` — branch **`feat/x402-demo`** (this directory)
+- `TaceoLabs/x402` — branch **`feat/real-mpc-integration`** (the fork; see its
+  `FORK-README.md` for an overview of what the branch adds on top of upstream)
