@@ -55,10 +55,10 @@ the filesystem layout matters:
 
 ```
 <some-parent>/
-├── Merces1_updated/        ← TaceoLabs/Merces1_updated @ feat/x402-demo
+├── Merces1_updated/        ← this repo
 │   └── x402-demo/          ← you are here
 └── x402/
-    └── repo/               ← TaceoLabs/x402 @ feat/real-mpc-integration
+    └── repo/               ← the x402 fork
         └── typescript/packages/*
 ```
 
@@ -183,11 +183,11 @@ pnpm run agent
 ## Where the TypeScript dependencies come from
 
 ```
-@x402/core       → TaceoLabs/x402 @ feat/real-mpc-integration · typescript/packages/core
-@x402/evm        → TaceoLabs/x402 @ feat/real-mpc-integration · typescript/packages/mechanisms/evm
+@x402/core       → x402 fork · typescript/packages/core
+@x402/evm        → x402 fork · typescript/packages/mechanisms/evm
                    (this is the fork's version — adds confidential/ scheme)
-@x402/axios      → TaceoLabs/x402 @ feat/real-mpc-integration · typescript/packages/http/axios
-@x402/express    → TaceoLabs/x402 @ feat/real-mpc-integration · typescript/packages/http/express
+@x402/axios      → x402 fork · typescript/packages/http/axios
+@x402/express    → x402 fork · typescript/packages/http/express
 ```
 
 All four are consumed via pnpm's `workspace:*` protocol; `pnpm install` in
