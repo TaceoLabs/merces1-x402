@@ -3,7 +3,7 @@ use alloy::{
     primitives::{Address, U256},
     providers::DynProvider,
 };
-use client::transfer_compressed::TransferCompressed;
+use client::transfer::Transfer;
 use contract_rs::{merces::MercesContract, token::USDCTokenContract};
 use groth16_material::circom::CircomGroth16Material;
 use rand::thread_rng;
@@ -90,25 +90,33 @@ impl User {
         merces_contract: &MercesContract,
     ) -> eyre::Result<usize> {
         let mut rng = thread_rng();
-        let mut transfer = TransferCompressed::new(
+        let transfer = Transfer::new(
             contract_rs::u256_to_field(amount)?,
             mpc_pks.into(),
             &mut rng,
         );
-        let onchain_transfer = transfer.compute_alpha();
 
         let (proof, public_inputs) = transfer.generate_proof(&self.proving_key, &mut rng)?;
-        let beta = public_inputs[0];
+        // let beta = public_inputs[0];
         self.proving_key.verify_proof(&proof, &public_inputs)?;
+
+        let ciphertexts = [
+            [public_inputs[3], public_inputs[4]],
+            [public_inputs[5], public_inputs[6]],
+            [public_inputs[7], public_inputs[8]],
+        ];
+        let sender_pk = ark_babyjubjub::EdwardsAffine {
+            x: public_inputs[0],
+            y: public_inputs[1],
+        };
 
         let res = merces_contract
             .transfer(
                 &self.provider,
                 recipient,
-                onchain_transfer.amount_commitment,
-                onchain_transfer.ciphertexts,
-                onchain_transfer.sender_pk,
-                beta,
+                public_inputs[2],
+                ciphertexts,
+                sender_pk,
                 proof,
             )
             .await?;

@@ -381,7 +381,6 @@ impl MercesContract {
         Ok((action_index, receipt))
     }
 
-    #[expect(clippy::too_many_arguments)]
     pub async fn transfer(
         &self,
         provider: &DynProvider,
@@ -389,18 +388,17 @@ impl MercesContract {
         amount_commitment: ark_bn254::Fr,
         ciphertexts: [[ark_bn254::Fr; 2]; 3],
         sender_pk: ark_babyjubjub::EdwardsAffine,
-        beta: ark_bn254::Fr,
+        // beta: ark_bn254::Fr,
         proof: Proof<Bn254>,
     ) -> eyre::Result<(usize, TransactionReceipt)> {
         let contract = Merces::new(self.contract_address, provider);
 
         let ciphertext = Self::encode_ciphertext(ciphertexts, sender_pk);
         let amount_commitment = super::bn254_fr_to_u256(amount_commitment);
-        let beta = super::bn254_fr_to_u256(beta);
         let proof = Self::compress_proof(&proof);
 
         let receipt = contract
-            .transfer(receiver, amount_commitment, beta, ciphertext, proof)
+            .transfer(receiver, amount_commitment, ciphertext, proof)
             .send()
             .await
             .context("while broadcasting to network")?

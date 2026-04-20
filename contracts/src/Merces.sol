@@ -10,7 +10,7 @@ import {Poseidon2T2_BN254} from "./Poseidon2.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 interface IVerifierClient {
-    function verifyCompressedProof(uint256[4] calldata compressedProof, uint256[3] calldata input) external view;
+    function verifyCompressedProof(uint256[4] calldata compressedProof, uint256[15] calldata input) external view;
 }
 
 interface IVerifierServer {
@@ -263,7 +263,7 @@ contract Merces is ERC165, IMercesMpc {
     function transfer(
         address receiver,
         uint256 amountCommitment,
-        uint256 beta,
+        // uint256 beta,
         Ciphertext calldata ciphertext,
         uint256[4] calldata proof
     ) public returns (uint256) {
@@ -280,7 +280,7 @@ contract Merces is ERC165, IMercesMpc {
         uint256 index = actionQueue.push(aq);
 
         _verifyTxClient(
-            beta,
+            // beta,
             proof,
             [
                 ciphertext.senderPk.x,
@@ -534,17 +534,13 @@ contract Merces is ERC165, IMercesMpc {
     ///
     /// After computing `alpha` and `gamma`, the function directly calls `clientTransferVerifier.verifyCompressedProof` to verify the proof on-chain.
     ///
-    /// @param beta Random challenge provided by the user.
+    // / @param beta Random challenge provided by the user.
     /// @param proof The client proof array to verify.
     /// @param publicInputs The full set of public inputs of the circuit.
-    function _verifyTxClient(uint256 beta, uint256[4] calldata proof, uint256[15] memory publicInputs)
-        internal
-        view
-        virtual
-    {
-        uint256 alpha = _computeSha256(abi.encodePacked(publicInputs));
-        uint256 gamma = _computeUhfClient(alpha, beta, publicInputs);
-        clientVerifier.verifyCompressedProof(proof, [beta, gamma, alpha]);
+    function _verifyTxClient(uint256[4] calldata proof, uint256[15] memory publicInputs) internal view virtual {
+        // uint256 alpha = _computeSha256(abi.encodePacked(publicInputs));
+        // uint256 gamma = _computeUhfClient(alpha, beta, publicInputs);
+        clientVerifier.verifyCompressedProof(proof, publicInputs);
     }
 
     function _verifyTxServer(uint256 beta, uint256[4] calldata proof, uint256[BATCH_SIZE * 6] memory publicInputs)
