@@ -22,3 +22,10 @@ num-bigint.workspace = true
 poseidon2 = { workspace = true, features = ["bn254", "t2", "t3"] }
 rand.workspace = true
 sha2.workspace = true
+
+[dev-dependencies]
+criterion = "0.6"
+
+[[bench]]
+name = "proofs"
+harness = false

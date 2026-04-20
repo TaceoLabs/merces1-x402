@@ -14,6 +14,8 @@ impl CircomConfig {
 
     const TRANSFER_R1CS: &str = "/../circom/r1cs/client.r1cs";
     const TRANSFER_GRAPH: &str = "/../circom/graph/client_graph.bin";
+    const TRANSFER_COMPRESSED_R1CS: &str = "/../circom/r1cs/client_compressed.r1cs";
+    const TRANSFER_COMPRESSED_GRAPH: &str = "/../circom/graph/client_compressed_graph.bin";
 
     pub const AMOUNT_BITSIZE: usize = 80;
 
@@ -54,6 +56,32 @@ impl CircomConfig {
             .build_from_bytes(&zkey_bytes, &graph)
             .context("While building CircomGroth16Material")
     }
+
+    pub fn get_transfer_compressed_proof_schema<R: Rng + CryptoRng>(
+        rng: &mut R,
+    ) -> eyre::Result<CircomProofSchema<Bn254>> {
+        let r1cs = format!("{}{}", Self::ROOT, Self::TRANSFER_COMPRESSED_R1CS);
+        CircomProofSchema::from_r1cs_file_circom(PathBuf::from(r1cs), rng)
+            .context("while reading r1cs file")
+    }
+
+    pub fn get_transfer_compressed_graph() -> eyre::Result<Vec<u8>> {
+        let graph_path = format!("{}{}", Self::ROOT, Self::TRANSFER_COMPRESSED_GRAPH);
+        std::fs::read(graph_path).context("while reading graph file")
+    }
+
+    pub fn get_transfer_compressed_key_material<R: Rng + CryptoRng>(
+        rng: &mut R,
+    ) -> eyre::Result<CircomGroth16Material> {
+        let proof_schema = Self::get_transfer_compressed_proof_schema(rng)?;
+        let graph = Self::get_transfer_compressed_graph()?;
+        let zkey_bytes = Self::proof_schema_to_zkey_bytes(proof_schema)?;
+        CircomGroth16MaterialBuilder::new()
+            .bbf_num_2_bits_helper()
+            .bbf_inv()
+            .build_from_bytes(&zkey_bytes, &graph)
+            .context("While building CircomGroth16Material")
+    }
 }
 
 #[cfg(test)]
@@ -67,6 +95,18 @@ mod test {
 
         println!(
             "Transfer (Client) R1CS size: constraints = {}, witnesses = {}",
+            key_material.zkey().matrices.0.num_constraints,
+            key_material.zkey().matrices.0.num_witness_variables
+        );
+    }
+
+    #[test]
+    fn compile_transfer_compressed_groth16() {
+        let key_material =
+            CircomConfig::get_transfer_compressed_key_material(&mut rand::thread_rng()).unwrap();
+
+        println!(
+            "Transfer (Client Compressed) R1CS size: constraints = {}, witnesses = {}",
             key_material.zkey().matrices.0.num_constraints,
             key_material.zkey().matrices.0.num_witness_variables
         );

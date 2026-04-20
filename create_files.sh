@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 # CIRCOM Files
-CIRCOM_CIRCUITS=("client" "server")
+CIRCOM_CIRCUITS=("client" "client_compressed" "server")
 
 cd circom/main
 for CIRCUIT in "${CIRCOM_CIRCUITS[@]}"; do
@@ -11,7 +11,7 @@ done
 cd ../..
 
 # CIRCOM graph files
-CIRCOM_GRAPH_CIRCUITS=("client")
+CIRCOM_GRAPH_CIRCUITS=("client" "client_compressed")
 
 cd circom-witness-rs
 for CIRCUIT in "${CIRCOM_GRAPH_CIRCUITS[@]}"; do
