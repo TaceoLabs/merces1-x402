@@ -5,6 +5,7 @@ include "taceolib/secret_sharing.circom";
 include "taceolib/encryption.circom";
 include "taceolib/merces.circom";
 include "taceolib/compression.circom";
+include "taceolib/pedersen.circom";
 
 template transfer_batched(N, BALANCE_BITSIZE) {
     signal input sender_old_balance[N];
@@ -97,14 +98,24 @@ template transfer_client(AMOUNT_BITSIZE) {
     signal input share_amount_r[2];
     // Outputs
     signal output encrypt_pk[2];
-    signal output amount_c;
+    signal output amount_c[2];
     signal output ciphertexts[3][2];
 
     // 1. Commitment to the amount using the provided randomness including range check
-    component amount_comm = check_amount(AMOUNT_BITSIZE);
-    amount_comm.amount <== amount;
-    amount_comm.amount_r <== amount_r;
-    amount_c <== amount_comm.out;
+    signal amount_bits[AMOUNT_BITSIZE] <== TACEO_PRECOMPUTATION_Num2Bits(AMOUNT_BITSIZE)(amount);
+    component r_range_check = BabyJubJubIsInFr();
+    r_range_check.in <== amount_r;
+    // Commit
+    component he_commit = pedersen_commit_bits();
+    for (var i = 0; i < AMOUNT_BITSIZE; i++) {
+        he_commit.value_bits[i] <== amount_bits[i];
+    }
+    for (var i = AMOUNT_BITSIZE; i < 251; i++) {
+        he_commit.value_bits[i] <== 0;
+    }
+    he_commit.r_bits <== r_range_check.out_bits;
+    amount_c[0] <== he_commit.out.x;
+    amount_c[1] <== he_commit.out.y;
 
      // 2. Additive secret sharing of amount and amount_r using
     signal share_amount_[3];
@@ -160,24 +171,25 @@ template transfer_client_compressed(AMOUNT_BITSIZE, T) {
     transaction_client.share_amount_r <== share_amount_r;
 
     // Compressing the outputs
-    var q[15];
+    var q[16];
     q[0] = transaction_client.encrypt_pk[0];
     q[1] = transaction_client.encrypt_pk[1];
-    q[2] = transaction_client.amount_c;
-    q[3] = transaction_client.ciphertexts[0][0];
-    q[4] = transaction_client.ciphertexts[0][1];
-    q[5] = transaction_client.ciphertexts[1][0];
-    q[6] = transaction_client.ciphertexts[1][1];
-    q[7] = transaction_client.ciphertexts[2][0];
-    q[8] = transaction_client.ciphertexts[2][1];
-    q[9] = mpc_pks[0][0];
-    q[10] = mpc_pks[0][1];
-    q[11] = mpc_pks[1][0];
-    q[12] = mpc_pks[1][1];
-    q[13] = mpc_pks[2][0];
-    q[14] = mpc_pks[2][1];
+    q[2] = transaction_client.amount_c[0];
+    q[3] = transaction_client.amount_c[1];
+    q[4] = transaction_client.ciphertexts[0][0];
+    q[5] = transaction_client.ciphertexts[0][1];
+    q[6] = transaction_client.ciphertexts[1][0];
+    q[7] = transaction_client.ciphertexts[1][1];
+    q[8] = transaction_client.ciphertexts[2][0];
+    q[9] = transaction_client.ciphertexts[2][1];
+    q[10] = mpc_pks[0][0];
+    q[11] = mpc_pks[0][1];
+    q[12] = mpc_pks[1][0];
+    q[13] = mpc_pks[1][1];
+    q[14] = mpc_pks[2][0];
+    q[15] = mpc_pks[2][1];
 
-    component compression = Compression(15, T);
+    component compression = Compression(16, T);
     compression.q <== q;
     compression.alpha <== alpha;
     beta <== compression.beta;
