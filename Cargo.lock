@@ -1803,7 +1803,7 @@ dependencies = [
 [[package]]
 name = "circom-mpc-compiler"
 version = "0.10.0"
-source = "git+https://github.com/TaceoLabs/co-snarks?rev=924c886ed3d2e11ba3260f2e7f0ab9cb7546eaf2#924c886ed3d2e11ba3260f2e7f0ab9cb7546eaf2"
+source = "git+https://github.com/TaceoLabs/co-snarks?rev=8c2349c2dc7afb83e12819ab5915ed67b56af962#8c2349c2dc7afb83e12819ab5915ed67b56af962"
 dependencies = [
  "ark-ec",
  "ark-ff 0.5.0",
@@ -1825,8 +1825,9 @@ dependencies = [
 [[package]]
 name = "circom-mpc-vm"
 version = "0.9.0"
-source = "git+https://github.com/TaceoLabs/co-snarks?rev=924c886ed3d2e11ba3260f2e7f0ab9cb7546eaf2#924c886ed3d2e11ba3260f2e7f0ab9cb7546eaf2"
+source = "git+https://github.com/TaceoLabs/co-snarks?rev=8c2349c2dc7afb83e12819ab5915ed67b56af962#8c2349c2dc7afb83e12819ab5915ed67b56af962"
 dependencies = [
+ "ark-bn254",
  "ark-ff 0.5.0",
  "ark-serialize 0.5.0",
  "bincode",
@@ -1844,7 +1845,7 @@ dependencies = [
 [[package]]
 name = "circom-proof-schema"
 version = "0.1.0"
-source = "git+https://github.com/TaceoLabs/circom_proof_schema?rev=c10be7f44b693c11a76426df8fe2736f67a16c4b#c10be7f44b693c11a76426df8fe2736f67a16c4b"
+source = "git+https://github.com/TaceoLabs/circom_proof_schema?rev=1b08dc499ca47442f39e8ebce363b2a91ffe4924#1b08dc499ca47442f39e8ebce363b2a91ffe4924"
 dependencies = [
  "ark-circom",
  "ark-ec",
@@ -1965,7 +1966,7 @@ dependencies = [
 [[package]]
 name = "co-circom"
 version = "0.10.0"
-source = "git+https://github.com/TaceoLabs/co-snarks?rev=924c886ed3d2e11ba3260f2e7f0ab9cb7546eaf2#924c886ed3d2e11ba3260f2e7f0ab9cb7546eaf2"
+source = "git+https://github.com/TaceoLabs/co-snarks?rev=8c2349c2dc7afb83e12819ab5915ed67b56af962#8c2349c2dc7afb83e12819ab5915ed67b56af962"
 dependencies = [
  "ark-bls12-381",
  "ark-bn254",
@@ -1996,7 +1997,7 @@ dependencies = [
 [[package]]
 name = "co-circom-types"
 version = "0.6.0"
-source = "git+https://github.com/TaceoLabs/co-snarks?rev=924c886ed3d2e11ba3260f2e7f0ab9cb7546eaf2#924c886ed3d2e11ba3260f2e7f0ab9cb7546eaf2"
+source = "git+https://github.com/TaceoLabs/co-snarks?rev=8c2349c2dc7afb83e12819ab5915ed67b56af962#8c2349c2dc7afb83e12819ab5915ed67b56af962"
 dependencies = [
  "ark-ff 0.5.0",
  "ark-serialize 0.5.0",
@@ -2014,7 +2015,7 @@ dependencies = [
 [[package]]
 name = "co-groth16"
 version = "0.10.0"
-source = "git+https://github.com/TaceoLabs/co-snarks?rev=924c886ed3d2e11ba3260f2e7f0ab9cb7546eaf2#924c886ed3d2e11ba3260f2e7f0ab9cb7546eaf2"
+source = "git+https://github.com/TaceoLabs/co-snarks?rev=8c2349c2dc7afb83e12819ab5915ed67b56af962#8c2349c2dc7afb83e12819ab5915ed67b56af962"
 dependencies = [
  "ark-bn254",
  "ark-ec",
@@ -2037,7 +2038,7 @@ dependencies = [
 [[package]]
 name = "co-plonk"
 version = "0.7.0"
-source = "git+https://github.com/TaceoLabs/co-snarks?rev=924c886ed3d2e11ba3260f2e7f0ab9cb7546eaf2#924c886ed3d2e11ba3260f2e7f0ab9cb7546eaf2"
+source = "git+https://github.com/TaceoLabs/co-snarks?rev=8c2349c2dc7afb83e12819ab5915ed67b56af962#8c2349c2dc7afb83e12819ab5915ed67b56af962"
 dependencies = [
  "ark-bn254",
  "ark-ec",
@@ -3922,7 +3923,7 @@ dependencies = [
 [[package]]
 name = "mpc-core"
 version = "0.10.0"
-source = "git+https://github.com/TaceoLabs/co-snarks?rev=924c886ed3d2e11ba3260f2e7f0ab9cb7546eaf2#924c886ed3d2e11ba3260f2e7f0ab9cb7546eaf2"
+source = "git+https://github.com/TaceoLabs/co-snarks?rev=8c2349c2dc7afb83e12819ab5915ed67b56af962#8c2349c2dc7afb83e12819ab5915ed67b56af962"
 dependencies = [
  "ark-bn254",
  "ark-ec",
@@ -3946,6 +3947,7 @@ dependencies = [
  "serde",
  "sha3",
  "subtle",
+ "taceo-ark-babyjubjub",
  "thiserror 2.0.18",
  "tracing",
 ]
@@ -3953,7 +3955,7 @@ dependencies = [
 [[package]]
 name = "mpc-net"
 version = "0.5.0"
-source = "git+https://github.com/TaceoLabs/co-snarks?rev=924c886ed3d2e11ba3260f2e7f0ab9cb7546eaf2#924c886ed3d2e11ba3260f2e7f0ab9cb7546eaf2"
+source = "git+https://github.com/TaceoLabs/co-snarks?rev=8c2349c2dc7afb83e12819ab5915ed67b56af962#8c2349c2dc7afb83e12819ab5915ed67b56af962"
 dependencies = [
  "byteorder",
  "bytes",

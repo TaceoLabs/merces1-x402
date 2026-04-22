@@ -452,7 +452,6 @@ mod tests {
                         assert_eq!(applied_transactions, NUM_TRANSACTIONS);
                         assert_eq!(valids.len(), CircomConfig::NUM_TRANSACTIONS);
                         assert!(valids.iter().all(|&v| v)); // All transactions should be valid, including dummies
-                        println!("traces length: {}", traces.len());
                         let (proof, public_inputs) = groth16
                             .trace_to_proof(inputs, traces, &nets[0], &nets[1])
                             .unwrap();

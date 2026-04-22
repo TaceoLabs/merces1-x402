@@ -21,17 +21,17 @@ ark-groth16 = "^0.5.0"
 ark-serialize = "^0.5.0"
 clap = { version = "4.5.53", features = ["derive", "env"] }
 client = { path = "./client" }
-circom-mpc-vm = { version = "0.9.0", git = "https://github.com/TaceoLabs/co-snarks", rev = "924c886ed3d2e11ba3260f2e7f0ab9cb7546eaf2" }
-circom-proof-schema = { git = "https://github.com/TaceoLabs/circom_proof_schema", rev = "c10be7f44b693c11a76426df8fe2736f67a16c4b", version = "^0.1.0" }
-co-circom = { git = "https://github.com/TaceoLabs/co-snarks", rev = "924c886ed3d2e11ba3260f2e7f0ab9cb7546eaf2", version = "0.10.0" }
+circom-mpc-vm = { version = "0.9.0", git = "https://github.com/TaceoLabs/co-snarks", rev = "8c2349c2dc7afb83e12819ab5915ed67b56af962" }
+circom-proof-schema = { git = "https://github.com/TaceoLabs/circom_proof_schema", rev = "1b08dc499ca47442f39e8ebce363b2a91ffe4924", version = "^0.1.0" }
+co-circom = { git = "https://github.com/TaceoLabs/co-snarks", rev = "8c2349c2dc7afb83e12819ab5915ed67b56af962", version = "0.10.0" }
 contract-rs = { path = "./contract-rs" }
 eyre = "0.6.12"
 figment = { version = "0.10.19", features = ["toml", "env"] }
 groth16-material = { package = "taceo-groth16-material", version = "0.2" }
 groth16-sol = { package = "taceo-groth16-sol", version = "0.2" }
 itertools = "0.14.0"
-mpc-core = { git = "https://github.com/TaceoLabs/co-snarks", rev = "924c886ed3d2e11ba3260f2e7f0ab9cb7546eaf2", version = "0.10.0" }
-mpc-net = { version = "0.5.0", git = "https://github.com/TaceoLabs/co-snarks", rev = "924c886ed3d2e11ba3260f2e7f0ab9cb7546eaf2" }
+mpc-core = { git = "https://github.com/TaceoLabs/co-snarks", rev = "8c2349c2dc7afb83e12819ab5915ed67b56af962", version = "0.10.0" }
+mpc-net = { version = "0.5.0", git = "https://github.com/TaceoLabs/co-snarks", rev = "8c2349c2dc7afb83e12819ab5915ed67b56af962" }
 mpc-nodes = { path = "./mpc-nodes" }
 num-bigint = { version = "0.4.6" }
 poseidon2 = { package = "taceo-poseidon2", version = "0.2", default-features = false }

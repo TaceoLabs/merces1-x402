@@ -13,12 +13,12 @@ cd ../..
 # CIRCOM graph files
 CIRCOM_GRAPH_CIRCUITS=("client")
 
-cd circom-witness-rs
-for CIRCUIT in "${CIRCOM_GRAPH_CIRCUITS[@]}"; do
-    WITNESS_CPP=../circom/main/${CIRCUIT}.circom CIRCOM_LIBRARY_PATH=../circom/ cargo run --bin generate-graph --features build-witness
-    mv graph.bin ../circom/graph/${CIRCUIT}_graph.bin
-done
-cd ..
+# cd circom-witness-rs
+# for CIRCUIT in "${CIRCOM_GRAPH_CIRCUITS[@]}"; do
+#     WITNESS_CPP=../circom/main/${CIRCUIT}.circom CIRCOM_LIBRARY_PATH=../circom/ cargo run --bin generate-graph --features build-witness
+#     mv graph.bin ../circom/graph/${CIRCUIT}_graph.bin
+# done
+# cd ..
 
 # Solidity JSON
 cd contracts

@@ -28,7 +28,7 @@ template register_pending_transaction(AMOUNT_BITSIZE) {
     component r_range_check = BabyJubJubIsInFr();
     r_range_check.in <== amount_he_r;
     // Commit
-    component he_commit = pedersen_commit_bits();
+    component he_commit = PedersenCommitBits();
     for (var i = 0; i < AMOUNT_BITSIZE; i++) {
         he_commit.value_bits[i] <== range_check.in_bits[i];
     }
@@ -41,7 +41,7 @@ template register_pending_transaction(AMOUNT_BITSIZE) {
 }
 
 // Does not includes range checks!
-template pedersen_commit_bits() {
+template PedersenCommitBits() {
     signal input value_bits[251];
     signal input r_bits[251];
     output BabyJubJubPoint() { twisted_edwards } out;
