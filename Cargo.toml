@@ -1,7 +1,6 @@
 [workspace]
 resolver = "3"
 members = ["client", "contract-rs", "e2e", "mpc-nodes"]
-exclude = ["circom-witness-rs"]
 
 [workspace.package]
 edition = "2024"
