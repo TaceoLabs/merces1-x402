@@ -3,13 +3,16 @@ pub mod map;
 pub mod process_map;
 
 use crate::{circom::config::CircomConfig, map::DepositValueShare};
-use ark_ff::{BigInteger, PrimeField, Zero};
+use ark_ff::{BigInteger, One, PrimeField, Zero};
 use circom_mpc_vm::{ComponentAcceleratorOutput, Rep3VmType};
 use itertools::Itertools;
 use mpc_core::{
+    MpcState,
     gadgets::poseidon2::{CircomTraceBatchedHasher, CircomTracePlainHasher, Poseidon2},
     protocols::{
-        rep3::{self, Rep3PrimeFieldShare, Rep3State, network::Rep3NetworkExt},
+        rep3::{
+            self, Rep3PrimeFieldShare, Rep3State, arithmetic, conversion, network::Rep3NetworkExt,
+        },
         rep3_ring::{self, Rep3RingShare, ring::bit::Bit},
     },
     serde_compat::{ark_de, ark_se},
@@ -30,6 +33,29 @@ pub(crate) const CIRCOM_MAP_LABELS: [&str; 8] = [
     "amount_r",
     "sender_new_r",
     "receiver_new_r",
+];
+
+// The ct bits for the alias check for CT = -1
+const CT_BITS_MINUS_ONE: [bool; 254] = [
+    false, false, false, false, false, false, false, false, false, false, false, false, false,
+    false, false, false, false, false, false, false, false, false, false, false, false, false,
+    false, false, true, true, true, true, true, true, false, false, true, false, false, true, true,
+    false, true, false, true, true, true, true, true, false, false, false, false, true, true, true,
+    true, true, false, false, false, false, true, false, true, false, false, false, true, false,
+    false, true, false, false, false, false, true, true, true, false, true, false, false, true,
+    true, true, false, true, true, false, false, true, true, true, true, false, false, false,
+    false, true, false, false, true, false, false, false, false, true, false, true, true, true,
+    true, true, false, false, true, true, false, false, false, false, false, true, false, true,
+    false, false, true, false, true, true, true, false, true, false, false, false, false, true,
+    true, false, true, false, true, false, false, false, false, false, false, true, true, false,
+    false, false, false, false, false, true, false, true, true, false, true, true, false, true,
+    true, false, true, false, false, false, true, false, false, false, false, false, true, false,
+    true, false, false, false, false, true, true, true, false, true, true, false, false, true,
+    false, true, false, false, false, false, false, false, false, true, false, true, true, false,
+    false, false, true, true, false, false, true, false, false, false, false, true, true, true,
+    false, true, false, false, true, true, true, false, false, true, true, true, false, false,
+    true, false, false, false, true, false, false, true, true, false, false, false, false, false,
+    true, true,
 ];
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize, PartialEq, Eq)]
@@ -171,11 +197,16 @@ pub(crate) fn feed_forward_shared<
     })
 }
 
+#[expect(clippy::type_complexity)]
 pub(crate) fn decompose_compose<F: PrimeField, N: Network>(
     sender_new_balance: Rep3PrimeFieldShare<F>,
     net: &N,
     rep3_state: &mut Rep3State,
-) -> eyre::Result<(bool, ComponentAcceleratorOutput<Rep3VmType<F>>)> {
+) -> eyre::Result<(
+    bool,
+    ComponentAcceleratorOutput<Rep3VmType<F>>,
+    ComponentAcceleratorOutput<Rep3VmType<F>>,
+)> {
     let a2b = rep3::conversion::a2b(sender_new_balance, net, rep3_state)?;
 
     let mut to_compose = Vec::with_capacity(F::MODULUS_BIT_SIZE as usize);
@@ -235,11 +266,20 @@ pub(crate) fn decompose_compose<F: PrimeField, N: Network>(
     let opened = should_zero_rand + b + c;
     let valid = opened.is_zero();
 
+    let alias_check_trace = alias_check_trace_helper_rep3(
+        decomps
+            .clone()
+            .try_into()
+            .map_err(|_| eyre::eyre!("failed to convert decomps to 254-element array"))?,
+        net,
+        rep3_state,
+    )?;
+
     let balance = ComponentAcceleratorOutput::new(
         decomps.into_iter().map(Rep3VmType::from).collect_vec(),
         Vec::new(),
     );
-    Ok((valid, balance))
+    Ok((valid, balance, alias_check_trace))
 }
 
 pub(crate) fn get_query_transaction_circom_input(
@@ -366,4 +406,158 @@ pub(crate) fn compression_commitment_helper<
     let (beta_traces, _) = poseidon2_plain_sponge_circom_helper::<T_SPONGE, I, _>(public_inputs);
 
     (beta_traces, alpha)
+}
+
+#[expect(unused)]
+fn alias_check_ct_bits<F: PrimeField, const CT: i32>() -> [F; 254] {
+    let ct_biguint: BigUint = {
+        let modulus = BigUint::from_bytes_le(&F::MODULUS.to_bytes_le());
+        if CT >= 0 {
+            BigUint::from(CT as u128) % &modulus
+        } else {
+            let neg_offset = ((-CT) as u128) % &modulus;
+            (&modulus - neg_offset) % &modulus
+        }
+    };
+
+    std::array::from_fn(|i| F::from((&ct_biguint >> i) & BigUint::one()))
+}
+
+fn alias_check_output<F: PrimeField>(
+    parts: Vec<Rep3VmType<F>>,
+    trace_num2_bits: Vec<Rep3VmType<F>>,
+    sum: Rep3VmType<F>,
+) -> ComponentAcceleratorOutput<Rep3VmType<F>> {
+    let zeroes_as_vm_type = [F::zero(); 255].iter().map(|x| (*x).into()).collect_vec();
+
+    ComponentAcceleratorOutput::new(
+        Vec::new(),
+        [zeroes_as_vm_type, parts, [sum].to_vec(), trace_num2_bits].concat(),
+    )
+}
+
+pub(crate) fn alias_check_trace_helper<F: PrimeField /*const CT: i32*/>(
+    input: [F; 254],
+) -> ComponentAcceleratorOutput<Rep3VmType<F>> {
+    for x in input.iter() {
+        debug_assert!(x.is_zero() || x.is_one());
+    }
+
+    let ct_bits = CT_BITS_MINUS_ONE;
+    // We hardcoded this for CT = -1, for other values use this function:
+    // let ct_bits = alias_check_ct_bits::<F, CT>();
+
+    let mut sum = F::zero();
+    let mut b = F::from(u128::MAX);
+    let mut a = F::one();
+    let mut e = F::one();
+    let mut parts = Vec::with_capacity(127);
+
+    for i in 0..127usize {
+        let lo = i * 2;
+        let hi = lo + 1;
+        let clsb = ct_bits[lo];
+        let cmsb = ct_bits[hi];
+        let slsb = input[lo];
+        let smsb = input[hi];
+
+        let part = match (cmsb, clsb) {
+            //These are guaranteed to be 0/1
+            (false, false) => -b * smsb * slsb + b * smsb + b * slsb,
+            (false, true) => a * smsb * slsb - a * slsb + b * smsb - a * smsb + a,
+            (true, false) => b * smsb * slsb - a * smsb + a,
+            _ => -a * smsb * slsb + a,
+        };
+        parts.push(part.into());
+        sum += part;
+
+        b -= e;
+        a += e;
+        e += e;
+    }
+
+    let trace_num2_bits: Vec<Rep3VmType<F>> = {
+        let a: BigUint = sum.into();
+        (0..135)
+            .map(|i| F::from((&a >> i) & BigUint::one()).into())
+            .collect()
+    };
+
+    alias_check_output(parts, trace_num2_bits, sum.into())
+}
+
+pub(crate) fn alias_check_trace_helper_rep3<F: PrimeField, N: Network /*const CT: i32*/>(
+    input: [Rep3PrimeFieldShare<F>; 254],
+    net: &N,
+    rep3_state: &mut Rep3State,
+) -> eyre::Result<ComponentAcceleratorOutput<Rep3VmType<F>>> {
+    let ct_bits = CT_BITS_MINUS_ONE;
+    // We hardcoded this for CT = -1, for other values use this function:
+    // let ct_bits = alias_check_ct_bits::<F, CT>();
+
+    let my_id = rep3_state.id();
+    let mut sum = Rep3PrimeFieldShare::zero();
+    let mut b = F::from(u128::MAX);
+    let mut a = F::one();
+    let mut e = F::one();
+
+    let mut to_mul_lhs = Vec::with_capacity(127);
+    let mut to_mul_rhs = Vec::with_capacity(127);
+    for i in 0..127usize {
+        let lo = i * 2;
+        let hi = lo + 1;
+        to_mul_lhs.push(input[lo]);
+        to_mul_rhs.push(input[hi]);
+    }
+
+    let result = arithmetic::mul_vec(&to_mul_lhs, &to_mul_rhs, net, rep3_state)?;
+    let mut parts = Vec::with_capacity(127);
+
+    for (i, res) in result.into_iter().enumerate() {
+        let lo = i * 2;
+        let hi = lo + 1;
+        let clsb = ct_bits[lo];
+        let cmsb = ct_bits[hi];
+        let slsb = input[lo];
+        let smsb = input[hi];
+        let smsb_times_slsb = res;
+
+        let part = match (cmsb, clsb) {
+            //These are guaranteed to be 0/1
+            (false, false) => {
+                arithmetic::mul_public(smsb_times_slsb, -b)
+                    + arithmetic::mul_public(smsb, b)
+                    + arithmetic::mul_public(slsb, b)
+            }
+            (false, true) => arithmetic::add_public(
+                arithmetic::mul_public(smsb_times_slsb, a) - arithmetic::mul_public(slsb, a)
+                    + arithmetic::mul_public(smsb, b)
+                    - arithmetic::mul_public(smsb, a),
+                a,
+                my_id,
+            ),
+            (true, false) => arithmetic::add_public(
+                arithmetic::mul_public(smsb_times_slsb, b) - arithmetic::mul_public(smsb, a),
+                a,
+                my_id,
+            ),
+            _ => arithmetic::add_public(arithmetic::mul_public(smsb_times_slsb, -a), a, my_id),
+        };
+        parts.push(part.into());
+        sum += part;
+
+        b -= e;
+        a += e;
+        e += e;
+    }
+
+    let a_bits = conversion::a2b(sum, net, rep3_state)?;
+    let a_bits_split: Vec<_> = (0..135).map(|i| (&a_bits >> i) & BigUint::one()).collect();
+    let trace_num2_bits: Vec<Rep3VmType<F>> =
+        conversion::bit_inject_many(&a_bits_split, net, rep3_state)?
+            .iter()
+            .map(|x| (*x).into())
+            .collect_vec();
+
+    Ok(alias_check_output(parts, trace_num2_bits, sum.into()))
 }
