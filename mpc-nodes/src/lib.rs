@@ -164,6 +164,131 @@ pub(crate) fn feed_forward_shared<
     })
 }
 
+pub(crate) fn decompose_compose_batched<F: PrimeField, N: Network>(
+    sender_new_balance: Rep3PrimeFieldShare<F>,
+    sender_new_blinding: Rep3PrimeFieldShare<F>,
+    net: &N,
+    rep3_state: &mut Rep3State,
+) -> eyre::Result<[(bool, ComponentAcceleratorOutput<Rep3VmType<F>>); 2]> {
+    let [a2b_balance, a2b_blinding] =
+        rep3::conversion::a2b_many(&[sender_new_balance, sender_new_blinding], net, rep3_state)?
+            .try_into()
+            .expect("we convert two elements");
+
+    let mut to_compose_balance = Vec::with_capacity(F::MODULUS_BIT_SIZE as usize);
+    let mut to_compose_blinding = Vec::with_capacity(F::MODULUS_BIT_SIZE as usize);
+
+    assert!(F::MODULUS_BIT_SIZE <= 256);
+    assert!(F::MODULUS_BIT_SIZE > 192);
+    let a2b_sender_balance_a_ = a2b_balance.a.to_u64_digits();
+    let a2b_sender_balance_b_ = a2b_balance.b.to_u64_digits();
+    let a2b_sender_blinding_a_ = a2b_blinding.a.to_u64_digits();
+    let a2b_sender_blinding_b_ = a2b_blinding.b.to_u64_digits();
+
+    // First the lowest 128 bit
+    let mut a2b_sender_balance_a =
+        ((a2b_sender_balance_a_[1] as u128) << 64) | a2b_sender_balance_a_[0] as u128;
+    let mut a2b_sender_balance_b =
+        ((a2b_sender_balance_b_[1] as u128) << 64) | a2b_sender_balance_b_[0] as u128;
+    let mut a2b_sender_blinding_a =
+        ((a2b_sender_blinding_a_[1] as u128) << 64) | a2b_sender_blinding_a_[0] as u128;
+    let mut a2b_sender_blinding_b =
+        ((a2b_sender_blinding_b_[1] as u128) << 64) | a2b_sender_blinding_b_[0] as u128;
+    for _ in 0..128 {
+        let bit_balance = Rep3RingShare::new(
+            Bit::new((a2b_sender_balance_a & 1) == 1),
+            Bit::new((a2b_sender_balance_b & 1) == 1),
+        );
+        let bit_blinding = Rep3RingShare::new(
+            Bit::new((a2b_sender_blinding_a & 1) == 1),
+            Bit::new((a2b_sender_blinding_b & 1) == 1),
+        );
+        to_compose_balance.push(bit_balance);
+        to_compose_blinding.push(bit_blinding);
+        a2b_sender_balance_a >>= 1;
+        a2b_sender_balance_b >>= 1;
+        a2b_sender_blinding_a >>= 1;
+        a2b_sender_blinding_b >>= 1;
+    }
+    // Then the rest
+    let mut a2b_sender_balance_a =
+        ((a2b_sender_balance_a_[3] as u128) << 64) | a2b_sender_balance_a_[2] as u128;
+    let mut a2b_sender_balance_b =
+        ((a2b_sender_balance_b_[3] as u128) << 64) | a2b_sender_balance_b_[2] as u128;
+    for _ in 0..F::MODULUS_BIT_SIZE as usize - 128 {
+        let bit_balance = Rep3RingShare::new(
+            Bit::new((a2b_sender_balance_a & 1) == 1),
+            Bit::new((a2b_sender_balance_b & 1) == 1),
+        );
+        let bit_blinding = Rep3RingShare::new(
+            Bit::new((a2b_sender_blinding_a & 1) == 1),
+            Bit::new((a2b_sender_blinding_b & 1) == 1),
+        );
+        to_compose_balance.push(bit_balance);
+        to_compose_blinding.push(bit_blinding);
+        a2b_sender_balance_a >>= 1;
+        a2b_sender_balance_b >>= 1;
+        a2b_sender_blinding_a >>= 1;
+        a2b_sender_blinding_b >>= 1;
+    }
+
+    let mut to_compose = to_compose_balance;
+    to_compose.extend(to_compose_blinding);
+    let decomps = rep3_ring::conversion::bit_inject_from_bits_to_field_many::<F, _>(
+        &to_compose,
+        net,
+        rep3_state,
+    )?;
+    let (balance_decomps, blinding_decomps) = decomps.split_at(F::MODULUS_BIT_SIZE as usize);
+
+    debug_assert_eq!(balance_decomps.len(), F::MODULUS_BIT_SIZE as usize);
+    debug_assert_eq!(blinding_decomps.len(), F::MODULUS_BIT_SIZE as usize);
+
+    // Check if valid
+    // let valid_should_zero = a2b >> CircomConfig::TRANSFER_BALANCE_BITSIZE;
+    // let is_zero = rep3::binary::is_zero(&valid_should_zero, net, rep3_state)?;
+    // let is_zero = Rep3RingShare::new(Bit::new(is_zero.a.bit(0)), Bit::new(is_zero.b.bit(0)));
+    // let valid = rep3_ring::binary::open(&is_zero, net)?.0.convert();
+
+    // Instead of doing the above, we can sum up the bits, multiply a random value and open
+    let mut should_zero_balance = Rep3PrimeFieldShare::zero();
+    let mut should_zero_blinding = Rep3PrimeFieldShare::zero();
+    for bit in balance_decomps
+        .iter()
+        .skip(CircomConfig::TRANSFER_BALANCE_BITSIZE)
+    {
+        should_zero_balance += bit;
+    }
+    for bit in blinding_decomps.iter().skip(253) {
+        should_zero_blinding += bit;
+    }
+    let rand_balance = rep3::arithmetic::rand(rep3_state);
+    let rand_blinding = rep3::arithmetic::rand(rep3_state);
+    let should_zero_rand = should_zero_balance * rand_balance;
+    let should_zero_rand_blinding = should_zero_blinding * rand_blinding;
+    let (b, c) = net.broadcast_many(&[should_zero_rand, should_zero_rand_blinding])?;
+    let opened_balance = should_zero_rand + b[0] + c[0];
+    let opened_blinding = should_zero_rand_blinding + b[1] + c[1];
+    let valid_balance = opened_balance.is_zero();
+    let valid_blinding = opened_blinding.is_zero();
+
+    let balance = ComponentAcceleratorOutput::new(
+        balance_decomps
+            .iter()
+            .map(|x| Rep3VmType::from(*x))
+            .collect_vec(),
+        Vec::new(),
+    );
+    let blinding = ComponentAcceleratorOutput::new(
+        blinding_decomps
+            .iter()
+            .map(|x| Rep3VmType::from(*x))
+            .collect_vec(),
+        Vec::new(),
+    );
+    Ok([(valid_balance, balance), (valid_blinding, blinding)])
+}
+
 pub(crate) fn decompose_compose<F: PrimeField, N: Network>(
     sender_new_balance: Rep3PrimeFieldShare<F>,
     net: &N,
