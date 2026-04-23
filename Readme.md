@@ -29,6 +29,28 @@ curl -L https://foundry.paradigm.xyz | bash
 foundryup
 ```
 
+### Get Repository
+
+The anonymized repository is located at [https://anonymous.4open.science/r/Merces-46CE/](https://anonymous.4open.science/r/Merces-46CE/).
+
+In order to run the code, you need to get 3 dependency git repository (for solidity code). The easiest way to setup everything correctly is just getting the `clone.py` script and execute it.
+This will clone the anonymized repository into the newly created `Merces` folder and put all git-dependencies where they belong.
+
+#### Manual setup
+
+If you prefer a manual setup instead of running `clone.py`, download the anonymized repository as a zip folder and extract it. Go to the `contracts` folder inside the repository and execute the following commands
+
+```bash
+mkdir lib
+git clone https://github.com/OpenZeppelin/openzeppelin-contracts
+git clone https://github.com/foundry-rs/forge-std
+git clone https://github.com/TaceoLabs/babyjubjub-solidity
+cd openzeppelin-contracts && git checkout 8ff78ffb6e78463f070eab59487b4ba30481b53c
+cd ../forge-std && git checkout 0e44f85a13976ba7491c6a9ee994b1a7efc3c281
+cd ../babyjubjub-solidity && git checkout 4202e8794c44cf3f894c910354c0567b659e6669
+cd ../..
+```
+
 ### Run end-to-end test
 
 To run the end-to-end test, you first need to start the local blockchain test environment `anvil`.
