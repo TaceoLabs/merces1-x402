@@ -234,7 +234,11 @@ where
         );
 
         // The bit decomposition
-        let [(valid, decomp_sender), (_, decomposed_blinding)] = super::decompose_compose_batched(
+        let [
+            (valid, decomp_sender),
+            (_, decomposed_blinding),
+            (_, alias_check_trace),
+        ] = super::decompose_compose_batched(
             sender_new.amount,
             sender_new.blinding,
             net0,
@@ -296,6 +300,7 @@ where
             )?;
         let trace: Vec<ComponentAcceleratorOutput<Rep3VmType<F>>> = vec![
             decomp_sender,
+            alias_check_trace,
             decomposed_blinding,
             ComponentAcceleratorOutput::new(
                 vec![pedersen_trace.out_x.into(), pedersen_trace.out_y.into()],
@@ -330,7 +335,11 @@ where
             Rep3PrimeFieldShare::zero_share(),
         );
 
-        let [(valid, decomp_sender), (_, decomposed_blinding)] = super::decompose_compose_batched(
+        let [
+            (valid, decomp_sender),
+            (_, decomposed_blinding),
+            (_, alias_check_trace),
+        ] = super::decompose_compose_batched(
             sender_new.amount,
             sender_new.blinding,
             net0,
@@ -392,12 +401,14 @@ where
             )?;
         let trace: Vec<ComponentAcceleratorOutput<Rep3VmType<F>>> = vec![
             decomp_sender,
+            alias_check_trace,
             decomposed_blinding,
             ComponentAcceleratorOutput::new(
                 vec![pedersen_trace.out_x.into(), pedersen_trace.out_y.into()],
                 pedersen_trace.trace.iter().map(|x| (*x).into()).collect(),
             ),
         ];
+
         Ok((valid, sender_new, receiver_new, inputs, trace))
     }
 
@@ -432,6 +443,7 @@ where
                 vec![Rep3VmType::default(); F::MODULUS_BIT_SIZE as usize],
                 Vec::new(),
             ),
+            super::alias_check_trace_helper([F::zero(); 254]),
             ComponentAcceleratorOutput::new(vec![Rep3VmType::default(); 253], Vec::new()),
             ComponentAcceleratorOutput::new(
                 vec![pedersen_trace.out_x.into(), pedersen_trace.out_y.into()],
@@ -457,6 +469,7 @@ where
                 vec![Rep3VmType::default(); F::MODULUS_BIT_SIZE as usize],
                 Vec::new(),
             ),
+            super::alias_check_trace_helper([F::zero(); 254]),
             ComponentAcceleratorOutput::new(vec![Rep3VmType::default(); 253], Vec::new()),
             ComponentAcceleratorOutput::new(
                 vec![pedersen_trace.out_x.into(), pedersen_trace.out_y.into()],

@@ -1,6 +1,7 @@
 pragma circom 2.2.2;
 
 include "poseidon2.circom";
+include "circomlib/aliascheck.circom";
 include "circomlib/bitify.circom";
 include "babyjubjub.circom";
 
@@ -50,4 +51,10 @@ template PedersenCommitBits() {
     add.lhs <== g_value.out;
     add.rhs <== g_r.out;
     out <== add.out;
+}
+
+template TACEO_PRECOMPUTATION_AliasCheck() {
+    signal input in[254];
+
+    AliasCheck()(in);
 }
