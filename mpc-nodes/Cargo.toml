@@ -20,7 +20,7 @@ co-circom.workspace = true
 eyre.workspace = true
 itertools.workspace = true
 mpc-core.workspace = true
-mpc-net.workspace = true
+mpc-net = { workspace = true, features = ["local"] }
 num-bigint.workspace = true
 rand.workspace = true
 serde.workspace = true
