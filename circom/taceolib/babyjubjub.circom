@@ -5,6 +5,7 @@ include "circomlib/escalarmulany.circom";
 include "circomlib/comparators.circom";
 include "circomlib/compconstant.circom";
 include "circomlib/bitify.circom";
+include "precomputations.circom";
 
 // Utilities for working with the BabyJubJub curve in Circom 2.x, using Twisted Edwards form.
 // This file defines:
@@ -218,7 +219,7 @@ template BabyJubJubIsInFr() {
     // Prime order of BabyJubJub's scalar field Fr.
     var fr = 2736030358979909402780800718157159386076813972158567259200215660948447373041;
 
-    signal bits[253] <== Num2Bits(253)(in);
+    signal bits[253] <== TACEO_PRECOMPUTATION_Num2Bits(253)(in);
     // CompConstant enforces <=, so compare against (fr - 1).
     component compConstant = CompConstant(fr - 1);
     for (var i=0; i<253; i++) {

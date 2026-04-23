@@ -235,6 +235,81 @@ pub(crate) fn decompose_compose<F: PrimeField, N: Network>(
     Ok((valid, balance))
 }
 
+pub(crate) fn decompose_compose_babyjubjub_fr<F: PrimeField, N: Network>(
+    sender_new_blinding: Rep3PrimeFieldShare<F>,
+    net: &N,
+    rep3_state: &mut Rep3State,
+) -> eyre::Result<(bool, ComponentAcceleratorOutput<Rep3VmType<F>>)> {
+    let a2b = rep3::conversion::a2b(sender_new_blinding, net, rep3_state)?;
+
+    let mut to_compose = Vec::with_capacity(F::MODULUS_BIT_SIZE as usize);
+
+    assert!(F::MODULUS_BIT_SIZE <= 256);
+    assert!(F::MODULUS_BIT_SIZE > 192);
+    let a2b_sender_a_ = a2b.a.to_u64_digits();
+    let a2b_sender_b_ = a2b.b.to_u64_digits();
+
+    // First the lowest 128 bit
+    let mut a2b_sender_a = ((a2b_sender_a_[1] as u128) << 64) | a2b_sender_a_[0] as u128;
+    let mut a2b_sender_b = ((a2b_sender_b_[1] as u128) << 64) | a2b_sender_b_[0] as u128;
+    for _ in 0..128 {
+        let bit = Rep3RingShare::new(
+            Bit::new((a2b_sender_a & 1) == 1),
+            Bit::new((a2b_sender_b & 1) == 1),
+        );
+        to_compose.push(bit);
+        a2b_sender_a >>= 1;
+        a2b_sender_b >>= 1;
+    }
+    // Then the rest
+    let mut a2b_sender_a = ((a2b_sender_a_[3] as u128) << 64) | a2b_sender_a_[2] as u128;
+    let mut a2b_sender_b = ((a2b_sender_b_[3] as u128) << 64) | a2b_sender_b_[2] as u128;
+    for _ in 0..F::MODULUS_BIT_SIZE as usize - 128 {
+        let bit = Rep3RingShare::new(
+            Bit::new((a2b_sender_a & 1) == 1),
+            Bit::new((a2b_sender_b & 1) == 1),
+        );
+        to_compose.push(bit);
+        a2b_sender_a >>= 1;
+        a2b_sender_b >>= 1;
+    }
+
+    let decomps = rep3_ring::conversion::bit_inject_from_bits_to_field_many::<F, _>(
+        &to_compose,
+        net,
+        rep3_state,
+    )?;
+
+    debug_assert_eq!(decomps.len(), F::MODULUS_BIT_SIZE as usize);
+
+    // Check if valid
+    // let valid_should_zero = a2b >> CircomConfig::TRANSFER_BALANCE_BITSIZE;
+    // let is_zero = rep3::binary::is_zero(&valid_should_zero, net, rep3_state)?;
+    // let is_zero = Rep3RingShare::new(Bit::new(is_zero.a.bit(0)), Bit::new(is_zero.b.bit(0)));
+    // let valid = rep3_ring::binary::open(&is_zero, net)?.0.convert();
+
+    // Instead of doing the above, we can sum up the bits, multiply a random value and open
+    let mut should_zero = Rep3PrimeFieldShare::zero();
+    for bit in decomps.iter().skip(253) {
+        should_zero += bit;
+    }
+    let rand = rep3::arithmetic::rand(rep3_state);
+    let should_zero_rand = should_zero * rand;
+    let (b, c) = net.broadcast(should_zero_rand)?;
+    let opened = should_zero_rand + b + c;
+    let valid = opened.is_zero();
+
+    let balance = ComponentAcceleratorOutput::new(
+        decomps
+            .into_iter()
+            .take(253)
+            .map(Rep3VmType::from)
+            .collect_vec(),
+        Vec::new(),
+    );
+    Ok((valid, balance))
+}
+
 pub(crate) fn get_query_transaction_circom_input(
     sender_old: DepositValueShare<F>,
     amount: Rep3PrimeFieldShare<F>,

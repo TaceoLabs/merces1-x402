@@ -3,7 +3,7 @@ use crate::{
     circom::config::CircomConfig,
     map::{DepositValueShare, PrivateDeposit},
 };
-use ark_ff::PrimeField;
+use ark_ff::{PrimeField, Zero};
 use circom_mpc_vm::{ComponentAcceleratorOutput, Rep3VmType};
 use itertools::izip;
 use mpc_core::{
@@ -180,7 +180,7 @@ where
                 valids.push(valid);
 
                 super::add_inputs_to_circom_map(i, inputs_, &mut proof_inputs);
-                traces.push(traces_);
+                traces.extend(traces_);
                 applied_transactions += 1;
             }
 
@@ -192,7 +192,7 @@ where
 
                 for i in applied_transactions..CircomConfig::NUM_TRANSACTIONS {
                     super::add_inputs_to_circom_map(i, dummy_input.clone(), &mut proof_inputs);
-                    traces.push(dummy_trace.clone());
+                    traces.extend(dummy_trace.clone());
                 }
             }
             debug_assert_eq!(valids.len(), CircomConfig::NUM_TRANSACTIONS);
@@ -224,8 +224,9 @@ where
         DepositValueShare<F>,
         DepositValueShare<F>,
         Vec<Rep3VmType<F>>,
-        ComponentAcceleratorOutput<Rep3VmType<F>>,
+        Vec<ComponentAcceleratorOutput<Rep3VmType<F>>>,
     )> {
+        let my_id = PartyID::try_from(net0.id())?;
         let inputs = super::get_query_transaction_circom_input(
             sender_old.to_owned(),
             amount,
@@ -234,10 +235,73 @@ where
 
         // The bit decomposition
         let (valid, decomp_sender) = super::decompose_compose(sender_new.amount, net0, rep3_state)?;
+        let decomposed_sender_new: &[Rep3VmType<F>; 251] = if decomp_sender.output.len() >= 251 {
+            <&[_; 251]>::try_from(&decomp_sender.output[..251])
+                .expect("Decomposition should output 251 bits")
+        } else {
+            // In case the decomposition outputs less than 251 bits (which can happen if the value is small), we pad with zeros. This is safe since the circuit only looks at the first 251 bits.
+            let mut padded = decomp_sender.output.clone();
+            padded.resize(251, Rep3VmType::default());
+            &padded
+                .try_into()
+                .expect("Padded decomposition should have 251 bits")
+        };
 
-        Ok((valid, sender_new, receiver_new, inputs, decomp_sender))
+        let (_, decomposed_blinding) =
+            super::decompose_compose_babyjubjub_fr(sender_new.blinding, net0, rep3_state)?;
+
+        let decomposed_sender_blinding_new: &[Rep3VmType<F>; 251] =
+            if decomposed_blinding.output.len() >= 251 {
+                <&[_; 251]>::try_from(&decomposed_blinding.output[..251])
+                    .expect("Decomposition should output 251 bits")
+            } else {
+                // In case the decomposition outputs less than 251 bits (which can happen if the value is small), we pad with zeros. This is safe since the circuit only looks at the first 251 bits.
+                let mut padded = decomposed_blinding.output.clone();
+                padded.resize(251, Rep3VmType::default());
+                &padded
+                    .try_into()
+                    .expect("Padded decomposition should have 251 bits")
+            };
+
+        let decomposed_sender_new_as_primefieldshare: Vec<Rep3PrimeFieldShare<F>> =
+            decomposed_sender_new
+                .iter()
+                .map(|bit| match bit {
+                    Rep3VmType::Arithmetic(share) => *share,
+                    Rep3VmType::Public(public) => {
+                        Rep3PrimeFieldShare::promote_from_trivial(public, my_id)
+                    }
+                })
+                .collect();
+        let decomposed_sender_blinding_new_as_primefieldshare: Vec<Rep3PrimeFieldShare<F>> =
+            decomposed_sender_blinding_new
+                .iter()
+                .map(|bit| match bit {
+                    Rep3VmType::Arithmetic(share) => *share,
+                    Rep3VmType::Public(public) => {
+                        Rep3PrimeFieldShare::promote_from_trivial(public, my_id)
+                    }
+                })
+                .collect();
+
+        let pedersen_trace =
+            mpc_core::gadgets::pedersen::pedersen_accelerator_rep3::pedersen_commit_bits_trace_rep3(
+               &decomposed_sender_new_as_primefieldshare.try_into()
+                    .expect("Padded decomposition should have 251 bits"),
+               &decomposed_sender_blinding_new_as_primefieldshare.try_into()
+                    .expect("Padded decomposition should have 251 bits"),
+               net0,rep3_state
+            )?;
+        let trace: Vec<ComponentAcceleratorOutput<Rep3VmType<F>>> = vec![
+            decomp_sender,
+            decomposed_blinding,
+            ComponentAcceleratorOutput::new(
+                vec![pedersen_trace.out_x.into(), pedersen_trace.out_y.into()],
+                pedersen_trace.trace.iter().map(|x| (*x).into()).collect(),
+            ),
+        ];
+        Ok((valid, sender_new, receiver_new, inputs, trace))
     }
-
     #[expect(clippy::type_complexity)]
     pub fn process_withdraw_circom<N: Network>(
         sender_old: DepositValueShare<F>,
@@ -250,7 +314,7 @@ where
         DepositValueShare<F>,
         DepositValueShare<F>,
         Vec<Rep3VmType<F>>,
-        ComponentAcceleratorOutput<Rep3VmType<F>>,
+        Vec<ComponentAcceleratorOutput<Rep3VmType<F>>>,
     )> {
         let my_id = PartyID::try_from(net0.id())?;
         let inputs = super::get_query_withdraw_circom_input_public_amount(
@@ -265,8 +329,72 @@ where
         );
 
         let (valid, decomp_sender) = super::decompose_compose(sender_new.amount, net0, rep3_state)?;
+        let decomposed_sender_new: &[Rep3VmType<F>; 251] = if decomp_sender.output.len() >= 251 {
+            <&[_; 251]>::try_from(&decomp_sender.output[..251])
+                .expect("Decomposition should output 251 bits")
+        } else {
+            // In case the decomposition outputs less than 251 bits (which can happen if the value is small), we pad with zeros. This is safe since the circuit only looks at the first 251 bits.
+            let mut padded = decomp_sender.output.clone();
+            padded.resize(251, Rep3VmType::default());
+            &padded
+                .try_into()
+                .expect("Padded decomposition should have 251 bits")
+        };
 
-        Ok((valid, sender_new, receiver_new, inputs, decomp_sender))
+        let (_, decomposed_blinding) =
+            super::decompose_compose_babyjubjub_fr(sender_new.blinding, net0, rep3_state)?;
+
+        let decomposed_sender_blinding_new: &[Rep3VmType<F>; 251] =
+            if decomposed_blinding.output.len() >= 251 {
+                <&[_; 251]>::try_from(&decomposed_blinding.output[..251])
+                    .expect("Decomposition should output 251 bits")
+            } else {
+                // In case the decomposition outputs less than 251 bits (which can happen if the value is small), we pad with zeros. This is safe since the circuit only looks at the first 251 bits.
+                let mut padded = decomposed_blinding.output.clone();
+                padded.resize(251, Rep3VmType::default());
+                &padded
+                    .try_into()
+                    .expect("Padded decomposition should have 251 bits")
+            };
+
+        let decomposed_sender_new_as_primefieldshare: Vec<Rep3PrimeFieldShare<F>> =
+            decomposed_sender_new
+                .iter()
+                .map(|bit| match bit {
+                    Rep3VmType::Arithmetic(share) => *share,
+                    Rep3VmType::Public(public) => {
+                        Rep3PrimeFieldShare::promote_from_trivial(public, my_id)
+                    }
+                })
+                .collect();
+        let decomposed_sender_blinding_new_as_primefieldshare: Vec<Rep3PrimeFieldShare<F>> =
+            decomposed_sender_blinding_new
+                .iter()
+                .map(|bit| match bit {
+                    Rep3VmType::Arithmetic(share) => *share,
+                    Rep3VmType::Public(public) => {
+                        Rep3PrimeFieldShare::promote_from_trivial(public, my_id)
+                    }
+                })
+                .collect();
+
+        let pedersen_trace =
+            mpc_core::gadgets::pedersen::pedersen_accelerator_rep3::pedersen_commit_bits_trace_rep3(
+               &decomposed_sender_new_as_primefieldshare.try_into()
+                    .expect("Padded decomposition should have 251 bits"),
+               &decomposed_sender_blinding_new_as_primefieldshare.try_into()
+                    .expect("Padded decomposition should have 251 bits"),
+               net0,rep3_state
+            )?;
+        let trace: Vec<ComponentAcceleratorOutput<Rep3VmType<F>>> = vec![
+            decomp_sender,
+            decomposed_blinding,
+            ComponentAcceleratorOutput::new(
+                vec![pedersen_trace.out_x.into(), pedersen_trace.out_y.into()],
+                pedersen_trace.trace.iter().map(|x| (*x).into()).collect(),
+            ),
+        ];
+        Ok((valid, sender_new, receiver_new, inputs, trace))
     }
 
     #[expect(clippy::type_complexity)]
@@ -281,7 +409,7 @@ where
         DepositValueShare<F>,
         DepositValueShare<F>,
         Vec<Rep3VmType<F>>,
-        ComponentAcceleratorOutput<Rep3VmType<F>>,
+        Vec<ComponentAcceleratorOutput<Rep3VmType<F>>>,
     )> {
         let inputs = super::get_deposit_input_public_amount_circom(amount, receiver_new.blinding);
 
@@ -289,31 +417,50 @@ where
             Rep3PrimeFieldShare::zero_share(),
             Rep3PrimeFieldShare::zero_share(),
         );
-        Ok((
-            true,
-            sender_new,
-            receiver_new,
-            inputs,
+
+        let pedersen_trace =
+            mpc_core::gadgets::pedersen::pedersen_accelerator_plain::pedersen_commit_bits_trace_fr(
+                &[F::zero(); 251],
+                &[F::zero(); 251],
+            )?;
+        let trace: Vec<ComponentAcceleratorOutput<Rep3VmType<F>>> = vec![
             ComponentAcceleratorOutput::new(
                 vec![Rep3VmType::default(); F::MODULUS_BIT_SIZE as usize],
                 Vec::new(),
             ),
-        ))
+            ComponentAcceleratorOutput::new(vec![Rep3VmType::default(); 253], Vec::new()),
+            ComponentAcceleratorOutput::new(
+                vec![pedersen_trace.out_x.into(), pedersen_trace.out_y.into()],
+                pedersen_trace.trace.iter().map(|x| (*x).into()).collect(),
+            ),
+        ];
+
+        Ok((true, sender_new, receiver_new, inputs, trace))
     }
 
     #[expect(clippy::type_complexity)]
     pub fn process_dummy_circom() -> eyre::Result<(
         Vec<Rep3VmType<F>>,
-        ComponentAcceleratorOutput<Rep3VmType<F>>,
+        Vec<ComponentAcceleratorOutput<Rep3VmType<F>>>,
     )> {
-        // 3 circuit input signals (matching CIRCOM_MAP_LABELS), all zero for dummy transactions.
-        Ok((
-            vec![Rep3VmType::default(); 3],
+        let pedersen_trace =
+            mpc_core::gadgets::pedersen::pedersen_accelerator_plain::pedersen_commit_bits_trace_fr(
+                &[F::zero(); 251],
+                &[F::zero(); 251],
+            )?;
+        let trace: Vec<ComponentAcceleratorOutput<Rep3VmType<F>>> = vec![
             ComponentAcceleratorOutput::new(
                 vec![Rep3VmType::default(); F::MODULUS_BIT_SIZE as usize],
                 Vec::new(),
             ),
-        ))
+            ComponentAcceleratorOutput::new(vec![Rep3VmType::default(); 253], Vec::new()),
+            ComponentAcceleratorOutput::new(
+                vec![pedersen_trace.out_x.into(), pedersen_trace.out_y.into()],
+                pedersen_trace.trace.iter().map(|x| (*x).into()).collect(),
+            ),
+        ];
+        // 3 circuit input signals (matching CIRCOM_MAP_LABELS), all zero for dummy transactions.
+        Ok((vec![Rep3VmType::default(); 3], trace))
     }
 }
 
