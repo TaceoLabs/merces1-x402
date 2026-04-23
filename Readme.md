@@ -7,7 +7,7 @@ It is organized as follows:
 - `client`: Contains the client code (e.g,. client transfer ZK proof generation) written in Rust
 - `contract-rs`: Contains the interface to interact with the smart contract programmatically. The interface is written in Rust.
 - `contracts`: Contains the source code of the smart contracts written in solidity. Note that the Groth16 verifiers are generated programmatically from the Circom source files.
-- `e2e`: Contains an end-to-end test which interacts with anvil, acommonly used blockchain test environment.
+- `e2e`: Contains an end-to-end test which interacts with anvil, a commonly used blockchain test environment.
 - `mpc-nodes` Contains the MPC code, including the data structure, modifying the data structure in a batch, and creating the Groth16 proof in MPC.
 
 ## Instructions to run
@@ -91,4 +91,4 @@ The network will process the 4 intents it read from chain, and pad the batch wit
 
 After the MPC network posted the proof on-chain, the end-to-end test checks whether the on-chain balances of Alice and Bob changed according to our expectation. If no error is written, everything was done correctly.
 
-Whenever the end-to-end test interacts with the smart contract, you will see it posting a transaction hash. Observe (in the terminal running anvil) that each transaction produced a state-update of the blockchain.
+Whenever the end-to-end test interacts with the smart contract, you will see it posting a transaction hash. Observe (in the terminal running anvil) that each transaction produced a state-update on the blockchain.

@@ -39,7 +39,7 @@ def get_submodules():
     os.chdir("../..")
 
 def main():
-    # create folder
+    # Remove folder if it exists
     path = os.getcwd()
     des_path = path + "/" + DESTINATION
     if os.path.exists(des_path):
