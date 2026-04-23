@@ -282,6 +282,7 @@ pub(crate) fn decompose_compose_batched<F: PrimeField, N: Network>(
     let blinding = ComponentAcceleratorOutput::new(
         blinding_decomps
             .iter()
+            .take(253)
             .map(|x| Rep3VmType::from(*x))
             .collect_vec(),
         Vec::new(),
@@ -289,6 +290,7 @@ pub(crate) fn decompose_compose_batched<F: PrimeField, N: Network>(
     Ok([(valid_balance, balance), (valid_blinding, blinding)])
 }
 
+#[expect(unused)]
 pub(crate) fn decompose_compose<F: PrimeField, N: Network>(
     sender_new_balance: Rep3PrimeFieldShare<F>,
     net: &N,
@@ -360,6 +362,7 @@ pub(crate) fn decompose_compose<F: PrimeField, N: Network>(
     Ok((valid, balance))
 }
 
+#[expect(unused)]
 pub(crate) fn decompose_compose_babyjubjub_fr<F: PrimeField, N: Network>(
     sender_new_blinding: Rep3PrimeFieldShare<F>,
     net: &N,

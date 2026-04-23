@@ -234,7 +234,12 @@ where
         );
 
         // The bit decomposition
-        let (valid, decomp_sender) = super::decompose_compose(sender_new.amount, net0, rep3_state)?;
+        let [(valid, decomp_sender), (_, decomposed_blinding)] = super::decompose_compose_batched(
+            sender_new.amount,
+            sender_new.blinding,
+            net0,
+            rep3_state,
+        )?;
         let decomposed_sender_new: &[Rep3VmType<F>; 251] = if decomp_sender.output.len() >= 251 {
             <&[_; 251]>::try_from(&decomp_sender.output[..251])
                 .expect("Decomposition should output 251 bits")
@@ -246,9 +251,6 @@ where
                 .try_into()
                 .expect("Padded decomposition should have 251 bits")
         };
-
-        let (_, decomposed_blinding) =
-            super::decompose_compose_babyjubjub_fr(sender_new.blinding, net0, rep3_state)?;
 
         let decomposed_sender_blinding_new: &[Rep3VmType<F>; 251] =
             if decomposed_blinding.output.len() >= 251 {
@@ -328,7 +330,12 @@ where
             Rep3PrimeFieldShare::zero_share(),
         );
 
-        let (valid, decomp_sender) = super::decompose_compose(sender_new.amount, net0, rep3_state)?;
+        let [(valid, decomp_sender), (_, decomposed_blinding)] = super::decompose_compose_batched(
+            sender_new.amount,
+            sender_new.blinding,
+            net0,
+            rep3_state,
+        )?;
         let decomposed_sender_new: &[Rep3VmType<F>; 251] = if decomp_sender.output.len() >= 251 {
             <&[_; 251]>::try_from(&decomp_sender.output[..251])
                 .expect("Decomposition should output 251 bits")
@@ -340,9 +347,6 @@ where
                 .try_into()
                 .expect("Padded decomposition should have 251 bits")
         };
-
-        let (_, decomposed_blinding) =
-            super::decompose_compose_babyjubjub_fr(sender_new.blinding, net0, rep3_state)?;
 
         let decomposed_sender_blinding_new: &[Rep3VmType<F>; 251] =
             if decomposed_blinding.output.len() >= 251 {
