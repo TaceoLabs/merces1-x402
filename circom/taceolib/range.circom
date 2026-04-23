@@ -1,7 +1,6 @@
 pragma circom 2.2.2;
 
 include "precomputations.circom";
-include "circomlib/aliascheck.circom";
 include "circomlib/comparators.circom";
 
 template range_check_with_output_flag(BITSIZE) {
@@ -12,13 +11,10 @@ template range_check_with_output_flag(BITSIZE) {
     signal output in_bits[BITSIZE];
 
     // Num2Bits_strict with taceo_precomputation
-    component aliasCheck = AliasCheck();
     component n2b = TACEO_PRECOMPUTATION_Num2Bits(254);
     in ==> n2b.in;
 
-    for (var i=0; i<254; i++) {
-        n2b.out[i] ==> aliasCheck.in[i];
-    }
+    TACEO_PRECOMPUTATION_AliasCheck()(n2b.out); 
     for (var i=0; i<BITSIZE; i++) {
         in_bits[i] <== n2b.out[i];
     }
