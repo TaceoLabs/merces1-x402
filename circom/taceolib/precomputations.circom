@@ -1,6 +1,7 @@
 pragma circom 2.2.2;
 
 include "poseidon2.circom";
+include "circomlib/aliascheck.circom";
 include "circomlib/bitify.circom";
 
 template TACEO_PRECOMPUTATION_Poseidon2(T) {
@@ -15,4 +16,10 @@ template TACEO_PRECOMPUTATION_Num2Bits(n) {
     signal output out[n];
 
     out <== Num2Bits(n)(in);
+}
+
+template TACEO_PRECOMPUTATION_AliasCheck() {
+    signal input in[254];
+
+    AliasCheck()(in);
 }
