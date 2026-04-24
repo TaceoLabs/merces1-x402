@@ -3,7 +3,7 @@ use crate::{
     circom::config::CircomConfig,
     map::{DepositValueShare, PrivateDeposit},
 };
-use ark_ff::{PrimeField, Zero};
+use ark_ff::{One, PrimeField, Zero};
 use circom_mpc_vm::{ComponentAcceleratorOutput, Rep3VmType};
 use itertools::izip;
 use mpc_core::{
@@ -238,6 +238,7 @@ where
             (valid, decomp_sender),
             (_, decomposed_blinding),
             (_, alias_check_trace),
+            (_, is_zero_trace),
         ] = super::decompose_compose_batched(
             sender_new.amount,
             sender_new.blinding,
@@ -301,6 +302,7 @@ where
         let trace: Vec<ComponentAcceleratorOutput<Rep3VmType<F>>> = vec![
             decomp_sender,
             alias_check_trace,
+            is_zero_trace,
             decomposed_blinding,
             ComponentAcceleratorOutput::new(
                 vec![pedersen_trace.out_x.into(), pedersen_trace.out_y.into()],
@@ -339,6 +341,7 @@ where
             (valid, decomp_sender),
             (_, decomposed_blinding),
             (_, alias_check_trace),
+            (_, is_zero_trace),
         ] = super::decompose_compose_batched(
             sender_new.amount,
             sender_new.blinding,
@@ -402,6 +405,7 @@ where
         let trace: Vec<ComponentAcceleratorOutput<Rep3VmType<F>>> = vec![
             decomp_sender,
             alias_check_trace,
+            is_zero_trace,
             decomposed_blinding,
             ComponentAcceleratorOutput::new(
                 vec![pedersen_trace.out_x.into(), pedersen_trace.out_y.into()],
@@ -444,6 +448,7 @@ where
                 Vec::new(),
             ),
             super::alias_check_trace_helper([F::zero(); 254]),
+            ComponentAcceleratorOutput::new(vec![F::one().into()], vec![F::zero().into()]),
             ComponentAcceleratorOutput::new(vec![Rep3VmType::default(); 253], Vec::new()),
             ComponentAcceleratorOutput::new(
                 vec![pedersen_trace.out_x.into(), pedersen_trace.out_y.into()],
@@ -470,6 +475,7 @@ where
                 Vec::new(),
             ),
             super::alias_check_trace_helper([F::zero(); 254]),
+            ComponentAcceleratorOutput::new(vec![F::one().into()], vec![F::zero().into()]),
             ComponentAcceleratorOutput::new(vec![Rep3VmType::default(); 253], Vec::new()),
             ComponentAcceleratorOutput::new(
                 vec![pedersen_trace.out_x.into(), pedersen_trace.out_y.into()],

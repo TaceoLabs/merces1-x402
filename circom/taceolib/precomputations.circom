@@ -4,6 +4,7 @@ include "poseidon2.circom";
 include "circomlib/aliascheck.circom";
 include "circomlib/bitify.circom";
 include "babyjubjub.circom";
+include "circomlib/comparators.circom";
 
 template NO_TACEO_PRECOMPUTATION_Poseidon2(T) {
     signal input in[T];
@@ -57,4 +58,11 @@ template TACEO_PRECOMPUTATION_AliasCheck() {
     signal input in[254];
 
     AliasCheck()(in);
+}
+
+template TACEO_PRECOMPUTATION_IsZero() {
+    signal input in;
+    signal output out;
+
+    out <== IsZero()(in);
 }
