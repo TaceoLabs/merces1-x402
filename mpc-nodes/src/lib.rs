@@ -206,6 +206,7 @@ pub(crate) fn decompose_compose<F: PrimeField, N: Network>(
     bool,
     ComponentAcceleratorOutput<Rep3VmType<F>>,
     ComponentAcceleratorOutput<Rep3VmType<F>>,
+    ComponentAcceleratorOutput<Rep3VmType<F>>,
 )> {
     let a2b = rep3::conversion::a2b(sender_new_balance, net, rep3_state)?;
 
@@ -274,12 +275,14 @@ pub(crate) fn decompose_compose<F: PrimeField, N: Network>(
         net,
         rep3_state,
     )?;
+    let is_zero_trace = is_zero_helper(valid, should_zero, net, rep3_state)?;
 
     let balance = ComponentAcceleratorOutput::new(
         decomps.into_iter().map(Rep3VmType::from).collect_vec(),
         Vec::new(),
     );
-    Ok((valid, balance, alias_check_trace))
+
+    Ok((valid, balance, is_zero_trace, alias_check_trace))
 }
 
 pub(crate) fn get_query_transaction_circom_input(
@@ -560,4 +563,27 @@ pub(crate) fn alias_check_trace_helper_rep3<F: PrimeField, N: Network /*const CT
             .collect_vec();
 
     Ok(alias_check_output(parts, trace_num2_bits, sum.into()))
+}
+
+fn is_zero_helper<F: PrimeField, N: Network>(
+    valid: bool,
+    value: Rep3PrimeFieldShare<F>,
+    net: &N,
+    rep3_state: &mut Rep3State,
+) -> eyre::Result<ComponentAcceleratorOutput<Rep3VmType<F>>> {
+    if valid {
+        return Ok(ComponentAcceleratorOutput::new(
+            vec![F::one().into()],
+            vec![F::zero().into()],
+        ));
+    }
+    let my_id = rep3_state.id();
+    let is_zero_as_field = if valid { F::one() } else { F::zero() };
+    let inv_input = arithmetic::add_public(value, is_zero_as_field, my_id);
+    let maybe_masked_inv = arithmetic::div_public_by_shared(F::one(), inv_input, net, rep3_state)?;
+    let helper = arithmetic::sub_shared_by_public(maybe_masked_inv, is_zero_as_field, my_id);
+    Ok(ComponentAcceleratorOutput::new(
+        vec![is_zero_as_field.into()],
+        vec![helper.into()],
+    ))
 }

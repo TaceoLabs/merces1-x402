@@ -3,6 +3,7 @@ pragma circom 2.2.2;
 include "poseidon2.circom";
 include "circomlib/aliascheck.circom";
 include "circomlib/bitify.circom";
+include "circomlib/comparators.circom";
 
 template TACEO_PRECOMPUTATION_Poseidon2(T) {
     signal input in[T];
@@ -22,4 +23,11 @@ template TACEO_PRECOMPUTATION_AliasCheck() {
     signal input in[254];
 
     AliasCheck()(in);
+}
+
+template TACEO_PRECOMPUTATION_IsZero() {
+    signal input in;
+    signal output out;
+
+    out <== IsZero()(in);
 }
