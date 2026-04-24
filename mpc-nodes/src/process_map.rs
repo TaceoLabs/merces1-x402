@@ -240,7 +240,8 @@ where
                 traces.len(),
                 CircomConfig::NUM_TOTAL_COMMITMENTS
                     + CircomConfig::NUM_TRANSACTIONS
-                    + CircomConfig::NUM_TRANSACTIONS // The last ones are for the alias checks
+                    + CircomConfig::NUM_TRANSACTIONS // For the alias checks
+                    + CircomConfig::NUM_TRANSACTIONS // For the is_zero checks
             );
 
             if compression {
@@ -325,10 +326,11 @@ where
         opened_commitments.rotate_left(1); // Amount commitment is at the end for the sponge input
 
         // The bit decomposition
-        let (valid, decomp_sender, alias_check_trace) =
+        let (valid, decomp_sender, is_zero_trace, alias_check_trace) =
             super::decompose_compose(sender_new.amount, net0, rep3_state)?;
         traces.insert(1, decomp_sender);
         traces.insert(2, alias_check_trace);
+        traces.insert(3, is_zero_trace);
 
         Ok((
             valid,
@@ -387,7 +389,7 @@ where
                 F::zero(),
             ])?;
 
-        let (valid, decomp_sender, alias_check_trace) =
+        let (valid, decomp_sender, is_zero_trace, alias_check_trace) =
             super::decompose_compose(sender_new.amount, net0, rep3_state)?;
 
         traces.insert(0, traces_[0].clone());
@@ -397,6 +399,7 @@ where
 
         traces.insert(1, decomp_sender);
         traces.insert(2, alias_check_trace);
+        traces.insert(3, is_zero_trace);
 
         let ff_commmitments_shared =
             super::feed_forward_shared::<2, 2, 4, _>(state, input_commitment);
@@ -481,6 +484,9 @@ where
         ); // Mimic the range check
         let alias_check_trace = super::alias_check_trace_helper([F::zero(); 254]);
         traces.insert(2, alias_check_trace);
+        let is_zero_trace =
+            ComponentAcceleratorOutput::new(vec![F::one().into()], vec![F::zero().into()]);
+        traces.insert(3, is_zero_trace);
 
         let ff_commmitments_shared =
             super::feed_forward_shared::<2, 2, 4, _>(state, input_commitment);
@@ -522,7 +528,10 @@ where
             Vec::new(),
         ));
         let alias_check_trace = super::alias_check_trace_helper([F::zero(); 254]);
+        let is_zero_trace =
+            ComponentAcceleratorOutput::new(vec![F::one().into()], vec![F::zero().into()]);
         plain_traces.push(alias_check_trace);
+        plain_traces.push(is_zero_trace);
         plain_traces.push(plain_traces[0].clone());
         plain_traces.push(plain_traces[0].clone());
         plain_traces.push(plain_traces[0].clone());
