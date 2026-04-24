@@ -15,6 +15,7 @@ template range_check_with_output_flag(BITSIZE) {
     in ==> n2b.in;
 
     TACEO_PRECOMPUTATION_AliasCheck()(n2b.out); 
+    
     for (var i=0; i<BITSIZE; i++) {
         in_bits[i] <== n2b.out[i];
     }
@@ -27,9 +28,7 @@ template range_check_with_output_flag(BITSIZE) {
         sum += n2b.out[i];
     }
 
-    component isZero = IsZero();
-    isZero.in <== sum;
-    valid <== isZero.out;
+    valid <== TACEO_PRECOMPUTATION_IsZero()(sum);
 }
 
 // Checks the size of amount and computes a commitment
