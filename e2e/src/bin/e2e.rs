@@ -20,6 +20,13 @@ struct Cli {
 
     #[arg(short, long, default_value_t = false, action = clap::ArgAction::SetTrue)]
     pub erc20_token: bool,
+
+    #[arg(short, long, default_value = "wss://rpc.testnet.arc.network")]
+    pub rpc_url: SecretString,
+
+    #[clap(long, value_delimiter = ',', default_value = "0x0,0x0,0x0,0x0,0x0")]
+    // ff has wallets ask him (or faucet yourself)
+    pub private_keys: Vec<SecretString>,
 }
 
 pub fn install_tracing() {
@@ -69,10 +76,10 @@ async fn main() -> eyre::Result<ExitCode> {
     }
 
     tracing::info!("Initializing wallets...");
-    let wallets = Wallets::new_anvil(5)?;
+    let wallets = Wallets::from_strings(cli.private_keys)?;
 
     tracing::info!("Connecting providers...");
-    let anvil_rpc: SecretString = e2e::ANVIL_RPC.to_string().into();
+    let anvil_rpc: SecretString = cli.rpc_url;
     let deployer = Deployer::from_wallet(&anvil_rpc, wallets.wallets[0].clone()).await?;
     let mpc = Mpc::from_wallet(
         &anvil_rpc,
