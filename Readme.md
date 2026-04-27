@@ -85,10 +85,10 @@ After deployment is done, the two users post the following intents on-chain:
 - Bob posts an intent for withdrawing the tokens it received
 - Alice then posts another intent of transferring the same tokens to Bob. This intent will produce a valid ZK proof, but it will indicate that Alice has not enough balances to fulfill the request, so no token transfer will happen
 
-After the intents are posted, we let the MPC network process the intents in a batch. Note that in a real deployment the MPC network will just query the smart contract action queue and process the read elements. In this end-to-end test, the MPC parties are instantiated as separate threads and connected with a localhost network.
+After the intents are posted, we let the MPC network process the intents in a batch. Note that in a real deployment the MPC network will just query the smart contract action queue and process queue whenever new elements have been posted. In this end-to-end test, the MPC parties are instantiated as separate threads and connected with a localhost network.
 
 The network will process the 4 intents it read from chain, and pad the batch with 46 dummy transactions. Once done, it will create a ZK proof of correctness, learn which intents produced invalid transactions and post the result on-chain. You will see a warning that one transaction was invalid (which is intended behavior).
 
-After the MPC network posted the proof on-chain, the end-to-end test checks whether the on-chain balances of Alice and Bob changed according to our expectation. If no error is written, everything was done correctly.
+After the MPC network posted the proof on-chain, the end-to-end test checks whether the on-chain balances of Alice and Bob changed according to our expectation. If no error is written, everything was done correctly. The full testcase (posting 4 intents, followed by the processing from the MPC network) is then executed one more time.
 
 Whenever the end-to-end test interacts with the smart contract, you will see it posting a transaction hash. Observe (in the terminal running anvil) that each transaction produced a state-update on the blockchain.
