@@ -2,13 +2,13 @@ use std::array;
 
 use crate::{
     DecodedCiphertext,
-    environment::Environment,
     merces::Merces::{ActionItem, Ciphertext, MercesInstance},
 };
 use alloy::{
     hex,
+    network::Ethereum,
     primitives::{Address, B256, Bytes, FixedBytes, Log, U256, keccak256},
-    providers::{DynProvider, Provider},
+    providers::{DynProvider, PendingTransactionBuilder, Provider},
     rpc::types::{Filter, TransactionReceipt},
     sol,
     sol_types::{
@@ -19,6 +19,7 @@ use ark_bn254::Bn254;
 use ark_ff::PrimeField;
 use ark_groth16::Proof;
 use eyre::{Context, ContextCompat};
+use taceo_nodes_common::Environment;
 use tracing::instrument;
 
 // Codegen from ABI file to interact with the contract.
@@ -492,9 +493,9 @@ impl MercesContract {
     /// signature over the TransferFromAuthorization struct produced by `transfer_from_signing_hash`,
     /// signed by `sender`.
     #[expect(clippy::too_many_arguments)]
-    pub async fn transfer_from(
+    pub async fn transfer_from<P: Provider>(
         &self,
-        provider: &DynProvider,
+        provider: &P,
         sender: Address,
         receiver: Address,
         amount_commitment: ark_bn254::Fr,
@@ -635,5 +636,82 @@ impl MercesContract {
 
         self.read_processed_mpc_events_since(provider, from_block)
             .await
+    }
+
+    pub async fn get_processed_mpc_event<P: Provider>(
+        &self,
+        provider: &P,
+        from_block: u64,
+        action_index: usize,
+    ) -> eyre::Result<(usize, alloy::rpc::types::Log<Merces::ProcessedMPC>)> {
+        let filter = Filter::new()
+            .address(self.contract_address)
+            .from_block(from_block)
+            .event_signature(Merces::ProcessedMPC::SIGNATURE_HASH);
+        loop {
+            let logs = provider.get_logs(&filter).await?;
+
+            for log in logs {
+                let decoded = log.log_decode::<Merces::ProcessedMPC>()?;
+
+                if let Some(pos) = decoded
+                    .inner
+                    .actionIndices
+                    .iter()
+                    .position(|i| *i == action_index)
+                {
+                    return Ok((pos, decoded));
+                }
+            }
+            tokio::time::sleep(std::time::Duration::from_secs(1)).await;
+        }
+    }
+
+    pub async fn get_action_index_and_receipt_from_pending(
+        &self,
+        pending: PendingTransactionBuilder<Ethereum>,
+    ) -> eyre::Result<(usize, TransactionReceipt)> {
+        let receipt = pending
+            .get_receipt()
+            .await
+            .context("while receiving receipt for transaction")?;
+
+        if receipt.status() {
+            tracing::info!(
+                "transaction done with transaction hash: {}",
+                receipt.transaction_hash
+            );
+        } else {
+            eyre::bail!("cannot finish transaction: {receipt:?}");
+        }
+
+        let log = receipt
+            .logs()
+            .iter()
+            .find_map(|log| {
+                log.topics().first().and_then(|topic0| {
+                    if [
+                        Merces::Deposit::SIGNATURE_HASH,
+                        Merces::Withdraw::SIGNATURE_HASH,
+                        Merces::Transfer::SIGNATURE_HASH,
+                    ]
+                    .contains(topic0)
+                    {
+                        Some(log)
+                    } else {
+                        None
+                    }
+                })
+            })
+            .context("no logs found in transaction receipt")?;
+        let action_index = crate::u256_to_usize(
+            (*log
+                .topics()
+                .get(1)
+                .context("topic1 (action_index) not found in log")?)
+            .into(),
+        )?;
+
+        Ok((action_index, receipt))
     }
 }

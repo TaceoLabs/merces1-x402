@@ -18,4 +18,6 @@ ark-groth16.workspace = true
 eyre.workspace = true
 groth16-sol.workspace = true
 serde_json.workspace = true
+taceo-nodes-common.workspace = true
+tokio.workspace = true
 tracing.workspace = true

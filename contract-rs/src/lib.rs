@@ -1,4 +1,3 @@
-pub mod environment;
 pub mod merces;
 pub mod token;
 pub mod verifiers;
@@ -41,6 +40,10 @@ pub fn u256_to_field(value: U256) -> eyre::Result<ark_bn254::Fr> {
 
 pub fn bn254_fr_to_u256(field: ark_bn254::Fr) -> U256 {
     U256::from_limbs(field.into_bigint().0)
+}
+
+pub fn amount_to_wei(amount: U256, decimals: u8) -> U256 {
+    amount * U256::from(10u128.pow(decimals as u32))
 }
 
 /// Links a library to bytecode hex string and returns the hex string (no decoding).

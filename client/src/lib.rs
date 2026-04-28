@@ -7,7 +7,7 @@ use ark_ff::{BigInteger, PrimeField};
 use num_bigint::BigUint;
 use sha2::{Digest, Sha256};
 
-pub fn compute_alpha(hash_inputs: Vec<ark_bn254::Fr>) -> ark_bn254::Fr {
+pub fn compute_alpha(hash_inputs: &[ark_bn254::Fr]) -> ark_bn254::Fr {
     let hash_inputs = hash_inputs
         .iter()
         .flat_map(|x| {
@@ -28,4 +28,24 @@ pub fn compute_alpha(hash_inputs: Vec<ark_bn254::Fr>) -> ark_bn254::Fr {
     let mask = (BigUint::from(1u8) << 253) - BigUint::from(1u8);
     alpha &= mask; // Drop three bits from the calculated hash
     ark_bn254::Fr::from(alpha)
+}
+
+/// Computes gamma via the universal hash function (UHF) over the BN254 scalar field.
+///
+/// Matches `_computeUhfClient` / `_computeUhfServer` in Merces.sol. `seed = alpha + beta`
+/// Horner evaluation: for i from x.len()-1 down to 1: `mul = (seed * (mul + x[i])) % PRIME`
+/// Final: `gamma = (mul + x[0]) % PRIME`
+pub fn compute_gamma(
+    alpha: ark_bn254::Fr,
+    beta: ark_bn254::Fr,
+    x: &[ark_bn254::Fr],
+) -> ark_bn254::Fr {
+    let seed = alpha + beta;
+
+    let mut mul = ark_bn254::Fr::default();
+    for i in (1..x.len()).rev() {
+        mul = seed * (mul + x[i]);
+    }
+
+    mul + x[0]
 }

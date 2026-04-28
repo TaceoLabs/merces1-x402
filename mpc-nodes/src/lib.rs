@@ -2,16 +2,27 @@ pub mod circom;
 pub mod map;
 pub mod process_map;
 
-use crate::{circom::config::CircomConfig, map::DepositValueShare};
+use crate::{
+    circom::{config::CircomConfig, groth16::Groth16Material},
+    map::{DepositValueShare, PrivateDeposit},
+};
+use alloy::primitives::Address;
+use ark_bn254::Bn254;
 use ark_ff::{BigInteger, One, PrimeField, Zero};
+use ark_groth16::Proof;
 use circom_mpc_vm::{ComponentAcceleratorOutput, Rep3VmType};
-use itertools::Itertools;
+use contract_rs::merces::{
+    Merces::{ActionItem, Ciphertext},
+    MercesContract,
+};
+use itertools::{Itertools, izip};
 use mpc_core::{
-    MpcState,
+    MpcState as _,
     gadgets::poseidon2::{CircomTraceBatchedHasher, CircomTracePlainHasher, Poseidon2},
     protocols::{
         rep3::{
-            self, Rep3PrimeFieldShare, Rep3State, arithmetic, conversion, network::Rep3NetworkExt,
+            self, Rep3PrimeFieldShare, Rep3State, arithmetic, conversion, conversion::A2BType,
+            network::Rep3NetworkExt,
         },
         rep3_ring::{self, Rep3RingShare, ring::bit::Bit},
     },
@@ -57,6 +68,127 @@ const CT_BITS_MINUS_ONE: [bool; 254] = [
     true, false, false, false, true, false, false, true, true, false, false, false, false, false,
     true, true,
 ];
+
+fn read_and_build_queue<N: Network>(
+    my_key: &ark_babyjubjub::Fr,
+    action: &[ActionItem],
+    ciphertexts: &[Ciphertext],
+    networks: &[N],
+) -> eyre::Result<Vec<Action<Address>>> {
+    assert_eq!(action.len(), ciphertexts.len());
+    assert!(action.len() <= networks.len());
+
+    let my_id = networks[0].id();
+    assert!(my_id < 3);
+    let mut queue = Vec::with_capacity(action.len());
+    for (action, ciphertext, net) in izip!(action, ciphertexts, networks) {
+        match action.action {
+            1 => {
+                // Deposit
+                queue.push(Action::Deposit(
+                    action.receiver,
+                    contract_rs::u256_to_field(action.amount)?,
+                ));
+            }
+            2 => {
+                // Withdraw
+                queue.push(Action::Withdraw(
+                    action.sender,
+                    contract_rs::u256_to_field(action.amount)?,
+                ));
+            }
+            3 => {
+                // Transfer
+                let ciphertext =
+                    MercesContract::decode_ciphertext(ciphertext.clone())?[my_id].to_owned();
+                let sym_key = client::cryptography::dh_key_derivation(my_key, ciphertext.sender_pk);
+                let plaintexts = client::cryptography::sym_decrypt2(
+                    sym_key,
+                    [ciphertext.amount, ciphertext.amount_r],
+                    Default::default(),
+                );
+                let reshared = net.reshare_many(&plaintexts)?;
+                if reshared.len() != 2 {
+                    eyre::bail!(
+                        "Expected exactly 2 reshared plaintexts for transfer, got {}",
+                        reshared.len()
+                    );
+                }
+                queue.push(Action::Transfer(
+                    action.sender,
+                    action.receiver,
+                    Rep3PrimeFieldShare::new(plaintexts[0], reshared[0]),
+                    Rep3PrimeFieldShare::new(plaintexts[1], reshared[1]),
+                ));
+            }
+            x => {
+                return Err(eyre::eyre!("Unsupported action in action queue: {:?}", x));
+            }
+        }
+    }
+
+    Ok(queue)
+}
+
+#[expect(clippy::type_complexity)]
+pub fn mpc_party<N: Network>(
+    my_key: &ark_babyjubjub::Fr,
+    action: &[ActionItem],
+    ciphertexts: &[Ciphertext],
+    proving_key: &Groth16Material,
+    map: &mut PrivateDeposit<Address, DepositValueShare<ark_bn254::Fr>>,
+    nets: &[N; CircomConfig::NUM_TRANSACTIONS],
+) -> eyre::Result<(
+    usize,
+    Vec<ark_bn254::Fr>,
+    Vec<bool>,
+    Proof<Bn254>,
+    Vec<ark_bn254::Fr>,
+    Vec<(Address, DepositValueShare<ark_bn254::Fr>)>,
+)> {
+    let queue = read_and_build_queue(my_key, action, ciphertexts, nets)?;
+
+    let mut rep3_states = Vec::with_capacity(nets.len());
+    let mut rep3_state = Rep3State::new(&nets[0], A2BType::default())?;
+    for _ in 1..CircomConfig::NUM_TRANSACTIONS {
+        rep3_states.push(rep3_state.fork(0).unwrap());
+    }
+    rep3_states.push(rep3_state);
+
+    let (applied_transactions, commitments, valids, inputs, traces) = map
+        .process_queue_with_cocircom_trace(
+            &queue,
+            nets,
+            rep3_states.as_mut_slice().try_into().unwrap(),
+            CircomConfig::COMPRESSION,
+        )?;
+    let (proof, public_inputs) = proving_key.trace_to_proof(inputs, traces, &nets[0], &nets[1])?;
+    let updated = queue
+        .into_iter()
+        .zip(valids.iter())
+        .filter(|(_, valid)| **valid)
+        .flat_map(|(action, _)| match action {
+            Action::Deposit(address, _) | Action::Withdraw(address, _) => {
+                vec![(address, map.get(&address).cloned().expect("must exist"))]
+            }
+            Action::Transfer(sender, receiver, _, _) => {
+                vec![
+                    (sender, map.get(&sender).cloned().expect("must exist")),
+                    (receiver, map.get(&receiver).cloned().expect("must exist")),
+                ]
+            }
+        })
+        .collect();
+
+    Ok((
+        applied_transactions,
+        commitments,
+        valids,
+        proof,
+        public_inputs,
+        updated,
+    ))
+}
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize, PartialEq, Eq)]
 pub enum Action<K> {

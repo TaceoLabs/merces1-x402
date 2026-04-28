@@ -10,13 +10,17 @@ license.workspace = true
 publish.workspace = true
 
 [dependencies]
+alloy.workspace = true
+ark-babyjubjub.workspace = true
 ark-bn254.workspace = true
 ark-ff.workspace = true
 ark-groth16.workspace = true
 ark-serialize.workspace = true
 circom-mpc-vm.workspace = true
 circom-proof-schema.workspace = true
+client = { path = "../client", version = "0.1" }
 co-circom.workspace = true
+contract-rs = { path = "../contract-rs", version = "0.1" }
 eyre.workspace = true
 itertools.workspace = true
 mpc-core.workspace = true
@@ -25,4 +29,5 @@ num-bigint.workspace = true
 rand.workspace = true
 serde.workspace = true
 sha2.workspace = true
+taceo-circom-types = { workspace = true, features = ["groth16", "zkey"] }
 tracing.workspace = true

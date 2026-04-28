@@ -26,6 +26,17 @@ impl ProvingKeys {
         })
     }
 
+    pub fn from_files() -> eyre::Result<Self> {
+        Ok(Self {
+            client: Arc::new(
+                client::circom::config::CircomConfig::get_transfer_key_material_from_file()?,
+            ),
+            server: Arc::new(
+                mpc_nodes::circom::config::CircomConfig::get_transfer_key_material_from_file()?,
+            ),
+        })
+    }
+
     fn write_solidity_verifier<P: AsRef<Path>>(
         config: SolidityVerifierConfig,
         vk: VerifyingKey<Bn254>,

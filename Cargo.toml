@@ -1,6 +1,11 @@
 [workspace]
 resolver = "3"
-members = ["client", "contract-rs", "e2e", "mpc-nodes"]
+members = [
+  "client",
+  "contract-rs",
+  "e2e",
+  "mpc-nodes",
+]
 exclude = ["circom-witness-rs"]
 
 [workspace.package]
@@ -13,37 +18,62 @@ license = "MIT OR Apache-2.0"
 publish = false
 
 [workspace.dependencies]
-alloy = { version = "1.6", default-features = false }
+alloy = { version = "2", default-features = false }
 ark-babyjubjub = { package = "taceo-ark-babyjubjub", version = "^0.5.3" }
 ark-bn254 = "^0.5.0"
 ark-ec = "^0.5.0"
 ark-ff = "^0.5.0"
 ark-groth16 = "^0.5.0"
+ark-serde-compat = { package = "taceo-ark-serde-compat", version = "0.5", default-features = false }
 ark-serialize = "^0.5.0"
+async-trait = "0.1"
+axum = "0.8"
+axum-extra = "0.12"
+axum-test = "18"
+circom-mpc-vm = { git = "https://github.com/TaceoLabs/co-snarks", rev = "924c886ed3d2e11ba3260f2e7f0ab9cb7546eaf2", version = "0.9.0" }
+circom-proof-schema = { git = "https://github.com/TaceoLabs/circom_proof_schema", rev = "c10be7f44b693c11a76426df8fe2736f67a16c4b", version = "^0.1.0" }
 clap = { version = "4.5.53", features = ["derive", "env"] }
 client = { path = "./client" }
-circom-mpc-vm = { version = "0.9.0", git = "https://github.com/TaceoLabs/co-snarks", rev = "924c886ed3d2e11ba3260f2e7f0ab9cb7546eaf2" }
-circom-proof-schema = { git = "https://github.com/TaceoLabs/circom_proof_schema", rev = "c10be7f44b693c11a76426df8fe2736f67a16c4b", version = "^0.1.0" }
 co-circom = { git = "https://github.com/TaceoLabs/co-snarks", rev = "924c886ed3d2e11ba3260f2e7f0ab9cb7546eaf2", version = "0.10.0" }
+config = "0.15"
 contract-rs = { path = "./contract-rs" }
 eyre = "0.6.12"
+futures = "0.3"
 groth16-material = { package = "taceo-groth16-material", version = "0.2" }
 groth16-sol = { package = "taceo-groth16-sol", version = "0.2" }
+humantime = "2"
+humantime-serde = "1"
 itertools = "0.14.0"
 mpc-core = { git = "https://github.com/TaceoLabs/co-snarks", rev = "924c886ed3d2e11ba3260f2e7f0ab9cb7546eaf2", version = "0.10.0" }
-mpc-net = { version = "0.5.0", git = "https://github.com/TaceoLabs/co-snarks", rev = "924c886ed3d2e11ba3260f2e7f0ab9cb7546eaf2" }
+mpc-net = { git = "https://github.com/TaceoLabs/co-snarks", rev = "924c886ed3d2e11ba3260f2e7f0ab9cb7546eaf2", version = "0.5.0" }
 mpc-nodes = { path = "./mpc-nodes" }
 num-bigint = { version = "0.4.6" }
 poseidon2 = { package = "taceo-poseidon2", version = "0.2", default-features = false }
 rand = "0.8.5"
 rand_chacha = "0.3"
+reqwest = { version = "0.13", default-features = false, features = [
+  "json",
+  "rustls"
+] }
+reqwest-middleware = { version = "0.5" }
+rustls = "0.23"
 secrecy = "0.10"
-serde_json = { version = "1" }
 serde = { version = "1", features = ["derive"] }
+serde_json = { version = "1" }
 sha2 = { version = "0.10", features = ["compress"] }
-tokio = { version = "1", features = ["rt-multi-thread", "macros"] }
+sqlx = "0.8"
+taceo-circom-types = { version = "0.2.2", default-features = false }
+taceo-groth16 = "0.1.3"
+taceo-nodes-common = { version = "0.5.1", default-features = false }
+taceo-nodes-observability = "0.1"
+thiserror = { version = "2" }
+tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
+tokio-util = "0.7"
+tower-http = "0.6"
 tracing = "0.1.43"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+x402-axum = { version = "1.4" }
+x402-reqwest = { version = "1.4" }
 
 [profile.profiling]
 inherits = "bench"

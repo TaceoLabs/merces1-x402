@@ -1,4 +1,3 @@
-use ark_bn254::Bn254;
 use ark_ff::UniformRand;
 use eyre::Context;
 use groth16_material::circom::{CircomGroth16Material, Proof};
@@ -54,7 +53,7 @@ impl TransferCompressed {
     // Computes and sets alpha and returns the ciphertexts
     pub fn compute_alpha(&mut self) -> OnChainTransfer {
         let (hash_inputs, result) = self.get_sha_inputs();
-        self.alpha = crate::compute_alpha(hash_inputs);
+        self.alpha = crate::compute_alpha(&hash_inputs);
         result
     }
 
@@ -62,7 +61,7 @@ impl TransferCompressed {
         &self,
         groth16: &CircomGroth16Material,
         rng: &mut R,
-    ) -> eyre::Result<(Proof<Bn254>, Vec<ark_bn254::Fr>)> {
+    ) -> eyre::Result<(Proof<ark_bn254::Bn254>, Vec<ark_bn254::Fr>)> {
         let mut inputs = HashMap::new();
         inputs.insert("amount".to_string(), vec![self.amount.into()]);
         inputs.insert("amount_r".to_string(), vec![self.amount_r.into()]);
@@ -82,7 +81,6 @@ impl TransferCompressed {
             vec![self.share_amount_r[0].into(), self.share_amount_r[1].into()],
         );
         inputs.insert("alpha".to_string(), vec![self.alpha.into()]);
-
         groth16
             .generate_proof(&inputs, rng)
             .context("while computing proof")
