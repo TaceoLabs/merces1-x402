@@ -81,6 +81,13 @@ tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 x402-axum = { version = "1.4" }
 x402-reqwest = { version = "1.4" }
 
+# This profile can be used for CI in pull requests.
+[profile.ci-dev]
+inherits = "dev"
+opt-level = 1
+debug = true
+incremental = false
+
 [profile.profiling]
 inherits = "bench"
 debug = true
