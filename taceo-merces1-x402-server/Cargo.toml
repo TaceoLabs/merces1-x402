@@ -1,0 +1,25 @@
+[package]
+name = "taceo-merces1-x402-server"
+version = "0.1.0"
+edition.workspace = true
+rust-version.workspace = true
+readme.workspace = true
+homepage.workspace = true
+repository.workspace = true
+license.workspace = true
+publish.workspace = true
+
+[dependencies]
+alloy.workspace = true
+axum = { workspace = true }
+config = { workspace = true }
+eyre.workspace = true
+humantime-serde.workspace = true
+rustls.workspace = true
+serde = { workspace = true }
+taceo-merces1-x402 = { path = "../taceo-merces1-x402" }
+taceo-nodes-common = { workspace = true, features = ["serde", "web3"] }
+taceo-nodes-observability.workspace = true
+tokio = { workspace = true }
+tracing = { workspace = true }
+x402-axum = { workspace = true, features = ["telemetry"] }
