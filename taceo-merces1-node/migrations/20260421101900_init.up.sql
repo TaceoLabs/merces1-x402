@@ -5,7 +5,7 @@
 
 CREATE TABLE map (
     address BYTEA PRIMARY KEY,
-    share BYTEA NOT NULL,
+    share BYTEA,
     pending BYTEA,
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
