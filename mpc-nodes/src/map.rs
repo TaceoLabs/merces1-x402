@@ -37,6 +37,15 @@ where
     inner: HashMap<K, V>,
 }
 
+impl<K, V> From<HashMap<K, V>> for PrivateDeposit<K, V>
+where
+    K: std::hash::Hash + Eq,
+{
+    fn from(inner: HashMap<K, V>) -> Self {
+        Self { inner }
+    }
+}
+
 impl<K, V> Default for PrivateDeposit<K, V>
 where
     K: std::hash::Hash + Eq,
@@ -211,7 +220,8 @@ where
         + CanonicalSerialize
         + Clone
         + std::ops::Add<V, Output = V>
-        + std::ops::Sub<V, Output = V>,
+        + std::ops::Sub<V, Output = V>
+        + ark_ff::Zero,
 {
     // Returns the current deposit value for the given key
     pub fn read(&self, key: &K) -> Option<&DepositValue<V>> {
@@ -243,11 +253,10 @@ where
         amount: V,
         new_blinding: V,
     ) -> eyre::Result<(DepositValue<V>, DepositValue<V>)> {
-        let old = self.get(&key);
-        if old.is_none() {
-            return Err(eyre::eyre!("Key not found in HashMap"));
-        }
-        let old = old.unwrap().clone();
+        let old = self
+            .get(&key)
+            .cloned()
+            .unwrap_or(DepositValue::new(V::zero(), V::zero()));
         let new_amount = old.amount.to_owned() - amount;
         let new = DepositValue::new(new_amount, new_blinding);
         self.insert(key, new.clone());

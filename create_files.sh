@@ -29,6 +29,7 @@ cp out/BabyJubJub.sol/BabyJubJub.json json/BabyJubJub.json
 cp out/Poseidon2.sol/Poseidon2T2_BN254.json json/Poseidon2.json
 cp out/ActionQueue.sol/ActionQueueLib.json json/ActionQueue.json
 cp out/Merces.sol/Merces.json json/Merces.json
+jq '.abi' json/Merces.json > ../taceo-merces1-client-js/merces.json
 cp out/Token.sol/USDCToken.json json/USDCToken.json
 cp out/VerifierClient.sol/Verifier.json json/VerifierClient.json
 cp out/VerifierServer.sol/Verifier.json json/VerifierServer.json

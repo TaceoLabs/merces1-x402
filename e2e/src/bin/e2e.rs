@@ -59,7 +59,7 @@ async fn main() -> eyre::Result<ExitCode> {
     let mut rng = R::from_seed(seed);
 
     tracing::info!("Loading proving keys...");
-    let proving_keys = ProvingKeys::load(&mut rng)?;
+    let proving_keys = ProvingKeys::from_files()?;
 
     if cli.write_solidity {
         tracing::info!("Writing solidity verifiers...");

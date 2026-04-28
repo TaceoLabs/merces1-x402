@@ -1,6 +1,6 @@
 use ark_bn254::Bn254;
 use ark_ec::pairing::Pairing;
-use ark_serialize::CanonicalSerialize;
+use ark_serialize::{CanonicalDeserialize as _, CanonicalSerialize};
 use circom_proof_schema::proof_schema::CircomProofSchema;
 use eyre::Context;
 use groth16_material::circom::{ArkZkey, CircomGroth16Material, CircomGroth16MaterialBuilder};
@@ -14,6 +14,7 @@ impl CircomConfig {
 
     const TRANSFER_R1CS: &str = "/../circom/r1cs/client.r1cs";
     const TRANSFER_GRAPH: &str = "/../circom/graph/client_graph.bin";
+    const TRANSFER_ARKS_ZKEY: &str = "/../circom/artifacts/client.arks.zkey";
 
     pub const AMOUNT_BITSIZE: usize = 80;
 
@@ -46,6 +47,31 @@ impl CircomConfig {
         rng: &mut R,
     ) -> eyre::Result<CircomGroth16Material> {
         let proof_schema = Self::get_transfer_proof_schema(rng)?;
+        let graph = Self::get_transfer_graph()?;
+        let zkey_bytes = Self::proof_schema_to_zkey_bytes(proof_schema)?;
+        CircomGroth16MaterialBuilder::new()
+            .bbf_num_2_bits_helper()
+            .bbf_inv()
+            .build_from_bytes(&zkey_bytes, &graph)
+            .context("While building CircomGroth16Material")
+    }
+
+    pub fn get_transfer_proof_schema_from_file() -> eyre::Result<CircomProofSchema<Bn254>> {
+        let zkey_path = format!("{}{}", Self::ROOT, Self::TRANSFER_ARKS_ZKEY);
+        let zkey_bytes = std::fs::read(zkey_path).context("while reading zkey file")?;
+        let ark_zk = taceo_circom_types::groth16::ArkZkey::deserialize_with_mode(
+            zkey_bytes.as_slice(),
+            ark_serialize::Compress::No,
+            ark_serialize::Validate::Yes,
+        )?;
+        Ok(CircomProofSchema {
+            matrices: ark_zk.matrices.into(),
+            pk: ark_zk.pk,
+        })
+    }
+
+    pub fn get_transfer_key_material_from_file() -> eyre::Result<CircomGroth16Material> {
+        let proof_schema = Self::get_transfer_proof_schema_from_file()?;
         let graph = Self::get_transfer_graph()?;
         let zkey_bytes = Self::proof_schema_to_zkey_bytes(proof_schema)?;
         CircomGroth16MaterialBuilder::new()

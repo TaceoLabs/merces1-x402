@@ -1,4 +1,3 @@
-use ark_bn254::Bn254;
 use ark_ff::UniformRand;
 use eyre::Context;
 use groth16_material::circom::{CircomGroth16Material, Proof};
@@ -47,7 +46,7 @@ impl Transfer {
         &self,
         groth16: &CircomGroth16Material,
         rng: &mut R,
-    ) -> eyre::Result<(Proof<Bn254>, Vec<ark_bn254::Fr>)> {
+    ) -> eyre::Result<(Proof<ark_bn254::Bn254>, Vec<ark_bn254::Fr>)> {
         let mut inputs = HashMap::new();
         inputs.insert("amount".to_string(), vec![self.amount.into()]);
         inputs.insert("amount_r".to_string(), vec![self.amount_r.into()]);
@@ -66,7 +65,6 @@ impl Transfer {
             "share_amount_r".to_string(),
             vec![self.share_amount_r[0].into(), self.share_amount_r[1].into()],
         );
-
         groth16
             .generate_proof(&inputs, rng)
             .context("while computing proof")

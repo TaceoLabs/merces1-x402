@@ -20,7 +20,7 @@ contract USDCToken is ERC20 {
     }
 
     function decimals() public pure override returns (uint8) {
-        return 18;
+        return 6;
     }
 
     function _onlyOwner() internal view virtual {

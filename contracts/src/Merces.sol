@@ -104,10 +104,10 @@ contract Merces is ERC165, EIP712, IMercesMpc {
     }
 
     // We emit the location of the registered action indices for deposit, withdraw, and transfer
-    event Deposit(uint256 actionIndex);
-    event Withdraw(uint256 actionIndex);
-    event Transfer(uint256 actionIndex);
-    event TransferFrom(uint256 actionIndex, address indexed sender, address indexed receiver);
+    event Deposit(uint256 indexed actionIndex);
+    event Withdraw(uint256 indexed actionIndex);
+    event Transfer(uint256 indexed actionIndex);
+    event TransferFrom(uint256 indexed actionIndex, address indexed sender, address indexed receiver);
     // We emit the location of the registered action indices which have been processed, as well as whether they were valid or not
     event ProcessedMPC(uint256[BATCH_SIZE] actionIndices, bool[BATCH_SIZE] valid);
 
@@ -461,7 +461,7 @@ contract Merces is ERC165, EIP712, IMercesMpc {
                 publicInputs[i * 6 + 4] = amountCommitment;
                 publicInputs[i * 6 + 5] = validElement;
             } else if (aq.action == Action.Withdraw) {
-                uint256 senderOldCommitment = balanceCommitments[aq.sender];
+                uint256 senderOldCommitment = getBalanceCommitment(aq.sender);
                 if (commitments[i * 2 + 1] != 0) {
                     revert InvalidCommitment();
                 }
@@ -484,7 +484,7 @@ contract Merces is ERC165, EIP712, IMercesMpc {
                 publicInputs[i * 6 + 4] = amountCommitment;
                 publicInputs[i * 6 + 5] = validElement;
             } else if (aq.action == Action.Transfer) {
-                uint256 senderOldCommitment = balanceCommitments[aq.sender];
+                uint256 senderOldCommitment = getBalanceCommitment(aq.sender);
                 uint256 receiverOldCommitment = getBalanceCommitment(aq.receiver);
                 _requireInPrimeField(commitments[i * 2]);
                 _requireInPrimeField(commitments[i * 2 + 1]);

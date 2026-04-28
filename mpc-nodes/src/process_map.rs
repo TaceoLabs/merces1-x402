@@ -31,7 +31,7 @@ where
     // TODO we should probably only update the map after proof verification...
     pub fn process_queue_with_cocircom_trace<N: Network>(
         &mut self,
-        queue: Vec<Action<K>>,
+        queue: &[Action<K>],
         nets: &[N; CircomConfig::NUM_TRANSACTIONS],
         rep3_states: &mut [Rep3State; CircomConfig::NUM_TRANSACTIONS],
         compression: bool,
@@ -667,7 +667,7 @@ mod tests {
 
                         let (applied_transactions, commitments, valids, inputs, traces) = map
                             .process_queue_with_cocircom_trace(
-                                transaction,
+                                &transaction,
                                 nets.as_slice().try_into().unwrap(),
                                 rep3_states.as_mut_slice().try_into().unwrap(),
                                 CircomConfig::COMPRESSION,

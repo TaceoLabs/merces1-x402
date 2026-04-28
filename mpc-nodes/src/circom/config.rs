@@ -1,5 +1,6 @@
 use crate::circom::groth16::Groth16Material;
 use ark_bn254::Bn254;
+use ark_serialize::CanonicalDeserialize as _;
 use circom_proof_schema::proof_schema::CircomProofSchema;
 use co_circom::CoCircomCompilerParsed;
 use eyre::Context;
@@ -14,6 +15,7 @@ impl CircomConfig {
 
     const TRANSFER_CIRCUIT: &str = "/../circom/main/server.circom";
     const TRANSFER_R1CS: &str = "/../circom/r1cs/server.r1cs";
+    const TRANSFER_ARKS_ZKEY: &str = "/../circom/artifacts/server.arks.zkey";
 
     pub const NUM_TRANSACTIONS: usize = 50;
     pub const NUM_COMMITMENTS: usize = 5;
@@ -48,6 +50,28 @@ impl CircomConfig {
             ark_ff::Fp<ark_ff::MontBackend<ark_bn254::FrConfig, 4>, 4>,
         > = CircomConfig::get_transfer_circom()?;
         let proof_schema = CircomConfig::get_transfer_proof_schema(rng)?;
+        Ok(Groth16Material::new(proof_schema, circuit))
+    }
+
+    pub fn get_transfer_proof_schema_from_file() -> eyre::Result<CircomProofSchema<Bn254>> {
+        let zkey_path = format!("{}{}", Self::ROOT, Self::TRANSFER_ARKS_ZKEY);
+        let zkey_bytes = std::fs::read(zkey_path).context("while reading zkey file")?;
+        let ark_zk = taceo_circom_types::groth16::ArkZkey::deserialize_with_mode(
+            zkey_bytes.as_slice(),
+            ark_serialize::Compress::No,
+            ark_serialize::Validate::Yes,
+        )?;
+        Ok(CircomProofSchema {
+            matrices: ark_zk.matrices.into(),
+            pk: ark_zk.pk,
+        })
+    }
+
+    pub fn get_transfer_key_material_from_file() -> eyre::Result<Groth16Material> {
+        let circuit: CoCircomCompilerParsed<
+            ark_ff::Fp<ark_ff::MontBackend<ark_bn254::FrConfig, 4>, 4>,
+        > = CircomConfig::get_transfer_circom()?;
+        let proof_schema = CircomConfig::get_transfer_proof_schema_from_file()?;
         Ok(Groth16Material::new(proof_schema, circuit))
     }
 }

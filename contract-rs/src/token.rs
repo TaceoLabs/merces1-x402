@@ -18,7 +18,7 @@ sol!(
 
 #[derive(Debug, Clone)]
 pub struct USDCTokenContract {
-    pub(crate) contract_address: Address,
+    pub contract_address: Address,
 }
 
 impl USDCTokenContract {
