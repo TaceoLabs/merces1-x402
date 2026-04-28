@@ -8,6 +8,7 @@ members = [
   "taceo-merces1-client",
   "taceo-merces1-faucet",
   "taceo-merces1-node",
+  "taceo-merces1-x402",
 ]
 exclude = ["circom-witness-rs"]
 

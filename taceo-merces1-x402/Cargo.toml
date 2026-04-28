@@ -1,0 +1,38 @@
+[package]
+name = "taceo-merces1-x402"
+version = "0.1.0"
+edition.workspace = true
+rust-version.workspace = true
+readme.workspace = true
+homepage.workspace = true
+repository.workspace = true
+license.workspace = true
+publish.workspace = true
+
+[dependencies]
+alloy = { workspace = true, features = ["full"] }
+ark-babyjubjub.workspace = true
+ark-bn254.workspace = true
+ark-groth16.workspace = true
+ark-serde-compat = { workspace = true, features = ["babyjubjub"] }
+async-trait.workspace = true
+axum.workspace = true
+client = { path = "../client" }
+contract-rs = { path = "../contract-rs" }
+eyre.workspace = true
+groth16-material.workspace = true
+rand.workspace = true
+rand_chacha.workspace = true
+reqwest.workspace = true
+serde = { workspace = true }
+serde_json.workspace = true
+taceo-circom-types = { workspace = true, features = ["groth16"] }
+taceo-groth16.workspace = true
+thiserror.workspace = true
+tokio.workspace = true
+tracing = { workspace = true }
+x402-axum = { workspace = true, features = ["telemetry"] }
+x402-chain-eip155 = { version = "1.4", features = ["client", "facilitator"] }
+x402-facilitator-local = { version = "1.4" }
+x402-reqwest = { workspace = true, features = ["telemetry"] }
+x402-types = { version = "1.4" }
