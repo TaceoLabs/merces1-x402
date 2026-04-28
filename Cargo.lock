@@ -7766,6 +7766,7 @@ dependencies = [
  "config",
  "contract-rs",
  "eyre",
+ "futures",
  "humantime-serde",
  "mpc-core",
  "mpc-net",

@@ -27,6 +27,9 @@ pub struct Merces1NodeServiceConfig {
     #[serde(rename = "rpc")]
     pub rpc_provider_config: web3::HttpRpcProviderConfig,
 
+    /// The websocket RPC url
+    pub ws_rpc_url: String,
+
     /// The addresses of the other Merces1 nodes
     pub node_addrs: Vec<String>,
 
@@ -55,5 +58,5 @@ fn default_mpc_bind_addr() -> SocketAddr {
 }
 
 fn default_mpc_net_init_session_timeout() -> Duration {
-    Duration::from_secs(60)
+    Duration::from_secs(30)
 }

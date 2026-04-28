@@ -24,6 +24,7 @@ axum.workspace = true
 config = { workspace = true }
 contract-rs = { path = "../contract-rs", version = "0.1" }
 eyre.workspace = true
+futures.workspace = true
 humantime-serde.workspace = true
 mpc-core.workspace = true
 mpc-net = { workspace = true, features = ["tcp-session"] }
