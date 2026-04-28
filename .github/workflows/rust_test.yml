@@ -1,0 +1,37 @@
+name: Rust Tests
+
+on:
+    push:
+        branches:
+            - main
+        tags-ignore:
+            - v*
+    pull_request:
+
+concurrency:
+    group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+    cancel-in-progress: true
+
+env:
+    # incremental builds are slower and don't make much sense in ci
+    CARGO_INCREMENTAL: 0
+    CARGO_TERM_COLOR: always
+    RUST_BACKTRACE: full
+    FOUNDRY_PROFILE: ci
+
+jobs:
+    test:
+        name: Test
+        runs-on: [arc-runner-set]
+        steps:
+            - uses: actions/checkout@v6
+              with:
+                  submodules: recursive
+            - uses: dtolnay/rust-toolchain@master
+              with:
+                  toolchain: stable
+            # disable rust cache for now, as it does not help on the self-hosted runners
+            # - uses: Swatinem/rust-cache@v2
+            - uses: foundry-rs/foundry-toolchain@v1
+            - name: Unit & Integration Tests
+              run: cargo test --workspace --all-features --profile ci-dev
