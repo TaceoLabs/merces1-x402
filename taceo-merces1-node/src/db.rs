@@ -14,6 +14,7 @@ use std::collections::HashMap;
 use alloy::primitives::Address;
 use ark_serialize::{CanonicalDeserialize, CanonicalSerialize};
 use eyre::Context as _;
+use mpc_core::protocols::rep3::Rep3PrimeFieldShare;
 use mpc_nodes::map::{DepositValueShare, PrivateDeposit};
 use secrecy::SecretString;
 use sqlx::{PgPool, Row, migrate::Migrator};
@@ -73,13 +74,19 @@ impl DbPool {
             let address = Address::try_from(addr_bytes.as_slice())
                 .map_err(|_| eyre::eyre!("invalid address bytes in DB"))?;
 
-            let share_bytes: Vec<u8> = row.get("share");
-            let share = DepositValueShare::<ark_bn254::Fr>::deserialize_with_mode(
-                share_bytes.as_slice(),
-                ark_serialize::Compress::No,
-                ark_serialize::Validate::No,
-            )
-            .context("while deserializing share")?;
+            let share = if let Ok(share_bytes) = row.try_get::<Vec<u8>, _>("share") {
+                DepositValueShare::<ark_bn254::Fr>::deserialize_with_mode(
+                    share_bytes.as_slice(),
+                    ark_serialize::Compress::No,
+                    ark_serialize::Validate::No,
+                )
+                .context("while deserializing share")?
+            } else {
+                DepositValueShare {
+                    amount: Rep3PrimeFieldShare::default(),
+                    blinding: Rep3PrimeFieldShare::default(),
+                }
+            };
 
             map.insert(address, share);
         }
@@ -108,8 +115,8 @@ impl DbPool {
 
             sqlx::query(
                 "
-                INSERT INTO map (address, share, pending)
-                VALUES ($1, $2, $2)
+                INSERT INTO map (address, pending)
+                VALUES ($1, $2)
                 ON CONFLICT (address) DO UPDATE SET pending = EXCLUDED.pending
                 ",
             )
