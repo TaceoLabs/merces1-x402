@@ -1,0 +1,32 @@
+[package]
+name = "taceo-merces1-x402-facilitator"
+version = "0.1.0"
+edition.workspace = true
+rust-version.workspace = true
+readme.workspace = true
+homepage.workspace = true
+repository.workspace = true
+license.workspace = true
+publish.workspace = true
+
+[dependencies]
+alloy.workspace = true
+ark-babyjubjub.workspace = true
+ark-bn254.workspace = true
+ark-serde-compat = { workspace = true, features = ["babyjubjub"] }
+axum = { workspace = true }
+config = { workspace = true }
+eyre.workspace = true
+humantime-serde.workspace = true
+rustls.workspace = true
+secrecy = { workspace = true, features = ["serde"] }
+serde = { workspace = true }
+serde_json.workspace = true
+taceo-circom-types = { workspace = true, features = ["groth16"] }
+taceo-merces1-x402 = { path = "../taceo-merces1-x402" }
+taceo-nodes-common = { workspace = true, features = ["serde", "web3"] }
+taceo-nodes-observability.workspace = true
+tokio = { workspace = true }
+tower-http = { workspace = true, features = ["cors"] }
+tracing = { workspace = true }
+x402-facilitator-local = { version = "1.4" }

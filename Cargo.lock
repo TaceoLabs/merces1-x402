@@ -7817,6 +7817,32 @@ dependencies = [
 ]
 
 [[package]]
+name = "taceo-merces1-x402-facilitator"
+version = "0.1.0"
+dependencies = [
+ "alloy",
+ "ark-bn254",
+ "axum",
+ "config",
+ "eyre",
+ "humantime-serde",
+ "rustls",
+ "secrecy",
+ "serde",
+ "serde_json",
+ "taceo-ark-babyjubjub",
+ "taceo-ark-serde-compat 0.5.0",
+ "taceo-circom-types",
+ "taceo-merces1-x402",
+ "taceo-nodes-common",
+ "taceo-nodes-observability",
+ "tokio",
+ "tower-http",
+ "tracing",
+ "x402-facilitator-local",
+]
+
+[[package]]
 name = "taceo-nodes-common"
 version = "0.5.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
