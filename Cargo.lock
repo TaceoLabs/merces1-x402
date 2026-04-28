@@ -7843,6 +7843,25 @@ dependencies = [
 ]
 
 [[package]]
+name = "taceo-merces1-x402-server"
+version = "0.1.0"
+dependencies = [
+ "alloy",
+ "axum",
+ "config",
+ "eyre",
+ "humantime-serde",
+ "rustls",
+ "serde",
+ "taceo-merces1-x402",
+ "taceo-nodes-common",
+ "taceo-nodes-observability",
+ "tokio",
+ "tracing",
+ "x402-axum",
+]
+
+[[package]]
 name = "taceo-nodes-common"
 version = "0.5.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
