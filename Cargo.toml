@@ -5,6 +5,7 @@ members = [
   "contract-rs",
   "e2e",
   "mpc-nodes",
+  "taceo-merces1-client",
   "taceo-merces1-node",
 ]
 exclude = ["circom-witness-rs"]

@@ -6972,6 +6972,30 @@ dependencies = [
 ]
 
 [[package]]
+name = "taceo-merces1-client"
+version = "0.1.0"
+dependencies = [
+ "alloy",
+ "ark-bn254",
+ "clap",
+ "client",
+ "config",
+ "contract-rs",
+ "eyre",
+ "humantime",
+ "rand 0.8.5",
+ "reqwest 0.13.2",
+ "rustls",
+ "secrecy",
+ "taceo-ark-babyjubjub",
+ "taceo-groth16-material",
+ "taceo-nodes-common",
+ "taceo-nodes-observability",
+ "tokio",
+ "tracing",
+]
+
+[[package]]
 name = "taceo-merces1-node"
 version = "0.1.0"
 dependencies = [
