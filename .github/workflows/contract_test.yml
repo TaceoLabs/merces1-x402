@@ -1,0 +1,53 @@
+name: Contract Tests
+
+permissions: {}
+
+on:
+    push:
+        branches:
+            - main
+        tags-ignore:
+            - v*
+    pull_request:
+    workflow_dispatch:
+
+concurrency:
+    group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+    cancel-in-progress: true
+
+env:
+    FOUNDRY_PROFILE: ci
+
+jobs:
+    check:
+        name: Foundry project
+        runs-on: [arc-runner-set]
+        defaults:
+            run:
+                working-directory: ./contracts
+
+        permissions:
+            contents: read
+        steps:
+            - uses: actions/checkout@v6
+              with:
+                  persist-credentials: false
+                  submodules: recursive
+
+            - name: Install Foundry
+              uses: foundry-rs/foundry-toolchain@v1
+
+            - name: Show Forge version
+              run: forge --version
+
+            - name: Run Forge fmt
+              run: forge fmt --check
+
+            - name: Run Forge build
+              run: forge build --sizes
+
+            - name: Run Forge lints
+              run: forge lint -vvv
+
+            - name: Run Forge tests
+              run: forge test -vvv
