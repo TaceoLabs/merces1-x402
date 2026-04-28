@@ -228,7 +228,7 @@ run-x402-client:
     echo ""
     echo "balance before: $(just get-balance {{ X402_CLIENT_ADDRESS }})"
     echo "running x402 client example.."
-    ./target/release/examples/taceo-merces1-x402-client
+    cargo run --release -p taceo-merces1-x402 --example client
     echo "balance before: $(just get-balance {{ X402_CLIENT_ADDRESS }})"
 
 run-x402-client-js:
