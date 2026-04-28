@@ -694,6 +694,7 @@ impl MercesContract {
                         Merces::Deposit::SIGNATURE_HASH,
                         Merces::Withdraw::SIGNATURE_HASH,
                         Merces::Transfer::SIGNATURE_HASH,
+                        Merces::TransferFrom::SIGNATURE_HASH,
                     ]
                     .contains(topic0)
                     {
