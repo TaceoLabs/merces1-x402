@@ -176,6 +176,7 @@ run-setup $TOKEN="erc20":
         MERCES1_NODE__SERVICE__ENVIRONMENT=dev \
         MERCES1_NODE__SERVICE__MPC_SK=43 \
         MERCES1_NODE__SERVICE__RPC__HTTP_URLS=http://localhost:8545 \
+        MERCES1_NODE__SERVICE__WS_RPC_URL=ws://localhost:8545 \
         MERCES1_NODE__SERVICE__POSTGRES__CONNECTION_STRING=$DB_URL \
         MERCES1_NODE__SERVICE__POSTGRES__SCHEMA=node$i \
             ./target/release/taceo-merces1-node > logs/node$i.log 2>&1 &

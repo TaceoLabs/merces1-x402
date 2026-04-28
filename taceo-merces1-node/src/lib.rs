@@ -5,11 +5,18 @@ use std::{
 };
 
 use alloy::{
-    network::EthereumWallet, primitives::Address, providers::DynProvider,
+    eips::BlockNumberOrTag,
+    network::EthereumWallet,
+    primitives::Address,
+    providers::{DynProvider, Provider as _, ProviderBuilder, WsConnect},
+    rpc::types::Filter,
     signers::local::PrivateKeySigner,
+    sol_types::SolEvent as _,
 };
 use axum::Router;
-use contract_rs::merces::MercesContract;
+use contract_rs::merces::{Merces, MercesContract};
+use eyre::ContextCompat as _;
+use futures::StreamExt as _;
 use mpc_core::protocols::rep3::network::Rep3NetworkExt;
 use mpc_net::tcp_session::{TcpNetworkHandler, TcpNetworkHandlerBuilder};
 use mpc_nodes::{
@@ -17,7 +24,10 @@ use mpc_nodes::{
     map::{DepositValueShare, PrivateDeposit},
 };
 use secrecy::ExposeSecret as _;
-use taceo_nodes_common::{StartedServices, web3::HttpRpcProviderBuilder};
+use taceo_nodes_common::{
+    StartedServices,
+    web3::{HttpRpcProvider, HttpRpcProviderBuilder},
+};
 use tokio::sync::RwLock;
 use tokio_util::sync::CancellationToken;
 
@@ -29,11 +39,14 @@ mod db;
 
 /// Shared state injected into axum handlers.
 #[derive(Clone)]
+#[expect(dead_code)]
 pub struct AppState {
     /// Tracks which background services have started.
     started_services: StartedServices,
     /// map
     map: Arc<RwLock<PrivateDeposit<Address, DepositValueShare<ark_bn254::Fr>>>>,
+    http_provider: HttpRpcProvider,
+    ws_provider: DynProvider,
 }
 
 pub async fn start(
@@ -46,10 +59,14 @@ pub async fn start(
     // let wallet_address = signer.address();
     let wallet = EthereumWallet::from(signer);
 
-    let provider = HttpRpcProviderBuilder::with_config(&config.rpc_provider_config)
+    let http_provider = HttpRpcProviderBuilder::with_config(&config.rpc_provider_config)
         .environment(config.environment)
         .wallet(wallet.clone())
         .build()?;
+    let ws_provider = ProviderBuilder::new()
+        .connect_ws(WsConnect::new(config.ws_rpc_url))
+        .await?
+        .erased();
 
     let network =
         TcpNetworkHandlerBuilder::new(config.party_id, config.mpc_bind_addr, config.node_addrs)
@@ -74,31 +91,88 @@ pub async fn start(
 
     let map = db.load_map().await?;
     let map = Arc::new(RwLock::new(map));
+    let mut current_action_index = 0;
+
+    let event_signatures = vec![
+        Merces::Deposit::SIGNATURE_HASH,
+        Merces::Withdraw::SIGNATURE_HASH,
+        Merces::Transfer::SIGNATURE_HASH,
+        Merces::TransferFrom::SIGNATURE_HASH,
+    ];
+
+    let filter = Filter::new()
+        .address(config.merces_contract)
+        .event_signature(event_signatures)
+        .from_block(BlockNumberOrTag::Latest);
+
+    // subscribe to events before processing the queue to avoid missing events that are emitted while processing the queue
+    let mut stream = ws_provider.subscribe_logs(&filter).await?.into_stream();
+
+    let num_items = contract.get_queue_size(&http_provider).await?;
+    tracing::debug!("Action queue size on startup: {num_items}");
+
+    process_queue(
+        &contract,
+        &http_provider,
+        &network,
+        config.party_id,
+        mpc_sk,
+        &groth16_material,
+        &db,
+        &map,
+        config.mpc_net_init_session_timeout,
+        &mut current_action_index,
+    )
+    .await?;
+
+    let started = started_services.new_service();
+    started.store(true, std::sync::atomic::Ordering::Relaxed);
 
     let task = tokio::spawn({
         let map = Arc::clone(&map);
-        let mut interval = tokio::time::interval(std::time::Duration::from_secs(1));
+        let http_provider = http_provider.clone();
         async move {
+            let _drop_guard = cancellation_token.drop_guard_ref();
+
             loop {
-                tokio::select! {
+                let log = tokio::select! {
+                    log = stream.next() => {
+                        log.ok_or_else(|| eyre::eyre!("logs subscribe stream was closed"))?
+                    }
                     _ = cancellation_token.cancelled() => {
-                        tracing::info!("Cancellation received, stopping task");
+                        tracing::info!("Cancellation received, stopping event handler");
                         break;
                     }
-                    _ = interval.tick() => {
-                        let num_items = contract.get_queue_size(&provider).await?;
-                        tracing::info!("Action queue size: {num_items}");
-                        if num_items == 0 {
-                            continue;
-                        }
+                };
 
-                        if let Err(error) = process_queue(&contract, &provider, &network, config.party_id, mpc_sk, &groth16_material, &db, &map).await {
-                            tracing::error!("Error processing queue: {error:#}");
-                            // TODO the action item is likely still in the queue, retry?, remove?
-                            break;
-                        }
-                    }
+                tracing::debug!("Received action log: {:?}", log);
+
+                let action_index = contract_rs::u256_to_usize(
+                    (*log
+                        .topics()
+                        .get(1)
+                        .context("topic1 (action_index) not found in log")?)
+                    .into(),
+                )?;
+
+                if action_index <= current_action_index {
+                    tracing::debug!("Already processed action index {action_index}, skipping");
+                    continue;
                 }
+
+                process_queue(
+                    &contract,
+                    &http_provider,
+                    &network,
+                    config.party_id,
+                    mpc_sk,
+                    &groth16_material,
+                    &db,
+                    &map,
+                    config.mpc_net_init_session_timeout,
+                    &mut current_action_index,
+                )
+                .await?;
             }
             Ok(())
         }
@@ -107,6 +181,8 @@ pub async fn start(
     let app_state = AppState {
         started_services,
         map,
+        http_provider,
+        ws_provider,
     };
 
     let router = api::routes(app_state);
@@ -124,17 +200,23 @@ async fn process_queue(
     proving_key: &Groth16Material,
     db: &DbPool,
     map: &RwLock<PrivateDeposit<Address, DepositValueShare<ark_bn254::Fr>>>,
+    mpc_net_init_session_timeout: Duration,
+    current_action_index: &mut usize,
 ) -> eyre::Result<()> {
     tracing::info!("Processing action queue");
     let start = Instant::now();
     // TODO need to do this concurrently
     tracing::debug!("Initializing MPC network sessions");
     let mpc_net_init_start = Instant::now();
-    let mut nets = Vec::with_capacity(CircomConfig::NUM_TRANSACTIONS);
-    for i in 0..CircomConfig::NUM_TRANSACTIONS {
-        let net = network.init_session(i as u128).await?;
-        nets.push(net);
-    }
+    let nets = tokio::time::timeout(mpc_net_init_session_timeout, async {
+        let mut nets = Vec::with_capacity(CircomConfig::NUM_TRANSACTIONS);
+        for i in 0..CircomConfig::NUM_TRANSACTIONS {
+            let net = network.init_session(i as u128).await?;
+            nets.push(net);
+        }
+        eyre::Ok(nets)
+    })
+    .await??;
     tracing::debug!(
         "MPC network sessions initialized after {:?}",
         mpc_net_init_start.elapsed()
@@ -150,6 +232,12 @@ async fn process_queue(
         tokio::task::block_in_place(|| nets[0].broadcast(queue_size))?;
     let queue_size = queue_size.min(queue_size_prev).min(queue_size_next);
     tracing::debug!("Synchronized queue size: {queue_size}");
+
+    if queue_size == 0 {
+        tracing::debug!("Nothing to do");
+        return Ok(());
+    }
+
     let actions = &actions[..queue_size];
     let action_indices = &action_indices[..queue_size];
     let ciphertexts = &ciphertexts[..queue_size];
@@ -231,6 +319,8 @@ async fn process_queue(
         "Finished processing actions {action_indices:?} after {:?}",
         start.elapsed()
     );
+
+    *current_action_index = *last;
 
     Ok(())
 }
