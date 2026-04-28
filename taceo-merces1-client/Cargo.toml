@@ -1,0 +1,35 @@
+[package]
+name = "taceo-merces1-client"
+version = "0.1.0"
+edition.workspace = true
+rust-version.workspace = true
+readme.workspace = true
+homepage.workspace = true
+repository.workspace = true
+license.workspace = true
+publish.workspace = true
+
+[dependencies]
+alloy = { workspace = true, features = [
+  "full",
+  "node-bindings",
+  "rpc",
+  "rpc-client-ws",
+] }
+ark-babyjubjub.workspace = true
+ark-bn254.workspace = true
+clap.workspace = true
+client = { path = "../client", version = "0.1" }
+config = { workspace = true }
+contract-rs = { path = "../contract-rs", version = "0.1" }
+eyre.workspace = true
+groth16-material.workspace = true
+humantime.workspace = true
+rand.workspace = true
+reqwest.workspace = true
+rustls.workspace = true
+secrecy = { workspace = true, features = ["serde"] }
+taceo-nodes-common = { workspace = true, features = ["serde", "web3"] }
+taceo-nodes-observability.workspace = true
+tokio.workspace = true
+tracing.workspace = true
