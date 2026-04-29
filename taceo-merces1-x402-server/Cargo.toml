@@ -18,7 +18,7 @@ humantime-serde.workspace = true
 rustls.workspace = true
 serde = { workspace = true }
 taceo-merces1-x402 = { path = "../taceo-merces1-x402" }
-taceo-nodes-common = { workspace = true, features = ["serde", "web3"] }
+taceo-nodes-common = { workspace = true, features = ["api", "serde", "web3"] }
 taceo-nodes-observability.workspace = true
 tokio = { workspace = true }
 tracing = { workspace = true }
