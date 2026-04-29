@@ -16,7 +16,7 @@ RUN mv target/release/$SERVICE_NAME /app/bin
 FROM rust:1.95 AS healthcheck-builder
 RUN cargo install simple-web-healthcheck
 
-FROM gcr.io/distroless/cc-debian12:nonroot AS runtime
+FROM gcr.io/distroless/cc-debian13:nonroot AS runtime
 ARG SERVICE_NAME
 ARG GIT_HASH
 LABEL org.opencontainers.image.revision=$GIT_HASH
