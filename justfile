@@ -88,12 +88,32 @@ deploy-merces-anvil $TOKEN_ADDRESS="0x0000000000000000000000000000000000000000":
         -vvv
 
 [working-directory('contracts')]
+deploy-merces $MPC_ADDRESS $TOKEN_ADDRESS:
+    MERCES_DEPLOYMENT=prod \
+    forge script script/DeployMerces.s.sol:DeployMerces \
+        --broadcast \
+        --interactives 1 \
+        -vvvvv \
+        --rpc-url $RPC_URL \
+        --verify --verifier etherscan --etherscan-api-key $ETHERSCAN_API_KEY
+
+[working-directory('contracts')]
 deploy-token-anvil:
     forge script script/DeployToken.s.sol:DeployToken \
         --rpc-url http://localhost:8545 \
         --private-key {{ FAUCET_PRIVATE_KEY }} \
         --broadcast \
         -vvv
+
+[working-directory('contracts')]
+deploy-token $TOKEN="erc20":
+    # the deployer gets the initial supply of tokens, so we need to use the faucet wallet to deploy the token
+    forge script script/DeployToken.s.sol:DeployToken \
+        --broadcast \
+        --interactives 1 \
+        -vvvvv \
+        --rpc-url $RPC_URL \
+        --verify --verifier etherscan --etherscan-api-key $ETHERSCAN_API_KEY
 
 run-setup $TOKEN="erc20":
     #!/usr/bin/env bash
