@@ -74,7 +74,8 @@ impl DbPool {
             let address = Address::try_from(addr_bytes.as_slice())
                 .map_err(|_| eyre::eyre!("invalid address bytes in DB"))?;
 
-            let share = if let Ok(share_bytes) = row.try_get::<Vec<u8>, _>("share") {
+            let share_bytes: Option<Vec<u8>> = row.get("share");
+            let share = if let Some(share_bytes) = share_bytes {
                 DepositValueShare::<ark_bn254::Fr>::deserialize_with_mode(
                     share_bytes.as_slice(),
                     ark_serialize::Compress::No,
