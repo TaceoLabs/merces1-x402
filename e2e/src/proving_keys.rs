@@ -6,7 +6,7 @@ use mpc_nodes::circom::groth16::Groth16Material;
 use rand::{CryptoRng, Rng};
 use std::{
     fs::{self, File},
-    path::Path,
+    path::{Path, PathBuf},
     sync::Arc,
 };
 
@@ -27,12 +27,20 @@ impl ProvingKeys {
     }
 
     pub fn from_files() -> eyre::Result<Self> {
+        let circom_dir = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../circom");
         Ok(Self {
             client: Arc::new(
-                client::circom::config::CircomConfig::get_transfer_key_material_from_file()?,
+                client::circom::config::CircomConfig::get_transfer_key_material_from_files(
+                    circom_dir.join("artifacts/client.arks.zkey"),
+                    circom_dir.join("graph/client_graph.bin"),
+                )?,
             ),
             server: Arc::new(
-                mpc_nodes::circom::config::CircomConfig::get_transfer_key_material_from_file()?,
+                mpc_nodes::circom::config::CircomConfig::get_transfer_key_material_from_file(
+                    circom_dir.join("artifacts/server.arks.zkey"),
+                    circom_dir.join("main/server.circom"),
+                    circom_dir,
+                )?,
             ),
         })
     }

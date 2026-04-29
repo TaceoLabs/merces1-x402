@@ -101,14 +101,11 @@ impl AppState {
 pub async fn start(config: Merces1FaucetServiceConfig) -> eyre::Result<Router> {
     let started_services = StartedServices::new();
 
-    let dir = env!("CARGO_MANIFEST_DIR");
-    let zkey_path = format!("{dir}/../circom/artifacts/client.arks.zkey");
-    let graph_path = format!("{dir}/../circom/graph/client_graph.bin");
     let groth16_material = Arc::new(
         CircomGroth16MaterialBuilder::new()
             .bbf_num_2_bits_helper()
             .bbf_inv()
-            .build_from_paths(zkey_path, graph_path)?,
+            .build_from_paths(config.zkey_path, config.graph_path)?,
     );
 
     let signer = PrivateKeySigner::from_str(config.wallet_private_key.expose_secret())

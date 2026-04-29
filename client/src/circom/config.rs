@@ -5,7 +5,7 @@ use circom_proof_schema::proof_schema::CircomProofSchema;
 use eyre::Context;
 use groth16_material::circom::{ArkZkey, CircomGroth16Material, CircomGroth16MaterialBuilder};
 use rand::{CryptoRng, Rng};
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 pub struct CircomConfig {}
 
@@ -14,7 +14,6 @@ impl CircomConfig {
 
     const TRANSFER_R1CS: &str = "/../circom/r1cs/client.r1cs";
     const TRANSFER_GRAPH: &str = "/../circom/graph/client_graph.bin";
-    const TRANSFER_ARKS_ZKEY: &str = "/../circom/artifacts/client.arks.zkey";
 
     pub const AMOUNT_BITSIZE: usize = 80;
 
@@ -56,8 +55,9 @@ impl CircomConfig {
             .context("While building CircomGroth16Material")
     }
 
-    pub fn get_transfer_proof_schema_from_file() -> eyre::Result<CircomProofSchema<Bn254>> {
-        let zkey_path = format!("{}{}", Self::ROOT, Self::TRANSFER_ARKS_ZKEY);
+    pub fn get_transfer_proof_schema_from_file(
+        zkey_path: impl AsRef<Path>,
+    ) -> eyre::Result<CircomProofSchema<Bn254>> {
         let zkey_bytes = std::fs::read(zkey_path).context("while reading zkey file")?;
         let ark_zk = taceo_circom_types::groth16::ArkZkey::deserialize_with_mode(
             zkey_bytes.as_slice(),
@@ -70,9 +70,12 @@ impl CircomConfig {
         })
     }
 
-    pub fn get_transfer_key_material_from_file() -> eyre::Result<CircomGroth16Material> {
-        let proof_schema = Self::get_transfer_proof_schema_from_file()?;
-        let graph = Self::get_transfer_graph()?;
+    pub fn get_transfer_key_material_from_files(
+        zkey_path: impl AsRef<Path>,
+        graph_path: impl AsRef<Path>,
+    ) -> eyre::Result<CircomGroth16Material> {
+        let proof_schema = Self::get_transfer_proof_schema_from_file(zkey_path)?;
+        let graph = std::fs::read(graph_path).context("while reading graph file")?;
         let zkey_bytes = Self::proof_schema_to_zkey_bytes(proof_schema)?;
         CircomGroth16MaterialBuilder::new()
             .bbf_num_2_bits_helper()

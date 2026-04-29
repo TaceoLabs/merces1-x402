@@ -76,7 +76,11 @@ pub async fn start(
 
     let mpc_sk = ark_babyjubjub::Fr::from_str(config.mpc_sk.expose_secret()).expect("valid mpc_sk");
 
-    let groth16_material = CircomConfig::get_transfer_key_material_from_file()?;
+    let groth16_material = CircomConfig::get_transfer_key_material_from_file(
+        config.zkey_path,
+        config.circuit_path,
+        config.circom_lib_path,
+    )?;
 
     let contract = MercesContract {
         contract_address: config.merces_contract,

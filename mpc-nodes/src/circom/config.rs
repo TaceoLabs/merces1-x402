@@ -5,7 +5,7 @@ use circom_proof_schema::proof_schema::CircomProofSchema;
 use co_circom::CoCircomCompilerParsed;
 use eyre::Context;
 use rand::{CryptoRng, Rng};
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 pub struct CircomConfig {}
 
@@ -15,7 +15,6 @@ impl CircomConfig {
 
     const TRANSFER_CIRCUIT: &str = "/../circom/main/server.circom";
     const TRANSFER_R1CS: &str = "/../circom/r1cs/server.r1cs";
-    const TRANSFER_ARKS_ZKEY: &str = "/../circom/artifacts/server.arks.zkey";
 
     pub const NUM_TRANSACTIONS: usize = 50;
     pub const NUM_COMMITMENTS: usize = 5;
@@ -53,8 +52,9 @@ impl CircomConfig {
         Ok(Groth16Material::new(proof_schema, circuit))
     }
 
-    pub fn get_transfer_proof_schema_from_file() -> eyre::Result<CircomProofSchema<Bn254>> {
-        let zkey_path = format!("{}{}", Self::ROOT, Self::TRANSFER_ARKS_ZKEY);
+    pub fn get_transfer_proof_schema_from_file(
+        zkey_path: impl AsRef<Path>,
+    ) -> eyre::Result<CircomProofSchema<Bn254>> {
         let zkey_bytes = std::fs::read(zkey_path).context("while reading zkey file")?;
         let ark_zk = taceo_circom_types::groth16::ArkZkey::deserialize_with_mode(
             zkey_bytes.as_slice(),
@@ -67,11 +67,16 @@ impl CircomConfig {
         })
     }
 
-    pub fn get_transfer_key_material_from_file() -> eyre::Result<Groth16Material> {
-        let circuit: CoCircomCompilerParsed<
-            ark_ff::Fp<ark_ff::MontBackend<ark_bn254::FrConfig, 4>, 4>,
-        > = CircomConfig::get_transfer_circom()?;
-        let proof_schema = CircomConfig::get_transfer_proof_schema_from_file()?;
+    pub fn get_transfer_key_material_from_file(
+        zkey_path: impl Into<PathBuf>,
+        circuit_path: impl Into<PathBuf>,
+        lib_path: impl Into<PathBuf>,
+    ) -> eyre::Result<Groth16Material> {
+        let circuit = CircomProofSchema::<Bn254>::read_circuit_co_circom(
+            circuit_path.into(),
+            lib_path.into(),
+        )?;
+        let proof_schema = CircomConfig::get_transfer_proof_schema_from_file(zkey_path.into())?;
         Ok(Groth16Material::new(proof_schema, circuit))
     }
 }

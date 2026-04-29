@@ -1,6 +1,6 @@
 //! Configuration types for a Merces1 node services.
 
-use std::{net::SocketAddr, time::Duration};
+use std::{net::SocketAddr, path::PathBuf, time::Duration};
 
 use alloy::primitives::Address;
 use secrecy::SecretString;
@@ -51,6 +51,15 @@ pub struct Merces1NodeServiceConfig {
     /// The postgres config for the secret-manager
     #[serde(rename = "postgres")]
     pub postgres_config: PostgresConfig,
+
+    /// The path to the server proof zkey
+    pub zkey_path: PathBuf,
+
+    /// The path to the server proof circuit
+    pub circuit_path: PathBuf,
+
+    /// The path to the circom lib directory
+    pub circom_lib_path: PathBuf,
 }
 
 fn default_mpc_bind_addr() -> SocketAddr {

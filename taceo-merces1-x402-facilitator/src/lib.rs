@@ -33,11 +33,7 @@ pub async fn start(config: X402FacilitatorServiceConfig) -> eyre::Result<Router>
         ark_babyjubjub::EdwardsAffine::new(config.mpc_pks[4], config.mpc_pks[5]),
     ];
 
-    let vk_path = format!(
-        "{}/../circom/artifacts/client_verification_key.json",
-        env!("CARGO_MANIFEST_DIR")
-    );
-    let vk_bytes = std::fs::read(&vk_path)?;
+    let vk_bytes = std::fs::read(config.vk_path)?;
     let verifying_key = serde_json::from_slice::<VerificationKey<ark_bn254::Bn254>>(&vk_bytes)?;
 
     let facilitator = Arc::new(V2Eip155ConfidentialFacilitator::new(

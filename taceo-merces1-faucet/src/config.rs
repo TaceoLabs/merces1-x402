@@ -1,6 +1,6 @@
 //! Configuration types for the Merces1 registry service.
 
-use std::time::Duration;
+use std::{path::PathBuf, time::Duration};
 
 use alloy::primitives::{Address, U256};
 use secrecy::SecretString;
@@ -34,6 +34,12 @@ pub struct Merces1FaucetServiceConfig {
     #[serde(with = "humantime_serde")]
     #[serde(default = "default_processed_mpc_timeout")]
     pub processed_mpc_timeout: Duration,
+
+    /// The path to the client proof zkey
+    pub zkey_path: PathBuf,
+
+    /// The path to the client proof graph
+    pub graph_path: PathBuf,
 }
 
 fn default_amount() -> U256 {

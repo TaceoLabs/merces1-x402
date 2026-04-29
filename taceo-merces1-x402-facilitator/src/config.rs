@@ -1,5 +1,7 @@
 //! Configuration types for the x402 facilitator service.
 
+use std::path::PathBuf;
+
 use alloy::primitives::Address;
 use secrecy::SecretString;
 use serde::Deserialize;
@@ -27,4 +29,7 @@ pub struct X402FacilitatorServiceConfig {
     /// The blockchain RPC config
     #[serde(rename = "rpc")]
     pub rpc_provider_config: web3::HttpRpcProviderConfig,
+
+    /// The path to the verifying key file for the client proof.
+    pub vk_path: PathBuf,
 }
