@@ -23,7 +23,11 @@ pub async fn start(config: X402ServerServiceConfig) -> eyre::Result<Router> {
                 let promo_code = headers
                     .get("x-promo-code")
                     .and_then(|value| value.to_str().ok());
-                let usdc = ConfidentialUSDC::anvil();
+                let usdc = if config.environment.is_dev() {
+                    ConfidentialUSDC::anvil()
+                } else {
+                    ConfidentialUSDC::base_sepolia()
+                };
                 let amount = match promo_code {
                     Some(SAVE20) => usdc.parse("$0.8").expect("valid amount"),
                     Some(SAVE50) => usdc.parse("$0.5").expect("valid amount"),

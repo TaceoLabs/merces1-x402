@@ -1,6 +1,7 @@
+use alloy::primitives::Address;
+
 // #[cfg(feature = "server")]
 pub mod server;
-use alloy::primitives::Address;
 // #[cfg(feature = "server")]
 pub use server::*;
 
@@ -37,6 +38,18 @@ pub struct ConfidentialUSDC;
 impl ConfidentialUSDC {
     pub fn anvil() -> Eip155ConfidentialTokenDeployment {
         let chain_id = ChainId::new("eip155", "31337");
+        let chain_reference =
+            Eip155ChainReference::try_from(chain_id).expect("valid eip155 chain id");
+
+        Eip155ConfidentialTokenDeployment {
+            chain_reference,
+            address: Address::default(), // TODO?
+            decimals: 6,
+        }
+    }
+
+    pub fn base_sepolia() -> Eip155ConfidentialTokenDeployment {
+        let chain_id = ChainId::new("eip155", "84532");
         let chain_reference =
             Eip155ChainReference::try_from(chain_id).expect("valid eip155 chain id");
 
