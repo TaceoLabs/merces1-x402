@@ -1,0 +1,231 @@
+name: merces1-x402-services
+
+services:
+  # agent:
+  #   image: gcr.io/datadoghq/agent:7
+  #   environment:
+  #     DD_HOSTNAME: "${DD_HOSTNAME}"
+  #     DD_SITE: "datadoghq.eu"
+  #     DD_ENV: "${DD_ENV}"
+  #     DD_DOGSTATSD_NON_LOCAL_TRAFFIC: "true"
+  #     DD_APM_ENABLED: "true"
+  #     DD_APM_NON_LOCAL_TRAFFIC: "true"
+  #     DD_DOGSTATSD_ORIGIN_DETECTION_CLIENT: "true"
+  #     DD_DOGSTATSD_ORIGIN_DETECTION: "true"
+  #     DD_API_KEY: "${DD_API_KEY}"
+  #     DD_LOGS_ENABLED: "true"
+  #     DD_CONTAINER_EXCLUDE: "name:agent"
+  #     DD_LOGS_CONFIG_CONTAINER_COLLECT_ALL: "true"
+  #     DD_LOGS_CONFIG_PROCESSING_RULES: "${DD_LOGS_CONFIG_PROCESSING_RULES}"
+  #     DD_LOGS_CONFIG_AUTO_MULTI_LINE_DETECTION: "true"
+  #     DD_PROCESS_AGENT_ENABLED: "true"
+  #   restart: unless-stopped
+  #   volumes:
+  #     - /var/run/docker.sock:/var/run/docker.sock:ro
+  #     - /proc/:/host/proc/:ro
+  #     - /sys/fs/cgroup/:/host/sys/fs/cgroup:ro
+  #     - /var/lib/docker/containers:/var/lib/docker/containers:ro
+  #   env_file: .env
+
+  db-node0:
+    image: postgres:16
+    environment:
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_USER=postgres
+      - POSTGRES_DB=postgres
+    restart: unless-stopped
+    volumes:
+      - ./data/node0:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    env_file: .env
+
+  db-node1:
+    image: postgres:16
+    environment:
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_USER=postgres
+      - POSTGRES_DB=postgres
+    restart: unless-stopped
+    volumes:
+      - ./data/node1:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    env_file: .env
+
+  db-node2:
+    image: postgres:16
+    environment:
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_USER=postgres
+      - POSTGRES_DB=postgres
+    restart: unless-stopped
+    volumes:
+      - ./data/node2:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    env_file: .env
+
+  node0:
+    image: ghcr.io/taceolabs/merces1-x402/taceo-merces1-node:latest
+    depends_on:
+      db-node0:
+        condition: service_healthy
+    environment:
+      RUST_LOG: ${RUST_LOG:-info}
+      MERCES1_NODE__SERVICE__ENVIRONMENT: prod
+      MERCES1_NODE__SERVICE__PARTY_ID: 0
+      MERCES1_NODE__SERVICE__MERCES_CONTRACT: ${MERCES_CONTRACT}
+      MERCES1_NODE__SERVICE__NODE_ADDRS: node0:5432,node1:5432,node2:5432
+      MERCES1_NODE__SERVICE__MPC_SK: ${MPC_SK1}
+      MERCES1_NODE__SERVICE__RPC__HTTP_URLS: ${HTTP_RPC_URL}
+      MERCES1_NODE__SERVICE__RPC__CONFIRMATIONS_POLL_INTERVAL: 2s
+      MERCES1_NODE__SERVICE__WS_RPC_URL: ${WS_RPC_URL}
+      MERCES1_NODE__SERVICE__WALLET_PRIVATE_KEY: ${MPC_PRIVATE_KEY}
+      MERCES1_NODE__SERVICE__POSTGRES__CONNECTION_STRING: postgres://postgres:${POSTGRES_PASSWORD}@db-node0:5432/postgres
+      MERCES1_NODE__SERVICE__POSTGRES__SCHEMA: schema0
+      MERCES1_NODE__SERVICE__ZKEY_PATH: circom/artifacts/server.arks.zkey
+      MERCES1_NODE__SERVICE__CIRCUIT_PATH: circom/main/server.circom
+      MERCES1_NODE__SERVICE__CIRCOM_LIB_PATH: circom
+      # METRICS_EXPORTER: "datadog"
+      # METRICS_DATADOG_HOST: "agent"
+      # METRICS_DATADOG_PORT: "8125"
+      # TRACING_ENDPOINT: "http://agent:8126"
+      # TRACING_SERVICE_NAME: "node0"
+    restart: unless-stopped
+    ports:
+      - "10000:4321"
+    env_file: .env
+
+  node1:
+    image: ghcr.io/taceolabs/merces1-x402/taceo-merces1-node:latest
+    depends_on:
+      db-node1:
+        condition: service_healthy
+    environment:
+      RUST_LOG: ${RUST_LOG:-info}
+      MERCES1_NODE__SERVICE__ENVIRONMENT: prod
+      MERCES1_NODE__SERVICE__PARTY_ID: 1
+      MERCES1_NODE__SERVICE__MERCES_CONTRACT: ${MERCES_CONTRACT}
+      MERCES1_NODE__SERVICE__NODE_ADDRS: node0:5432,node1:5432,node2:5432
+      MERCES1_NODE__SERVICE__MPC_SK: ${MPC_SK2}
+      MERCES1_NODE__SERVICE__RPC__HTTP_URLS: ${HTTP_RPC_URL}
+      MERCES1_NODE__SERVICE__RPC__CONFIRMATIONS_POLL_INTERVAL: 2s
+      MERCES1_NODE__SERVICE__WS_RPC_URL: ${WS_RPC_URL}
+      MERCES1_NODE__SERVICE__WALLET_PRIVATE_KEY: ${MPC_PRIVATE_KEY}
+      MERCES1_NODE__SERVICE__POSTGRES__CONNECTION_STRING: postgres://postgres:${POSTGRES_PASSWORD}@db-node1:5432/postgres
+      MERCES1_NODE__SERVICE__POSTGRES__SCHEMA: schema0
+      MERCES1_NODE__SERVICE__ZKEY_PATH: circom/artifacts/server.arks.zkey
+      MERCES1_NODE__SERVICE__CIRCUIT_PATH: circom/main/server.circom
+      MERCES1_NODE__SERVICE__CIRCOM_LIB_PATH: circom
+      # METRICS_EXPORTER: "datadog"
+      # METRICS_DATADOG_HOST: "agent"
+      # METRICS_DATADOG_PORT: "8125"
+      # TRACING_ENDPOINT: "http://agent:8126"
+      # TRACING_SERVICE_NAME: "node1"
+    restart: unless-stopped
+    ports:
+      - "10001:4321"
+    env_file: .env
+
+  node2:
+    image: ghcr.io/taceolabs/merces1-x402/taceo-merces1-node:latest
+    depends_on:
+      db-node2:
+        condition: service_healthy
+    environment:
+      RUST_LOG: ${RUST_LOG:-info}
+      MERCES1_NODE__SERVICE__ENVIRONMENT: prod
+      MERCES1_NODE__SERVICE__PARTY_ID: 2
+      MERCES1_NODE__SERVICE__MERCES_CONTRACT: ${MERCES_CONTRACT}
+      MERCES1_NODE__SERVICE__NODE_ADDRS: node0:5432,node1:5432,node2:5432
+      MERCES1_NODE__SERVICE__MPC_SK: ${MPC_SK3}
+      MERCES1_NODE__SERVICE__RPC__HTTP_URLS: ${HTTP_RPC_URL}
+      MERCES1_NODE__SERVICE__RPC__CONFIRMATIONS_POLL_INTERVAL: 2s
+      MERCES1_NODE__SERVICE__WS_RPC_URL: ${WS_RPC_URL}
+      MERCES1_NODE__SERVICE__WALLET_PRIVATE_KEY: ${MPC_PRIVATE_KEY}
+      MERCES1_NODE__SERVICE__POSTGRES__CONNECTION_STRING: postgres://postgres:${POSTGRES_PASSWORD}@db-node2:5432/postgres
+      MERCES1_NODE__SERVICE__POSTGRES__SCHEMA: schema0
+      MERCES1_NODE__SERVICE__ZKEY_PATH: circom/artifacts/server.arks.zkey
+      MERCES1_NODE__SERVICE__CIRCUIT_PATH: circom/main/server.circom
+      MERCES1_NODE__SERVICE__CIRCOM_LIB_PATH: circom
+      # METRICS_EXPORTER: "datadog"
+      # METRICS_DATADOG_HOST: "agent"
+      # METRICS_DATADOG_PORT: "8125"
+      # TRACING_ENDPOINT: "http://agent:8126"
+      # TRACING_SERVICE_NAME: "node2"
+    restart: unless-stopped
+    ports:
+      - "10002:4321"
+    env_file: .env
+
+  faucet:
+    image: ghcr.io/taceolabs/merces1-x402/taceo-merces1-faucet:latest
+    environment:
+      RUST_LOG: ${RUST_LOG:-info}
+      MERCES1_FAUCET__SERVICE__ENVIRONMENT: prod
+      MERCES1_FAUCET__SERVICE__MERCES_CONTRACT: ${MERCES_CONTRACT}
+      MERCES1_FAUCET__SERVICE__TOKEN: ${TOKEN_CONTRACT}
+      MERCES1_FAUCET__SERVICE__WALLET_PRIVATE_KEY: ${FAUCET_PRIVATE_KEY}
+      MERCES1_FAUCET__SERVICE__RPC__HTTP_URLS: ${HTTP_RPC_URL}
+      MERCES1_FAUCET__SERVICE__RPC__CONFIRMATIONS_POLL_INTERVAL: 2s
+      MERCES1_FAUCET__SERVICE__ZKEY_PATH: circom/artifacts/client.arks.zkey
+      MERCES1_FAUCET__SERVICE__GRAPH_PATH: circom/graph/client_graph.bin
+      # METRICS_EXPORTER: "datadog"
+      # METRICS_DATADOG_HOST: "agent"
+      # METRICS_DATADOG_PORT: "8125"
+      # TRACING_ENDPOINT: "http://agent:8126"
+      # TRACING_SERVICE_NAME: "faucet"
+    restart: unless-stopped
+    ports:
+      - "8080:4321"
+    env_file: .env
+
+  x402-facilitator:
+    image: ghcr.io/taceolabs/merces1-x402/taceo-merces1-x402-facilitator:latest
+    environment:
+      RUST_LOG: ${RUST_LOG:-info}
+      MERCES1_X402_FACILITATOR__SERVICE__ENVIRONMENT: prod
+      MERCES1_X402_FACILITATOR__SERVICE__MERCES_CONTRACT: ${MERCES_CONTRACT}
+      MERCES1_X402_FACILITATOR__SERVICE__WALLET_PRIVATE_KEY: ${X402_FACILITATOR_PRIVATE_KEY}
+      MERCES1_X402_FACILITATOR__SERVICE__NODE_URLS: http://node0:4321,http://node1:4321,http://node2:4321
+      MERCES1_X402_FACILITATOR__SERVICE__MPC_PKS: ${MPC_PKS}
+      MERCES1_X402_FACILITATOR__SERVICE__RPC__HTTP_URLS: ${HTTP_RPC_URL}
+      MERCES1_X402_FACILITATOR__SERVICE__RPC__CONFIRMATIONS_POLL_INTERVAL: 2s
+      MERCES1_X402_FACILITATOR__SERVICE__VK_PATH: circom/artifacts/client_verification_key.json
+      # METRICS_EXPORTER: "datadog"
+      # METRICS_DATADOG_HOST: "agent"
+      # METRICS_DATADOG_PORT: "8125"
+      # TRACING_ENDPOINT: "http://agent:8126"
+      # TRACING_SERVICE_NAME: "x402-facilitator"
+    restart: unless-stopped
+    ports:
+      - "8081:4321"
+    env_file: .env
+
+  x402-server:
+    image: ghcr.io/taceolabs/merces1-x402/taceo-merces1-x402-server:latest
+    environment:
+      RUST_LOG: ${RUST_LOG:-info}
+      MERCES1_X402_SERVER__SERVICE__ENVIRONMENT: prod
+      MERCES1_X402_SERVER__SERVICE__FACILITATOR_URL: http://x402-facilitator:4321
+      MERCES1_X402_SERVER__SERVICE__PAY_TO: ${X402_SERVER_ADDRESS}
+      # METRICS_EXPORTER: "datadog"
+      # METRICS_DATADOG_HOST: "agent"
+      # METRICS_DATADOG_PORT: "8125"
+      # TRACING_ENDPOINT: "http://agent:8126"
+      # TRACING_SERVICE_NAME: "x402-server"
+    restart: unless-stopped
+    ports:
+      - "8082:4321"
+    env_file: .env
+
