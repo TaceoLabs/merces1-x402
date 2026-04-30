@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { ConnectButton } from "@rainbow-me/rainbowkit";
-import { useAccount, useWalletClient } from "wagmi";
+import { useAccount, useWalletClient, useSwitchChain } from "wagmi";
 import { formatUnits, type Address } from "viem";
 import { x402Client, wrapFetchWithPayment, x402HTTPClient } from "@x402/fetch";
 import { ConfidentialEvmScheme } from "@taceolabs/taceo-merces1-x402-js";
@@ -11,7 +11,7 @@ import { PrivateBalanceCard } from "@/components/PrivateBalanceCard";
 const NODE_URLS = ["/api/node0", "/api/node1", "/api/node2"];
 const X402_SERVER_URL = "/api/x402-server";
 const FAUCET_URL = "/api/faucet";
-
+const CHAIN_ID = Number(process.env.NEXT_PUBLIC_CHAIN_ID!);
 const BN254_PRIME = BigInt(
   "0x30644e72e131a029b85045b68181585d2833e84879b9709143e1f593f0000001",
 );
@@ -38,7 +38,8 @@ interface PaymentSettleResponse {
 }
 
 export default function Home() {
-  const { address, isConnected } = useAccount();
+  const { address, isConnected, chainId } = useAccount();
+  const { switchChain } = useSwitchChain();
   const { data: walletClient } = useWalletClient();
 
   const [privateBalance, setPrivateBalance] = useState<string | null>(null);
@@ -62,6 +63,15 @@ export default function Home() {
       setPrivateBalanceLoading(false);
     }
   }
+
+
+  // After connecting via WalletConnect (which lands on mainnet), immediately
+  // switch to chain id specified in env.
+  useEffect(() => {
+    if (isConnected && chainId !== CHAIN_ID) {
+      switchChain({ chainId: CHAIN_ID });
+    }
+  }, [isConnected, chainId]);
 
   useEffect(() => {
     if (isConnected && address) {
