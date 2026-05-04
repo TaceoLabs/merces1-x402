@@ -38,7 +38,7 @@ impl IntoResponse for Error {
                 (StatusCode::INTERNAL_SERVER_ERROR, error.to_string()).into_response()
             }
             Error::BadRequest(message) => (StatusCode::BAD_REQUEST, message).into_response(),
-            Error::Unauthorized(message) => (StatusCode::FORBIDDEN, message).into_response(),
+            Error::Unauthorized(message) => (StatusCode::UNAUTHORIZED, message).into_response(),
         }
     }
 }
