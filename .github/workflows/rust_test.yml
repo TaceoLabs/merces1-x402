@@ -30,6 +30,8 @@ jobs:
             - uses: dtolnay/rust-toolchain@master
               with:
                   toolchain: stable
+            - name: Install build deps
+              run: sudo apt update && sudo apt install -y build-essential pkg-config libssl-dev
             # disable rust cache for now, as it does not help on the self-hosted runners
             # - uses: Swatinem/rust-cache@v2
             - uses: foundry-rs/foundry-toolchain@v1

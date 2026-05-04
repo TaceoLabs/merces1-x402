@@ -32,6 +32,8 @@ jobs:
               with:
                   toolchain: stable
                   components: rustfmt, clippy
+            - name: Install build deps
+              run: sudo apt update && sudo apt install -y build-essential pkg-config libssl-dev
             - name: Rustfmt
               run: cargo fmt --all -- --check
             - name: Clippy
