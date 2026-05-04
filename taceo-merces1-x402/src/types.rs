@@ -70,6 +70,10 @@ pub struct ConfidentialEvmPayloadAuthorization {
     #[serde(with = "ark_serde_compat::field")]
     pub amount_commitment: ark_bn254::Fr,
 
+    /// The randomness used to compute the amount commitment
+    #[serde(with = "ark_serde_compat::field")]
+    pub amount_r: ark_bn254::Fr,
+
     #[serde(with = "ark_serde_compat::field")]
     pub beta: ark_bn254::Fr,
 

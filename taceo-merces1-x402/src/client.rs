@@ -16,7 +16,6 @@
 //! ```
 
 use std::sync::Arc;
-use std::time::Instant;
 
 use alloy::primitives::{Address, FixedBytes, U256};
 use alloy::signers::Signer;
@@ -176,11 +175,9 @@ pub async fn sign_confidential_authorization<S: Signer + Sync>(
         &mut rng,
     );
     let onchain_transfer = transfer.compute_alpha();
-    let start = Instant::now();
     let (proof, public_inputs) = transfer
         .generate_proof(&params.groth16_material, &mut rng)
         .expect("correct proof generation");
-    tracing::info!("Proof generation took {:.2?}", start.elapsed());
     let beta = public_inputs[0];
     params
         .groth16_material
@@ -191,6 +188,7 @@ pub async fn sign_confidential_authorization<S: Signer + Sync>(
         from: signer.address(),
         to: params.pay_to,
         amount_commitment: onchain_transfer.amount_commitment,
+        amount_r: transfer.amount_r,
         deadline,
         nonce,
         beta,

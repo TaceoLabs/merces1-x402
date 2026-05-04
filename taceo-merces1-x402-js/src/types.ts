@@ -5,6 +5,7 @@ export type ConfidentialAuthorization = {
   from: `0x${string}`;
   to: `0x${string}`;
   amountCommitment: string;
+  amountR: string;
   beta: string;
   ciphertexts: [string, string, string, string, string, string];
   senderPk: [string, string];

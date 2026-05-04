@@ -6,7 +6,7 @@ use std::{array, collections::HashMap};
 
 pub struct TransferCompressed {
     amount: ark_bn254::Fr,
-    amount_r: ark_bn254::Fr,
+    pub amount_r: ark_bn254::Fr,
     encrypt_sk: ark_babyjubjub::Fr,
     mpc_pks: [ark_babyjubjub::EdwardsAffine; 3],
     share_amount: [ark_bn254::Fr; 2],

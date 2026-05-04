@@ -68,13 +68,10 @@ export class ConfidentialEvmScheme implements SchemeNetworkClient {
     // ZK proof path: circuit computes commitment + encrypted shares + compressed proof
     const witnessWasm = await fetchWitnessWasm();
     const zkey = await fetchZkey();
-    const { inputs, ciphertexts, senderPk, amountCommitment } = prepareTransfer(amount, mpcPublicKeys);
+    const { inputs, ciphertexts, senderPk, amountCommitment, amountR } = prepareTransfer(amount, mpcPublicKeys);
     let proof: snarkjs.Groth16Proof, publicSignals: snarkjs.PublicSignals;
     try {
-      const start = performance.now();
       ({ proof, publicSignals } = await snarkjs.groth16.fullProve(inputs, witnessWasm, zkey));
-      const end = performance.now();
-      console.log(`Proof generation took ${(end - start)} milliseconds`);
     } catch (e) {
       throw new Error(`Proof or witness generation failed: ${e}`);
     }
@@ -154,6 +151,7 @@ export class ConfidentialEvmScheme implements SchemeNetworkClient {
         from: getAddress(this.signer.address),
         to: receiver,
         amountCommitment: amountCommitment.toString(),
+        amountR: amountR.toString(),
         beta: beta.toString(),
         ciphertexts: [ciphertexts.ciphertexts0[0].toString(), ciphertexts.ciphertexts0[1].toString(), ciphertexts.ciphertexts1[0].toString(), ciphertexts.ciphertexts1[1].toString(), ciphertexts.ciphertexts2[0].toString(), ciphertexts.ciphertexts2[1].toString()],
         senderPk: [senderPk.x.toString(), senderPk.y.toString()],

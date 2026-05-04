@@ -478,6 +478,17 @@ async fn assert_valid_payment<P: Provider>(
         return Err(PaymentVerificationError::Expired.into());
     }
 
+    tracing::debug!("Checking if amount commitment matches...");
+    let is_amount_commitment = payload.payload.authorization.amount_commitment;
+    let should_amount_commitment = client::cryptography::commit1(
+        contract_rs::u256_to_field(requirements.amount)
+            .map_err(|_| PaymentVerificationError::InvalidPaymentAmount)?,
+        payload.payload.authorization.amount_r,
+    );
+    if is_amount_commitment != should_amount_commitment {
+        return Err(PaymentVerificationError::InvalidPaymentAmount.into());
+    }
+
     tracing::debug!("Checking if nonce is unique...");
     let contract = MercesInstance::new(contract_address, provider);
     let nonce_used = contract

@@ -609,6 +609,7 @@ export interface PreparedTransferOutput {
     ciphertexts2: [bigint, bigint];
   };
   amountCommitment: bigint;
+  amountR: bigint;
   senderPk: AffinePoint<bigint>;
 }
 
@@ -665,6 +666,7 @@ export function prepareTransfer(
       ciphertexts2: ciphertextsArr[2],
     },
     amountCommitment,
+    amountR,
     senderPk: encryptPk,
   };
 }
