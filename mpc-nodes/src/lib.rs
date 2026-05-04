@@ -190,6 +190,20 @@ pub fn mpc_party<N: Network>(
     ))
 }
 
+pub fn mpc_balance_ge_amount<N: Network>(
+    address: Address,
+    amount: Rep3PrimeFieldShare<ark_bn254::Fr>,
+    map: &PrivateDeposit<Address, DepositValueShare<ark_bn254::Fr>>,
+    net: &N,
+) -> eyre::Result<Rep3PrimeFieldShare<ark_bn254::Fr>> {
+    if let Some(share) = map.get(&address) {
+        let mut rep3_state = Rep3State::new(net, A2BType::default())?;
+        arithmetic::ge(share.amount, amount, net, &mut rep3_state)
+    } else {
+        Ok(Rep3PrimeFieldShare::zero())
+    }
+}
+
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize, PartialEq, Eq)]
 pub enum Action<K> {
     Deposit(

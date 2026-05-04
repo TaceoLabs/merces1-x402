@@ -13,6 +13,7 @@ publish.workspace = true
 alloy = { workspace = true, features = ["full"] }
 ark-babyjubjub.workspace = true
 ark-bn254.workspace = true
+ark-ff.workspace = true
 ark-groth16.workspace = true
 ark-serde-compat = { workspace = true, features = ["babyjubjub"] }
 async-trait.workspace = true
@@ -21,6 +22,7 @@ client = { path = "../client" }
 contract-rs = { path = "../contract-rs" }
 eyre.workspace = true
 groth16-material.workspace = true
+mpc-core.workspace = true
 rand.workspace = true
 rand_chacha.workspace = true
 reqwest.workspace = true
@@ -31,6 +33,7 @@ taceo-groth16.workspace = true
 thiserror.workspace = true
 tokio.workspace = true
 tracing = { workspace = true }
+uuid = { workspace = true, features = ["serde", "v4"] }
 x402-axum = { workspace = true, features = ["telemetry"] }
 x402-chain-eip155 = { version = "1.4", features = ["client", "facilitator"] }
 x402-facilitator-local = { version = "1.4" }

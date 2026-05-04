@@ -7776,6 +7776,8 @@ dependencies = [
  "serde",
  "sqlx",
  "taceo-ark-babyjubjub",
+ "taceo-ark-serde-compat 0.5.0",
+ "taceo-merces1-x402",
  "taceo-nodes-common",
  "taceo-nodes-observability",
  "thiserror 2.0.18",
@@ -7783,6 +7785,7 @@ dependencies = [
  "tokio-util",
  "tower-http",
  "tracing",
+ "uuid",
 ]
 
 [[package]]
@@ -7791,12 +7794,14 @@ version = "0.1.0"
 dependencies = [
  "alloy",
  "ark-bn254",
+ "ark-ff 0.5.0",
  "ark-groth16",
  "async-trait",
  "axum",
  "client",
  "contract-rs",
  "eyre",
+ "mpc-core",
  "rand 0.8.5",
  "rand_chacha 0.3.1",
  "reqwest 0.13.2",
@@ -7810,6 +7815,7 @@ dependencies = [
  "thiserror 2.0.18",
  "tokio",
  "tracing",
+ "uuid",
  "x402-axum",
  "x402-chain-eip155",
  "x402-facilitator-local",
@@ -8666,7 +8672,9 @@ version = "1.23.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ddd74a9687298c6858e9b88ec8935ec45d22e8fd5e6394fa1bd4e99a87789c76"
 dependencies = [
+ "getrandom 0.4.2",
  "js-sys",
+ "serde_core",
  "wasm-bindgen",
 ]
 

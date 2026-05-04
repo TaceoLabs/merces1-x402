@@ -14,7 +14,10 @@ use alloy::{
     sol_types::SolEvent as _,
 };
 use axum::Router;
-use contract_rs::merces::{Merces, MercesContract};
+use contract_rs::merces::{
+    Merces::{self},
+    MercesContract,
+};
 use eyre::ContextCompat as _;
 use futures::StreamExt as _;
 use mpc_core::protocols::rep3::network::Rep3NetworkExt;
@@ -45,8 +48,11 @@ pub struct AppState {
     started_services: StartedServices,
     /// map
     map: Arc<RwLock<PrivateDeposit<Address, DepositValueShare<ark_bn254::Fr>>>>,
+    network: TcpNetworkHandler,
     http_provider: HttpRpcProvider,
     ws_provider: DynProvider,
+    chain_id: u64,
+    config: Merces1NodeServiceConfig,
 }
 
 pub async fn start(
@@ -64,22 +70,26 @@ pub async fn start(
         .wallet(wallet.clone())
         .build()?;
     let ws_provider = ProviderBuilder::new()
-        .connect_ws(WsConnect::new(config.ws_rpc_url))
+        .connect_ws(WsConnect::new(&config.ws_rpc_url))
         .await?
         .erased();
+    let chain_id = http_provider.get_chain_id().await?;
 
-    let network =
-        TcpNetworkHandlerBuilder::new(config.party_id, config.mpc_bind_addr, config.node_addrs)
-            .time_to_idle(config.mpc_net_init_session_timeout * 2) // remove sessions that are idle for too long, to prevent hanging sessions in case of failures
-            .build()
-            .await?;
+    let network = TcpNetworkHandlerBuilder::new(
+        config.party_id,
+        config.mpc_bind_addr,
+        config.node_addrs.clone(),
+    )
+    .time_to_idle(config.mpc_net_init_session_timeout * 2) // remove sessions that are idle for too long, to prevent hanging sessions in case of failures
+    .build()
+    .await?;
 
     let mpc_sk = ark_babyjubjub::Fr::from_str(config.mpc_sk.expose_secret()).expect("valid mpc_sk");
 
     let groth16_material = CircomConfig::get_transfer_key_material_from_file(
-        config.zkey_path,
-        config.circuit_path,
-        config.circom_lib_path,
+        &config.zkey_path,
+        &config.circuit_path,
+        &config.circom_lib_path,
     )?;
 
     let contract = MercesContract {
@@ -134,6 +144,7 @@ pub async fn start(
 
     let task = tokio::spawn({
         let map = Arc::clone(&map);
+        let network = network.clone();
         let http_provider = http_provider.clone();
         async move {
             let _drop_guard = cancellation_token.drop_guard_ref();
@@ -185,8 +196,11 @@ pub async fn start(
     let app_state = AppState {
         started_services,
         map,
+        network,
         http_provider,
         ws_provider,
+        chain_id,
+        config,
     };
 
     let router = api::routes(app_state);
@@ -270,6 +284,9 @@ async fn process_queue(
     if !proving_key.verify(&proof, &public_inputs)? {
         eyre::bail!("Proof verification failed");
     }
+
+    // drop write guard to release lock now that the proof is verified the balance shares can be read again
+    drop(map);
 
     tracing::info!(
         "Proof verified successfully, applied {}/{} actions",

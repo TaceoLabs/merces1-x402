@@ -9,10 +9,12 @@ use std::str::FromStr;
 use alloy::primitives::{Address, TxHash, U256};
 use alloy::providers::{PendingTransactionError, Provider};
 use alloy::transports::TransportError;
+use ark_ff::Field as _;
 use ark_groth16::VerifyingKey;
 use contract_rs::merces::Merces::MercesInstance;
 use contract_rs::merces::MercesContract;
 use std::collections::HashMap;
+use uuid::Uuid;
 use x402_chain_eip155::v2_eip155_exact::eip3009::assert_requirements_match;
 use x402_facilitator_local::FacilitatorLocalError;
 use x402_types::chain::ChainId;
@@ -359,27 +361,61 @@ async fn assert_valid_proof(
     Ok(())
 }
 
-// TODO run less-than MPC protocol to hide balance
 async fn assert_enough_balance(
     node_urls: &[String; 3],
-    address: &Address,
-    amount_required: U256,
+    amount: U256,
+    payload: &ConfidentialEvmPayload,
 ) -> Result<(), Eip155ConfidentialError> {
-    let url0 = format!("{}/balance/{address}", node_urls[0]);
-    let url1 = format!("{}/balance/{address}", node_urls[1]);
-    let url2 = format!("{}/balance/{address}", node_urls[2]);
+    let session_id = Uuid::new_v4();
+    let amount = contract_rs::u256_to_field(amount)
+        .map_err(|_| PaymentVerificationError::InvalidPaymentAmount)?;
+    let amount_shares =
+        mpc_core::protocols::rep3::share_field_element(amount, &mut rand::thread_rng());
+    let url0 = format!("{}/balance-ge-amount", node_urls[0]);
+    let url1 = format!("{}/balance-ge-amount", node_urls[1]);
+    let url2 = format!("{}/balance-ge-amount", node_urls[2]);
 
     let client = reqwest::Client::new();
     let (res0, res1, res2) = tokio::join!(
-        client.get(&url0).send(),
-        client.get(&url1).send(),
-        client.get(&url2).send(),
+        client
+            .post(&url0)
+            .json(&serde_json::json!({
+                "amount_share": amount_shares[0],
+                "session_id": session_id,
+                "authorization": payload.authorization.clone(),
+                "signature": payload.signature.clone(),
+            }))
+            .send(),
+        client
+            .post(&url1)
+            .json(&serde_json::json!({
+                "amount_share": amount_shares[1],
+                "session_id": session_id,
+                "authorization": payload.authorization.clone(),
+                "signature": payload.signature.clone(),
+            }))
+            .send(),
+        client
+            .post(&url2)
+            .json(&serde_json::json!({
+                "amount_share": amount_shares[2],
+                "session_id": session_id,
+                "authorization": payload.authorization.clone(),
+                "signature": payload.signature.clone(),
+            }))
+            .send(),
     );
 
     let res0 = res0
-        .map_err(|_| PaymentVerificationError::InsufficientFunds)?
+        .map_err(|e| {
+            tracing::error!("Error while sending request to node: {e}");
+            PaymentVerificationError::InsufficientFunds
+        })?
         .error_for_status()
-        .map_err(|_| PaymentVerificationError::InsufficientFunds)?;
+        .map_err(|e| {
+            tracing::error!("Node returned error: {e}");
+            PaymentVerificationError::InsufficientFunds
+        })?;
     let res1 = res1
         .map_err(|_| PaymentVerificationError::InsufficientFunds)?
         .error_for_status()
@@ -391,7 +427,10 @@ async fn assert_enough_balance(
 
     let (res0, res1, res2) = tokio::join!(res0.text(), res1.text(), res2.text(),);
 
-    let res0 = res0.map_err(|_| PaymentVerificationError::InsufficientFunds)?;
+    let res0 = res0.map_err(|e| {
+        tracing::error!("Error while reading response from node: {e}");
+        PaymentVerificationError::InsufficientFunds
+    })?;
     let res1 = res1.map_err(|_| PaymentVerificationError::InsufficientFunds)?;
     let res2 = res2.map_err(|_| PaymentVerificationError::InsufficientFunds)?;
 
@@ -402,9 +441,9 @@ async fn assert_enough_balance(
     let share2 =
         ark_bn254::Fr::from_str(&res2).map_err(|_| PaymentVerificationError::InsufficientFunds)?;
 
-    let balance = contract_rs::bn254_fr_to_u256(share0 + share1 + share2);
+    let ge = share0 + share1 + share2;
 
-    if balance < amount_required {
+    if ge != ark_bn254::Fr::ONE {
         return Err(PaymentVerificationError::InsufficientFunds.into());
     }
 
@@ -514,7 +553,7 @@ async fn assert_valid_payment<P: Provider>(
 
     tracing::debug!("Checking balance for address {}...", authorization.from);
     let amount_required = payload.accepted.amount;
-    assert_enough_balance(nodes_urls, &authorization.from, amount_required).await?;
+    assert_enough_balance(nodes_urls, amount_required, &payload.payload).await?;
 
     tracing::debug!("Payment is valid");
 
