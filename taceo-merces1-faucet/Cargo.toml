@@ -35,6 +35,6 @@ taceo-nodes-common = { workspace = true, features = [
 ] }
 taceo-nodes-observability.workspace = true
 thiserror.workspace = true
-tokio.workspace = true
+tokio = { workspace = true, features = ["macros", "rt-multi-thread"] }
 tower-http = { workspace = true, features = ["fs", "set-header", "trace"] }
 tracing.workspace = true

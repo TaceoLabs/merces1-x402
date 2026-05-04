@@ -25,13 +25,13 @@ groth16-material.workspace = true
 mpc-core.workspace = true
 rand.workspace = true
 rand_chacha.workspace = true
-reqwest.workspace = true
+reqwest = { workspace = true, features = ["json", "rustls"] }
 serde = { workspace = true }
 serde_json.workspace = true
 taceo-circom-types = { workspace = true, features = ["groth16"] }
 taceo-groth16.workspace = true
 thiserror.workspace = true
-tokio.workspace = true
+tokio = { workspace = true, features = ["macros"] }
 tracing = { workspace = true }
 uuid = { workspace = true, features = ["serde", "v4"] }
 x402-axum = { workspace = true, features = ["telemetry"] }

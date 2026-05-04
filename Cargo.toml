@@ -57,10 +57,7 @@ num-bigint = { version = "0.4.6" }
 poseidon2 = { package = "taceo-poseidon2", version = "0.2", default-features = false }
 rand = "0.8.5"
 rand_chacha = "0.3"
-reqwest = { version = "0.13", default-features = false, features = [
-  "json",
-  "rustls"
-] }
+reqwest = { version = "0.13", default-features = false }
 reqwest-middleware = { version = "0.5" }
 rustls = "0.23"
 secrecy = "0.10"
@@ -73,7 +70,7 @@ taceo-groth16 = "0.1.3"
 taceo-nodes-common = { version = "0.5.1", default-features = false }
 taceo-nodes-observability = "0.1"
 thiserror = { version = "2" }
-tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
+tokio = "1"
 tokio-util = "0.7"
 tower-http = "0.6"
 tracing = "0.1.43"

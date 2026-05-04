@@ -31,6 +31,6 @@ mpc-nodes.workspace = true
 rand.workspace = true
 rand_chacha.workspace = true
 secrecy.workspace = true
-tokio.workspace = true
+tokio = { workspace = true, features = ["macros", "rt-multi-thread"] }
 tracing.workspace = true
 tracing-subscriber.workspace = true
