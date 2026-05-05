@@ -320,11 +320,16 @@ async fn process_queue(
     }
 
     tracing::debug!("Sync with other nodes after on-chain update");
-    let _ = tokio::time::timeout(
+    let sentinel = 42u64; // arbitrary value to broadcast to check if other nodes have processed the on-chain update
+    let (prev_sentinel, next_sentinel) = tokio::time::timeout(
         Duration::from_secs(30),
-        tokio::task::spawn_blocking(move || nets[0].broadcast(42u64)),
+        tokio::task::spawn_blocking(move || nets[0].broadcast(sentinel)),
     )
-    .await??;
+    .await???;
+    eyre::ensure!(
+        prev_sentinel == sentinel && next_sentinel == sentinel,
+        "Failed to sync with other nodes after on-chain update"
+    );
 
     // TODO if this fails for some nodes we are stuck in a bad state
     tracing::debug!("Committing map update to DB");
