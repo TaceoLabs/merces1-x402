@@ -20,6 +20,6 @@ serde = { workspace = true }
 taceo-merces1-x402 = { path = "../taceo-merces1-x402" }
 taceo-nodes-common = { workspace = true, features = ["api", "serde", "web3"] }
 taceo-nodes-observability.workspace = true
-tokio = { workspace = true }
+tokio = { workspace = true, features = ["macros", "rt-multi-thread"] }
 tracing = { workspace = true }
 x402-axum = { workspace = true, features = ["telemetry"] }
