@@ -1,0 +1,182 @@
+.root {
+  --stack-inactive-scale: 0.86;
+  --stack-far-scale: 0.74;
+  --stack-hover-scale: 1.02;
+  --stack-side-peek: 6rem;
+  --stack-edge-translate: 2.5rem;
+  --stack-edge-space: 0px;
+  --stack-z-active: 30;
+  --stack-z-inactive: 10;
+  --stack-item-width: min(29.5rem, calc(100vw - 4rem));
+  --stack-step: var(--stack-side-peek);
+  --stack-overlay-color: rgb(255 255 255);
+  --stack-overlay-opacity: 0.5;
+  max-width: 100svw;
+  margin: 0 auto;
+  opacity: 0;
+  transition: opacity 200ms ease-out;
+  min-width: 0;
+}
+
+.root[data-ready="true"] {
+  opacity: 1;
+}
+
+.root[data-ready="false"] {
+  pointer-events: none;
+}
+
+.viewport {
+  width: 100%;
+  min-width: 0;
+  overflow-x: auto;
+  overflow-y: visible;
+  scroll-snap-type: x mandatory;
+  overscroll-behavior-x: contain;
+  overscroll-behavior-inline: contain;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+
+.viewport::-webkit-scrollbar {
+  display: none;
+}
+
+.track {
+  display: flex;
+  align-items: center;
+  width: max-content;
+  min-width: 100%;
+  list-style: none;
+  margin: 0;
+  padding-block: 0;
+  padding-inline: 0;
+  min-width: 0;
+}
+
+.item {
+  position: relative;
+  flex: 0 0 var(--stack-item-width);
+  scroll-snap-align: center;
+  view-timeline-name: --stack-item-in-view;
+  view-timeline-axis: inline;
+  animation: linear stack-adjust-z-index both;
+  animation-timeline: --stack-item-in-view;
+  z-index: var(--stack-z-inactive);
+  will-change: z-index;
+  pointer-events: none;
+}
+
+.item + .item {
+  margin-inline-start: calc(var(--stack-step) - var(--stack-item-width));
+}
+
+.item:first-child {
+  margin-inline-start: var(--stack-edge-space);
+}
+
+.item:last-child {
+  margin-inline-end: var(--stack-edge-space);
+}
+
+.itemInner {
+  width: 100%;
+  position: relative;
+  overflow: hidden;
+  border-radius: 0.625rem;
+  transform-origin: center;
+  transform: translateX(calc(var(--stack-edge-translate) * -1))
+    scale(var(--stack-far-scale));
+  animation: linear stack-card-transform both;
+  animation-timeline: --stack-item-in-view;
+  will-change: transform;
+  pointer-events: auto;
+}
+
+.overlay {
+  position: absolute;
+  inset: 0;
+  background-color: var(--stack-overlay-color);
+  opacity: 0;
+  pointer-events: none;
+  user-select: none;
+  will-change: opacity;
+  border-radius: 0.625rem;
+}
+
+.itemInner[data-clickable="true"] {
+  cursor: pointer;
+}
+
+@media (max-width: 47.999rem) {
+  .root {
+    --stack-item-width: calc(100vw - 2.5rem);
+    --stack-side-peek: 4.5rem;
+    --stack-edge-translate: 1rem;
+    --stack-inactive-scale: 0.88;
+  }
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .itemInner[data-clickable="true"][data-hover-capable="true"] {
+    transition: scale 160ms ease-out;
+  }
+
+  .itemInner[data-clickable="true"][data-hover-capable="true"]:hover {
+    scale: var(--stack-hover-scale);
+  }
+}
+
+@keyframes stack-adjust-z-index {
+  0% {
+    z-index: var(--stack-z-inactive);
+  }
+  50% {
+    z-index: var(--stack-z-active);
+  }
+  100% {
+    z-index: var(--stack-z-inactive);
+  }
+}
+
+@keyframes stack-card-transform {
+  0% {
+    transform: translateX(calc(var(--stack-edge-translate) * -1))
+      scale(var(--stack-far-scale));
+  }
+  25% {
+    transform: translateX(calc(var(--stack-edge-translate) * -0.5))
+      scale(var(--stack-inactive-scale));
+  }
+  50% {
+    transform: translateX(0) scale(1);
+  }
+  75% {
+    transform: translateX(calc(var(--stack-edge-translate) * 0.5))
+      scale(var(--stack-inactive-scale));
+  }
+  100% {
+    transform: translateX(var(--stack-edge-translate))
+      scale(var(--stack-far-scale));
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .root {
+    transition: none;
+  }
+
+  .item,
+  .itemInner,
+  .overlay {
+    animation: none;
+  }
+
+  .itemInner {
+    transform: none;
+  }
+
+  .overlay {
+    opacity: 0;
+  }
+}
