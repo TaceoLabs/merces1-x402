@@ -20,6 +20,10 @@ const nextConfig: NextConfig = {
         source: "/api/rpc",
         destination: `${process.env.RPC_URL}`,
       },
+      {
+        source: "/api/faucet/:path*",
+        destination: `${process.env.FAUCET_URL}/:path*`,
+      },
     ];
   },
 };

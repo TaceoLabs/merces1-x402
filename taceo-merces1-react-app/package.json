@@ -10,12 +10,15 @@
   },
   "dependencies": {
     "@rainbow-me/rainbowkit": "^2.2.10",
-    "@tanstack/react-query": "^5.90.21",
-    "next": "16.1.6",
-    "react": "19.2.3",
-    "react-dom": "19.2.3",
     "@taceolabs/taceo-merces1-client-js": "file:../taceo-merces1-client-js",
-    "viem": "^2.46.3",
+    "@tanstack/react-query": "^5.100.5",
+    "@x402/fetch": "^2.10.0",
+    "next": "16.2.4",
+    "radix-ui": "^1.4.3",
+    "react": "19.2.4",
+    "react-dom": "19.2.4",
+    "scroll-timeline-polyfill": "^1.1.0",
+    "viem": "^2.48.4",
     "wagmi": "^2.19.5"
   },
   "devDependencies": {
@@ -24,7 +27,7 @@
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "eslint": "^9",
-    "eslint-config-next": "16.1.6",
+    "eslint-config-next": "16.2.4",
     "tailwindcss": "^4",
     "typescript": "^5"
   }
