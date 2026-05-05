@@ -715,4 +715,18 @@ impl MercesContract {
 
         Ok((action_index, receipt))
     }
+
+    pub async fn account_exists(
+        &self,
+        provider: &DynProvider,
+        address: Address,
+    ) -> eyre::Result<bool> {
+        let contract = Merces::new(self.contract_address, provider);
+        let commitment = contract
+            .balanceCommitments(address)
+            .call()
+            .await
+            .context("while calling balanceCommitments")?;
+        Ok(commitment != U256::ZERO)
+    }
 }

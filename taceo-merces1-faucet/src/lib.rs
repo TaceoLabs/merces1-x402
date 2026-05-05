@@ -130,8 +130,7 @@ pub async fn start(config: Merces1FaucetServiceConfig) -> eyre::Result<Router> {
     let token = USDCTokenContract::new(config.token);
     // max amount we can deposit at once
     let initial_balance = U256::from(2).pow(U256::from(80)) - U256::from(1);
-    // TODO check the private balance, this is just a hack that works for local setup
-    if token.balance_of(&provider, wallet_address).await? == U256::MAX {
+    if !contract.account_exists(&provider, wallet_address).await? {
         tracing::info!("Initial deposit of {initial_balance} tokens to the faucet wallet");
         token
             .approve(&provider, config.merces_contract, initial_balance)
