@@ -9,10 +9,6 @@ use crate::config::X402ServerServiceConfig;
 
 pub mod config;
 
-const SAVE20: &str = "SAVE20";
-const SAVE50: &str = "SAVE50";
-const SAVE80: &str = "SAVE80";
-
 pub async fn start(config: X402ServerServiceConfig) -> eyre::Result<Router> {
     let x402 = X402Middleware::new(&config.facilitator_url);
 
@@ -20,20 +16,20 @@ pub async fn start(config: X402ServerServiceConfig) -> eyre::Result<Router> {
         .route(
             "/api/protected",
             get(handler).layer(x402.with_dynamic_price(move |headers, _uri, _base_url| {
-                let promo_code = headers
-                    .get("x-promo-code")
-                    .and_then(|value| value.to_str().ok());
+                let price_tier = headers
+                    .get("x-price-tier")
+                    .and_then(|value| value.to_str().ok())
+                    .map(str::to_owned);
                 let usdc = if config.environment.is_dev() {
                     ConfidentialUSDC::anvil()
                 } else {
                     ConfidentialUSDC::base_sepolia()
                 };
-                let amount = match promo_code {
-                    Some(SAVE20) => usdc.parse("$0.8").expect("valid amount"),
-                    Some(SAVE50) => usdc.parse("$0.5").expect("valid amount"),
-                    Some(SAVE80) => usdc.parse("$0.2").expect("valid amount"),
-                    _ => usdc.parse("$1").expect("valid amount"),
-                };
+                let price_str = price_tier
+                    .as_deref()
+                    .and_then(|code| config.price_tiers.get(code).map(String::as_str))
+                    .unwrap_or(&config.default_price);
+                let amount = usdc.parse(price_str).expect("valid amount");
                 async move { vec![V2Eip155Confidential::price_tag(config.pay_to, amount)] }
             })),
         )
