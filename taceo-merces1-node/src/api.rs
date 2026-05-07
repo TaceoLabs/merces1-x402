@@ -2,7 +2,7 @@ use alloy::primitives::{Address, Bytes, U256};
 use ark_ff::AdditiveGroup;
 use axum::{
     Json, Router,
-    extract::{Path, State},
+    extract::{Path, Query, State},
     http::StatusCode,
     response::IntoResponse,
     routing::{get, post},
@@ -15,7 +15,10 @@ use taceo_merces1_x402::ConfidentialEvmPayloadAuthorization;
 use tower_http::trace::TraceLayer;
 use uuid::Uuid;
 
-use crate::AppState;
+use crate::{
+    AppState,
+    db::{Transaction, TransactionFilter, TransactionKind},
+};
 
 /// Represents all possible API errors.
 #[expect(clippy::enum_variant_names)]
@@ -62,6 +65,7 @@ pub(crate) fn routes(app_state: AppState) -> Router {
             taceo_nodes_common::version_info!(),
         ))
         .route("/balance/{address}", get(balance))
+        .route("/transactions", get(transactions))
         .route("/balance-ge-amount", post(balance_ge_amount))
         .layer(TraceLayer::new_for_http())
         .with_state(app_state)
@@ -77,6 +81,35 @@ async fn balance(
         .map(|share| share.amount.a)
         .unwrap_or(ark_bn254::Fr::ZERO);
     Ok(balance.to_string())
+}
+
+#[derive(Debug, Clone, Deserialize)]
+struct TransactionsQuery {
+    offset: Option<u32>,
+    limit: Option<u32>,
+    sender: Option<Address>,
+    receiver: Option<Address>,
+    #[serde(rename = "type")]
+    kind: Option<TransactionKind>,
+}
+
+async fn transactions(
+    State(state): State<AppState>,
+    Query(query): Query<TransactionsQuery>,
+) -> Result<Json<Vec<Transaction>>, Error> {
+    let transactions = state
+        .db
+        .load_transactions(
+            query.offset.unwrap_or(0).into(),
+            query.limit.unwrap_or(10).into(),
+            TransactionFilter {
+                sender: query.sender,
+                receiver: query.receiver,
+                kind: query.kind,
+            },
+        )
+        .await?;
+    Ok(Json(transactions))
 }
 
 #[derive(Debug, Clone, Deserialize)]

@@ -23,6 +23,7 @@ use futures::StreamExt as _;
 use mpc_core::protocols::rep3::network::Rep3NetworkExt;
 use mpc_net::tcp_session::{TcpNetworkHandler, TcpNetworkHandlerBuilder};
 use mpc_nodes::{
+    Action,
     circom::{config::CircomConfig, groth16::Groth16Material},
     map::{DepositValueShare, PrivateDeposit},
 };
@@ -34,7 +35,10 @@ use taceo_nodes_common::{
 use tokio::sync::RwLock;
 use tokio_util::sync::CancellationToken;
 
-use crate::{config::Merces1NodeServiceConfig, db::DbPool};
+use crate::{
+    config::Merces1NodeServiceConfig,
+    db::{DbPool, TransactionKind},
+};
 
 mod api;
 pub mod config;
@@ -53,6 +57,7 @@ pub struct AppState {
     ws_provider: DynProvider,
     chain_id: u64,
     config: Merces1NodeServiceConfig,
+    db: DbPool,
 }
 
 pub async fn start(
@@ -146,6 +151,7 @@ pub async fn start(
         let map = Arc::clone(&map);
         let network = network.clone();
         let http_provider = http_provider.clone();
+        let db = db.clone();
         async move {
             let _drop_guard = cancellation_token.drop_guard_ref();
 
@@ -201,6 +207,7 @@ pub async fn start(
         ws_provider,
         chain_id,
         config,
+        db,
     };
 
     let router = api::routes(app_state);
@@ -267,7 +274,7 @@ async fn process_queue(
     tracing::info!("Processing {} actions {action_indices:?}", actions.len(),);
 
     let mut map = map.write().await;
-    let (applied_transactions, commitments, valid, proof, public_inputs, updated) =
+    let (applied_transactions, commitments, valid, proof, public_inputs, updated, actions) =
         tokio::task::block_in_place(|| {
             mpc_nodes::mpc_party(
                 &my_key,
@@ -298,7 +305,7 @@ async fn process_queue(
     db.update_map(&updated).await?;
 
     // only one party needs to submit the result to the contract
-    if party_id == 0 {
+    let receipt = if party_id == 0 {
         tracing::info!("Submitting MPC result to contract");
 
         let commitments = commitments
@@ -307,17 +314,20 @@ async fn process_queue(
             .collect::<Vec<_>>();
         let beta = public_inputs[0];
 
-        contract
+        let (_, receipt) = contract
             .process_mpc(
                 provider,
                 applied_transactions,
                 commitments.try_into().unwrap(),
-                valid.try_into().unwrap(),
+                valid.clone().try_into().unwrap(),
                 beta,
                 proof,
             )
             .await?;
-    }
+        Some(receipt)
+    } else {
+        None
+    };
 
     tracing::debug!("Sync with other nodes after on-chain update");
     let sentinel = 42u64; // arbitrary value to broadcast to check if other nodes have processed the on-chain update
@@ -333,13 +343,63 @@ async fn process_queue(
 
     // TODO if this fails for some nodes we are stuck in a bad state
     tracing::debug!("Committing map update to DB");
+    let mut tx = db.pool.begin().await?;
     db.commit_map_update(
         &updated
             .iter()
             .map(|(address, _)| *address)
             .collect::<Vec<_>>(),
+        &mut tx,
     )
     .await?;
+    let receipt = receipt.map(|receipt| receipt.transaction_hash);
+    for (action, valid) in actions.into_iter().zip(valid) {
+        if !valid {
+            continue;
+        }
+        match action {
+            Action::Deposit(receiver, amount) => {
+                db.insert_transaction(
+                    Address::default(),
+                    receiver,
+                    TransactionKind::Deposit,
+                    receipt,
+                    Some(amount),
+                    None,
+                    None,
+                    &mut tx,
+                )
+                .await?
+            }
+            Action::Withdraw(sender, amount) => {
+                db.insert_transaction(
+                    sender,
+                    Address::default(),
+                    TransactionKind::Withdraw,
+                    receipt,
+                    Some(amount),
+                    None,
+                    None,
+                    &mut tx,
+                )
+                .await?
+            }
+            Action::Transfer(sender, receiver, amount_share, _, amount_commitment) => {
+                db.insert_transaction(
+                    sender,
+                    receiver,
+                    TransactionKind::Transfer,
+                    receipt,
+                    None,
+                    Some(amount_commitment),
+                    Some(amount_share),
+                    &mut tx,
+                )
+                .await?
+            }
+        }
+    }
+    tx.commit().await?;
 
     tracing::info!(
         "Finished processing actions {action_indices:?} after {:?}",
