@@ -15,6 +15,10 @@ import * as snarkjs from 'snarkjs';
 const witnessWasmUrl = new URL('../client.wasm', import.meta.url);
 const zkeyUrl = new URL('../client.zkey', import.meta.url);
 
+const BN254_PRIME = BigInt(
+  '0x30644e72e131a029b85045b68181585d2833e84879b9709143e1f593f0000001',
+);
+
 export async function fetchWitnessWasm(): Promise<Uint8Array | string> {
   if (typeof window === 'undefined') {
     // Node.js: just return the file path since snarkjs will read it via fs.open
@@ -96,6 +100,16 @@ export class TimeoutError extends Error {
 }
 
 export type Token = { type: 'Native' } | { type: 'ERC20', address: Address };
+
+type RawTransaction =
+  | { Deposit: { id: number; receiver: string; tx_hash: string | null; amount: string; timestamp: string } }
+  | { Withdraw: { id: number; sender: string; tx_hash: string | null; amount: string; timestamp: string } }
+  | { Transfer: { id: number; sender: string; receiver: string; tx_hash: string | null; amount_commitment: string; amount_share: string; timestamp: string } };
+
+export type Transaction =
+  | { type: 'Deposit'; id: number; receiver: Address; txHash: string | null; amount: bigint; timestamp: string }
+  | { type: 'Withdraw'; id: number; sender: Address; txHash: string | null; amount: bigint; timestamp: string }
+  | { type: 'Transfer'; id: number; sender: Address; receiver: Address; txHash: string | null; amountCommitment: bigint; amount: bigint; timestamp: string };
 
 export interface TransferProof {
   compressedProof: [string, string, string, string];
@@ -245,13 +259,9 @@ export class Client {
       fetchBalance(this.nodeUrls[1]!, 1),
       fetchBalance(this.nodeUrls[2]!, 2),
     ]);
-    const BN254_PRIME = BigInt(
-      "0x30644e72e131a029b85045b68181585d2833e84879b9709143e1f593f0000001",
-    );
-
-    const balance = balanceShare0 + balanceShare1 + balanceShare2;
-    return balance % BN254_PRIME;
+    return (balanceShare0 + balanceShare1 + balanceShare2) % BN254_PRIME;
   }
+
 
   public async getNativeBalance(): Promise<bigint> {
     const address = this.walletClient.account!.address;
@@ -473,6 +483,53 @@ export function encodeCiphertexts(ciphertexts: { ciphertexts0: [bigint, bigint],
     r: [ciphertexts.ciphertexts0[1], ciphertexts.ciphertexts1[1], ciphertexts.ciphertexts2[1]],
     senderPk,
   };
+}
+
+export interface TransactionFilter {
+  sender?: Address;
+  receiver?: Address;
+  type?: 'Deposit' | 'Withdraw' | 'Transfer';
+}
+
+export async function getTransactions(nodeUrls: string[], offset?: number, limit?: number, filter?: TransactionFilter): Promise<Transaction[]> {
+  const fetchFromNode = async (url: string, nodeIndex: number): Promise<RawTransaction[]> => {
+    const params = new URLSearchParams({
+      offset: String(offset ?? 0),
+      limit: String(limit ?? 10),
+    });
+    if (filter?.sender) params.set('sender', filter.sender);
+    if (filter?.receiver) params.set('receiver', filter.receiver);
+    if (filter?.type) params.set('type', filter.type);
+    const res = await fetch(`${url}/transactions?${params}`);
+    if (!res.ok) {
+      throw new Error(`node ${nodeIndex} returned HTTP ${res.status}: ${res.statusText}`);
+    }
+    return res.json() as Promise<RawTransaction[]>;
+  };
+
+  const [txs0, txs1, txs2] = await Promise.all([
+    fetchFromNode(nodeUrls[0]!, 0),
+    fetchFromNode(nodeUrls[1]!, 1),
+    fetchFromNode(nodeUrls[2]!, 2),
+  ]);
+
+  return txs0.map((tx0, i) => {
+    const tx1 = txs1[i]!;
+    const tx2 = txs2[i]!;
+
+    if ('Deposit' in tx0 && 'Deposit' in tx1 && 'Deposit' in tx2) {
+      const amount = BigInt(tx0.Deposit.amount);
+      return { type: 'Deposit' as const, id: tx0.Deposit.id, receiver: tx0.Deposit.receiver as Address, txHash: tx0.Deposit.tx_hash, amount, timestamp: tx0.Deposit.timestamp };
+    } else if ('Withdraw' in tx0 && 'Withdraw' in tx1 && 'Withdraw' in tx2) {
+      const amount = BigInt(tx0.Withdraw.amount);
+      return { type: 'Withdraw' as const, id: tx0.Withdraw.id, sender: tx0.Withdraw.sender as Address, txHash: tx0.Withdraw.tx_hash, amount, timestamp: tx0.Withdraw.timestamp };
+    } else if ('Transfer' in tx0 && 'Transfer' in tx1 && 'Transfer' in tx2) {
+      const amount = (BigInt(tx0.Transfer.amount_share) + BigInt(tx1.Transfer.amount_share) + BigInt(tx2.Transfer.amount_share)) % BN254_PRIME;
+      return { type: 'Transfer' as const, id: tx0.Transfer.id, sender: tx0.Transfer.sender as Address, receiver: tx0.Transfer.receiver as Address, txHash: tx0.Transfer.tx_hash, amountCommitment: BigInt(tx0.Transfer.amount_commitment), amount, timestamp: tx0.Transfer.timestamp };
+    } else {
+      throw new Error(`Transaction type mismatch between nodes at index ${i}`);
+    }
+  });
 }
 
 /** BN254 scalar field */
