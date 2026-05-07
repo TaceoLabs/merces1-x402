@@ -119,6 +119,7 @@ fn read_and_build_queue<N: Network>(
                     action.receiver,
                     Rep3PrimeFieldShare::new(plaintexts[0], reshared[0]),
                     Rep3PrimeFieldShare::new(plaintexts[1], reshared[1]),
+                    contract_rs::u256_to_field(action.amount)?, // amount is a commitment
                 ));
             }
             x => {
@@ -145,6 +146,7 @@ pub fn mpc_party<N: Network>(
     Proof<Bn254>,
     Vec<ark_bn254::Fr>,
     Vec<(Address, DepositValueShare<ark_bn254::Fr>)>,
+    Vec<Action<Address>>,
 )> {
     let queue = read_and_build_queue(my_key, action, ciphertexts, nets)?;
 
@@ -164,17 +166,17 @@ pub fn mpc_party<N: Network>(
         )?;
     let (proof, public_inputs) = proving_key.trace_to_proof(inputs, traces, &nets[0], &nets[1])?;
     let updated = queue
-        .into_iter()
+        .iter()
         .zip(valids.iter())
         .filter(|(_, valid)| **valid)
         .flat_map(|(action, _)| match action {
             Action::Deposit(address, _) | Action::Withdraw(address, _) => {
-                vec![(address, map.get(&address).cloned().expect("must exist"))]
+                vec![(*address, map.get(address).cloned().expect("must exist"))]
             }
-            Action::Transfer(sender, receiver, _, _) => {
+            Action::Transfer(sender, receiver, _, _, _) => {
                 vec![
-                    (sender, map.get(&sender).cloned().expect("must exist")),
-                    (receiver, map.get(&receiver).cloned().expect("must exist")),
+                    (*sender, map.get(sender).cloned().expect("must exist")),
+                    (*receiver, map.get(receiver).cloned().expect("must exist")),
                 ]
             }
         })
@@ -187,6 +189,7 @@ pub fn mpc_party<N: Network>(
         proof,
         public_inputs,
         updated,
+        queue,
     ))
 }
 
@@ -214,7 +217,13 @@ pub enum Action<K> {
         K,
         #[serde(serialize_with = "ark_se", deserialize_with = "ark_de")] F,
     ), // Sender, amount
-    Transfer(K, K, Rep3PrimeFieldShare<F>, Rep3PrimeFieldShare<F>), // Sender, Receiver, amount, amount_blinding
+    Transfer(
+        K,
+        K,
+        Rep3PrimeFieldShare<F>,
+        Rep3PrimeFieldShare<F>,
+        #[serde(serialize_with = "ark_se", deserialize_with = "ark_de")] F,
+    ), // Sender, Receiver, amount, amount_blinding, amount_commitment
 }
 
 pub(crate) fn poseidon2_circom_commitment_helper<

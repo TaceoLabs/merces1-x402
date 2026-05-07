@@ -115,7 +115,7 @@ impl Mpc {
                 .all_equal(),
             "MPC parties produced different results"
         );
-        let (applied_transactions, commitments, valids, proof, public_inputs, _) =
+        let (applied_transactions, commitments, valids, proof, public_inputs, _, _) =
             proofs.pop().unwrap();
         if !self.proving_key.verify(&proof, &public_inputs)? {
             eyre::bail!("Proof verification failed");

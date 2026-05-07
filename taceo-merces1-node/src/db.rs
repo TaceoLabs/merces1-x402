@@ -10,18 +10,71 @@
 //! [`ark_serialize::CanonicalSerialize`].
 
 use std::collections::HashMap;
+use std::str::FromStr;
 
-use alloy::primitives::Address;
+use alloy::primitives::{Address, TxHash};
 use ark_serialize::{CanonicalDeserialize, CanonicalSerialize};
+use chrono::{DateTime, Utc};
 use eyre::Context as _;
 use mpc_core::protocols::rep3::Rep3PrimeFieldShare;
 use mpc_nodes::map::{DepositValueShare, PrivateDeposit};
 use secrecy::SecretString;
-use sqlx::{PgPool, Row, migrate::Migrator};
+use serde::{Deserialize, Serialize};
+use sqlx::{PgConnection, PgPool, Row, migrate::Migrator};
 use std::time::Duration;
 use taceo_nodes_common::postgres::{PostgresConfig, SanitizedSchema, pg_pool_with_schema};
 
 static MIGRATOR: Migrator = sqlx::migrate!("./migrations");
+
+#[derive(Debug, Clone, PartialEq, Eq, sqlx::Type, Deserialize)]
+#[sqlx(type_name = "transaction_type")]
+pub enum TransactionKind {
+    #[sqlx(rename = "deposit")]
+    Deposit,
+    #[sqlx(rename = "withdraw")]
+    Withdraw,
+    #[sqlx(rename = "transfer")]
+    Transfer,
+}
+
+#[derive(Debug, Clone, Serialize)]
+pub enum Transaction {
+    Deposit {
+        id: i64,
+        receiver: Address,
+        tx_hash: Option<TxHash>,
+        #[serde(with = "ark_serde_compat::field")]
+        amount: ark_bn254::Fr,
+        timestamp: DateTime<Utc>,
+    },
+    Withdraw {
+        id: i64,
+        sender: Address,
+        tx_hash: Option<TxHash>,
+        #[serde(with = "ark_serde_compat::field")]
+        amount: ark_bn254::Fr,
+        timestamp: DateTime<Utc>,
+    },
+    Transfer {
+        id: i64,
+        sender: Address,
+        receiver: Address,
+        tx_hash: Option<TxHash>,
+        #[serde(with = "ark_serde_compat::field")]
+        amount_commitment: ark_bn254::Fr,
+        // For simplicity, we serialize the amount share as additive instead of REP3 (more convenient for clients, and wire format)
+        #[serde(with = "ark_serde_compat::field")]
+        amount_share: ark_bn254::Fr,
+        timestamp: DateTime<Utc>,
+    },
+}
+
+#[derive(Debug, Clone)]
+pub(crate) struct TransactionFilter {
+    pub sender: Option<Address>,
+    pub receiver: Option<Address>,
+    pub kind: Option<TransactionKind>,
+}
 
 /// Thin wrapper around a [`sqlx::PgPool`] with secret-share–specific helpers.
 #[derive(Clone, Debug)]
@@ -132,7 +185,139 @@ impl DbPool {
         Ok(())
     }
 
-    pub(crate) async fn commit_map_update(&self, addresses: &[Address]) -> eyre::Result<()> {
+    /// Returns a page of transactions ordered by `id DESC`, with optional filters.
+    pub(crate) async fn load_transactions(
+        &self,
+        offset: i64,
+        limit: i64,
+        filter: TransactionFilter,
+    ) -> eyre::Result<Vec<Transaction>> {
+        let mut qb: sqlx::QueryBuilder<sqlx::Postgres> = sqlx::QueryBuilder::new(
+            r#"SELECT id, sender, receiver, "type", tx_hash, amount::text, amount_commitment, amount_share, "timestamp" FROM transactions WHERE TRUE"#,
+        );
+        if let Some(sender) = filter.sender {
+            qb.push(" AND sender = ")
+                .push_bind(sender.as_slice().to_vec());
+        }
+        if let Some(receiver) = filter.receiver {
+            qb.push(" AND receiver = ")
+                .push_bind(receiver.as_slice().to_vec());
+        }
+        if let Some(kind) = filter.kind {
+            qb.push(r#" AND "type" = "#).push_bind(kind);
+        }
+        qb.push(" ORDER BY id DESC LIMIT ").push_bind(limit);
+        qb.push(" OFFSET ").push_bind(offset);
+
+        let rows = qb
+            .build()
+            .fetch_all(&self.pool)
+            .await
+            .context("while loading transactions")?;
+
+        let mut txs = Vec::with_capacity(rows.len());
+        for row in rows {
+            let sender_bytes: Vec<u8> = row.get("sender");
+            let receiver_bytes: Vec<u8> = row.get("receiver");
+            let tx_hash_bytes: Option<Vec<u8>> = row.get("tx_hash");
+            let kind: TransactionKind = row.get("type");
+
+            match kind {
+                TransactionKind::Deposit => {
+                    txs.push(Transaction::Deposit {
+                        id: row.get("id"),
+                        receiver: Address::try_from(receiver_bytes.as_slice())
+                            .expect("valid address"),
+                        tx_hash: tx_hash_bytes.map(|b| {
+                            <[u8; 32]>::try_from(b.as_slice())
+                                .map(TxHash::from)
+                                .expect("valid tx_hash in DB")
+                        }),
+                        amount: ark_bn254::Fr::from_str(&row.get::<String, _>("amount"))
+                            .expect("valid field element"),
+                        timestamp: row.get("timestamp"),
+                    });
+                }
+                TransactionKind::Withdraw => {
+                    txs.push(Transaction::Withdraw {
+                        id: row.get("id"),
+                        sender: Address::try_from(sender_bytes.as_slice()).expect("valid address"),
+                        tx_hash: tx_hash_bytes.map(|b| {
+                            <[u8; 32]>::try_from(b.as_slice())
+                                .map(TxHash::from)
+                                .expect("valid tx_hash in DB")
+                        }),
+                        amount: ark_bn254::Fr::from_str(&row.get::<String, _>("amount"))
+                            .expect("valid field element"),
+                        timestamp: row.get("timestamp"),
+                    });
+                }
+                TransactionKind::Transfer => {
+                    txs.push(Transaction::Transfer {
+                        id: row.get("id"),
+                        sender: Address::try_from(sender_bytes.as_slice()).expect("valid address"),
+                        receiver: Address::try_from(receiver_bytes.as_slice())
+                            .expect("valid address"),
+                        tx_hash: tx_hash_bytes.map(|b| {
+                            <[u8; 32]>::try_from(b.as_slice())
+                                .map(TxHash::from)
+                                .expect("valid tx_hash in DB")
+                        }),
+                        amount_commitment: ark_bn254::Fr::from_str(
+                            &row.get::<String, _>("amount_commitment"),
+                        )
+                        .expect("valid field element"),
+                        amount_share: ark_bn254::Fr::from_str(
+                            &row.get::<String, _>("amount_share"),
+                        )
+                        .expect("valid field element"),
+
+                        timestamp: row.get("timestamp"),
+                    });
+                }
+            }
+        }
+
+        Ok(txs)
+    }
+
+    #[expect(clippy::too_many_arguments)]
+    pub(crate) async fn insert_transaction(
+        &self,
+        sender: Address,
+        receiver: Address,
+        kind: TransactionKind,
+        tx_hash: Option<TxHash>,
+        amount: Option<ark_bn254::Fr>,
+        amount_commitment: Option<ark_bn254::Fr>,
+        amount_share: Option<Rep3PrimeFieldShare<ark_bn254::Fr>>,
+        executor: &mut PgConnection,
+    ) -> eyre::Result<()> {
+        sqlx::query(
+            r#"
+                INSERT INTO transactions
+                    (sender, receiver, "type", tx_hash, amount, amount_commitment, amount_share)
+                VALUES ($1, $2, $3, $4, $5::numeric, $6, $7)
+                "#,
+        )
+        .bind(sender.as_slice())
+        .bind(receiver.as_slice())
+        .bind(kind)
+        .bind(tx_hash.map(|h| h.as_slice().to_vec()))
+        .bind(amount.map(|a| a.to_string()))
+        .bind(amount_commitment.map(|c| c.to_string()))
+        .bind(amount_share.map(|s| s.a.to_string()))
+        .execute(&mut *executor)
+        .await
+        .context("while inserting transaction")?;
+        Ok(())
+    }
+
+    pub(crate) async fn commit_map_update(
+        &self,
+        addresses: &[Address],
+        executor: &mut PgConnection,
+    ) -> eyre::Result<()> {
         let address_bytes: Vec<Vec<u8>> = addresses
             .iter()
             .map(|addr| addr.as_slice().to_vec())
@@ -146,7 +331,7 @@ impl DbPool {
             ",
         )
         .bind(&address_bytes)
-        .execute(&self.pool)
+        .execute(&mut *executor)
         .await
         .context("while committing map update")?;
 

@@ -94,7 +94,7 @@ where
                         });
                         handles.push(handle);
                     }
-                    Action::Transfer(sender, receiver, amount, amount_blinding) => {
+                    Action::Transfer(sender, receiver, amount, amount_blinding, _) => {
                         let (sender_old, sender_new, receiver_old, receiver_new) = copy_map
                             .transaction(sender.clone(), receiver.clone(), *amount, rep3_state)?;
                         let handle = scope.spawn(move || {
@@ -142,7 +142,7 @@ where
                                 continue;
                             }
                         }
-                        Action::Transfer(sender, receiver, _, _) => {
+                        Action::Transfer(sender, receiver, _, _, _) => {
                             if faulty_parties.contains(sender) || faulty_parties.contains(receiver)
                             {
                                 full_break = true;
@@ -160,7 +160,7 @@ where
                         Action::Withdraw(sender, _) => {
                             self.insert(sender.clone(), sender_new_);
                         }
-                        Action::Transfer(sender, receiver, _, _) => {
+                        Action::Transfer(sender, receiver, _, _, _) => {
                             self.insert(sender.clone(), sender_new_);
                             self.insert(receiver.clone(), receiver_new_);
                         }
@@ -175,7 +175,7 @@ where
                         Action::Withdraw(sender, _) => {
                             faulty_parties.insert(sender.clone());
                         }
-                        Action::Transfer(sender, receiver, _, _) => {
+                        Action::Transfer(sender, receiver, _, _, _) => {
                             faulty_parties.insert(sender.clone());
                             faulty_parties.insert(receiver.clone());
                         }
@@ -190,7 +190,7 @@ where
                         new_balance_commitments.push(commitments_opened[1]); // Sender new balance commitment
                         new_balance_commitments.push(F::zero()); // Smart contract expects 0
                     }
-                    Action::Transfer(_, _, _, _) => {
+                    Action::Transfer(_, _, _, _, _) => {
                         new_balance_commitments.push(commitments_opened[1]); // Sender new balance commitment
                         new_balance_commitments.push(commitments_opened[3]); // Receiver new balance commitment
                     }
@@ -602,6 +602,7 @@ mod tests {
             }
             let amount = F::from(rng.r#gen::<u64>());
             let amount_blinding = F::rand(&mut rng);
+            let amount_commitment = client::cryptography::commit1(amount, amount_blinding);
 
             // Share the amount and the blinding
             let amount_share = rep3::share_field_element(amount, &mut rng);
@@ -623,18 +624,21 @@ mod tests {
                 key2,
                 amount_share[0],
                 amount_blinding_share[0],
+                amount_commitment,
             ));
             action_queue_1.push(Action::Transfer(
                 key1,
                 key2,
                 amount_share[1],
                 amount_blinding_share[1],
+                amount_commitment,
             ));
             action_queue_2.push(Action::Transfer(
                 key1,
                 key2,
                 amount_share[2],
                 amount_blinding_share[2],
+                amount_commitment,
             ));
 
             // Withdraw from key2
