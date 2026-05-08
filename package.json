@@ -1,0 +1,10 @@
+{
+  "name": "merces1-x402-monorepo",
+  "private": true,
+  "workspaces": [
+    "taceo-merces1-client-js",
+    "taceo-merces1-x402-js",
+    "taceo-merces1-react-app",
+    "taceo-merces1-x402-react-app"
+  ]
+}

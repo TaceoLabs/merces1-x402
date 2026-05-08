@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from "react";
 import { Address, formatUnits, parseUnits } from "viem";
 import { ConnectButton } from "@rainbow-me/rainbowkit";
 import { useAccount, useWalletClient, usePublicClient, useBalance, useSwitchChain } from "wagmi";
-import { Client } from "@taceolabs/taceo-merces1-client-js";
+import { Client } from "@taceo/merces1-client";
 
 const NODE_URLS = ["/api/node0", "/api/node1", "/api/node2"];
 const MERCES_CONTRACT_ADDRESS = process.env.NEXT_PUBLIC_MERCES_CONTRACT_ADDRESS! as Address;

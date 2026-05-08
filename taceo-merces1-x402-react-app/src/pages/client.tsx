@@ -3,7 +3,7 @@ import WalletButton from "@/components/WalletButton";
 import { useAccount, useWalletClient, useSwitchChain } from "wagmi";
 import { type Address } from "viem";
 import { x402Client, wrapFetchWithPayment, x402HTTPClient } from "@x402/fetch";
-import { ConfidentialEvmScheme } from "@taceolabs/taceo-merces1-x402-js";
+import { ConfidentialEvmScheme } from "@taceo/confidential-x402";
 import Footer from "@/components/Footer";
 import Sidebar from "@/components/Sidebar";
 import PriceTierSelect from "@/components/PriceTierSelect";

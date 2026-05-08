@@ -8,7 +8,7 @@ import { ClientEvmSigner } from "@x402/evm";
 import { ConfidentialEvmPayload, ConfidentialExtra } from "../types";
 import { encodeAbiParameters, getAddress, keccak256, toHex } from "viem";
 import * as snarkjs from 'snarkjs';
-import { encodeCiphertexts, fetchWitnessWasm, fetchZkey, prepareTransfer } from "@taceolabs/taceo-merces1-client-js";
+import { encodeCiphertexts, fetchWitnessWasm, fetchZkey, prepareTransfer } from "@taceo/merces1-client";
 
 /**
  * Get the crypto object from the global scope.
