@@ -13,7 +13,7 @@ permissions:
 jobs:
   docker-build:
     name: Docker Build
-    runs-on: [arc-runner-set]
+    runs-on: [ubuntu-latest]
     strategy:
       matrix:
         service:

@@ -21,7 +21,7 @@ env:
 jobs:
     check:
         name: Foundry project
-        runs-on: [arc-runner-set]
+        runs-on: [ubuntu-latest]
         defaults:
             run:
                 working-directory: ./contracts
