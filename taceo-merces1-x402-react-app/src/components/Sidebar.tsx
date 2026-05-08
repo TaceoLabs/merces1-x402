@@ -47,6 +47,16 @@ const NAV = [
       </svg>
     ),
   },
+  {
+    href: "https://core.taceo.io",
+    label: "Docs",
+    icon: (
+      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+        <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z" />
+        <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z" />
+      </svg>
+    ),
+  },
 ];
 
 export default function Sidebar() {
@@ -73,21 +83,27 @@ export default function Sidebar() {
 
       {/* Nav */}
       <nav className="flex-1 px-3 py-2 flex flex-col gap-0.5 overflow-y-auto">
-        {NAV.map(({ href, label, icon }) => {
-          const isActive = pathname === href;
+        {NAV.map(({ href, label, icon }, i) => {
+          const isExternal = href.startsWith("http");
+          const isActive = !isExternal && pathname === href;
+          const prevIsExternal = i > 0 && NAV[i - 1].href.startsWith("http");
+          const showDivider = isExternal && !prevIsExternal;
           return (
-            <a
-              key={href}
-              href={href}
-              className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
-                isActive
-                  ? "bg-[#a7f3d0]"
-                  : "hover:bg-[#a7f3d0]"
-              }`}
-            >
-              {icon}
-              {label}
-            </a>
+            <div key={href}>
+              {showDivider && <hr className="my-2 border-zinc-200" />}
+              <a
+                href={href}
+                {...(isExternal ? { target: "_blank", rel: "noopener noreferrer" } : {})}
+                className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
+                  isActive
+                    ? "bg-[#a7f3d0]"
+                    : "hover:bg-[#a7f3d0]"
+                }`}
+              >
+                {icon}
+                {label}
+              </a>
+            </div>
           );
         })}
       </nav>

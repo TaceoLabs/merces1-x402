@@ -9,7 +9,7 @@ import Sidebar from "@/components/Sidebar";
 import TierBarChart, { inferPriceTier, type PriceTier } from "@/components/TierBarChart";
 import PriceTierSelect from "@/components/PriceTierSelect";
 import TxTable, { type Transfer } from "@/components/TxTable";
-import X402ModeToggle from "@/components/X402ModeToggle";
+import X402ModeToggle, { X402Mode } from "@/components/X402ModeToggle";
 import PaymentResultDialog from "@/components/PaymentResultDialog";
 import ErrorDialog from "@/components/ErrorDialog";
 import SpinnerButton from "@/components/SpinnerButton";
@@ -48,7 +48,7 @@ export default function ArticlePage() {
   const [content, setContent] = useState<string | null>(null);
   const [paymentResponse, setPaymentResponse] = useState<PaymentSettleResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [txMode, setTxMode] = useState<"normal" | "confidential">("confidential");
+  const [x402Mode, setX402Mode] = useState<X402Mode>("confidential");
   const [txs, setTxs] = useState<Transfer[]>([]);
   const [txsLoading, setTxsLoading] = useState(true);
   const [paying, setPaying] = useState(false);
@@ -231,7 +231,7 @@ export default function ArticlePage() {
                     {privateBalanceLoading
                       ? <span className="text-zinc-400 font-normal">loading…</span>
                       : privateBalance !== null
-                        ? <>{privateBalance} USDC</>
+                        ? <>{privateBalance} <span className="font-medium text-zinc-400">USDC</span></>
                         : <span className="text-zinc-400 font-normal">—</span>}
                   </span>
                 </div>
@@ -250,7 +250,7 @@ export default function ArticlePage() {
                         loadingLabel="Claiming…"
                         className="h-9 px-4 rounded-[0.5rem] border border-zinc-200 bg-white text-sm font-medium text-zinc-800 hover:bg-zinc-50 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                       >
-                        Send 1,000 USDC
+                        Claim 1,000 USDC from faucet
                       </SpinnerButton>
                       {faucetError && (
                         <ErrorDialog message={faucetError} onClose={() => setFaucetError(null)} />
@@ -323,23 +323,23 @@ export default function ArticlePage() {
                 {serverBalanceLoading
                   ? <span className="text-zinc-400 font-normal">loading…</span>
                   : serverBalance !== null
-                    ? <>{serverBalance} USDC</>
+                    ? <>{serverBalance} <span className="font-medium text-zinc-400">USDC</span></>
                     : <span className="text-zinc-400 font-normal">—</span>}
               </span>
             </div>
 
             <p className="text-base text-zinc-500 leading-relaxed mt-5">
-              This pricing tier breakdown is reconstructed from the server's records of each payment's plaintext amount and the corresponding price tier. No public on-chain data reveals how many payments were made at each tier, or how much revenue each tier generated. With normal x402, all this information would be visible on-chain as plain ERC-20 transfers. Switch to <em>Confidential x402</em> to see what actually appears on-chain.
+              This pricing tier breakdown is reconstructed from the server's records of each payment's plaintext amount and the corresponding price tier. No public on-chain data reveals how many payments were made at each tier, or how much revenue each tier generated. With <em>Standard x402</em>, all this information would be visible on-chain as plain ERC-20 transfers. Switch to <em>Confidential x402</em> to see how it looks on-chain.
             </p>
 
             {/* Mode toggle */}
             <div className="flex items-center justify-center mt-5 mb-4">
-              <X402ModeToggle mode={txMode} onChange={setTxMode} />
+              <X402ModeToggle mode={x402Mode} onChange={setX402Mode} />
             </div>
 
             {/* Pricing tier chart */}
             <div className="mt-4 rounded-[0.5rem] border border-zinc-200 bg-white p-5 shadow-[0_2px_4px_rgba(0,0,0,0.04)]">
-              <TierBarChart stats={tierStats} txsLoading={txsLoading} txMode={txMode} />
+              <TierBarChart stats={tierStats} txsLoading={txsLoading} txMode={x402Mode} />
             </div>
           </div>
 
@@ -347,18 +347,18 @@ export default function ArticlePage() {
           <div id="transaction-log" style={{ scrollMarginTop: "5rem" }}>
             <h2 className="text-xl font-medium text-zinc-900 mt-6 mb-3">On-chain transaction log</h2>
             <p className="text-base text-zinc-500 leading-relaxed">
-              Every payment settles as an on-chain transaction. The toggle below switches between two views of the same data — the <em>Normal x402</em> view shows the plaintext amount, while the <em>Confidential x402</em> view shows only the amount commitment that appears on-chain. The amounts never touch the public chain in cleartext.
+              Every payment settles as an on-chain transaction. The toggle below switches between two views of the same data — the <em>Standard x402</em> view shows the plaintext amount, while the <em>Confidential x402</em> view shows only the amount commitment that appears on-chain. The amounts never touch the public chain in cleartext.
             </p>
 
             {/* Mode toggle */}
             <div className="flex items-center justify-center mt-5 mb-4">
-              <X402ModeToggle mode={txMode} onChange={setTxMode} />
+              <X402ModeToggle mode={x402Mode} onChange={setX402Mode} />
             </div>
 
             <TxTable
               txs={txs}
               txsLoading={txsLoading}
-              txMode={txMode}
+              txMode={x402Mode}
               blockExplorerUrl={BLOCK_EXPLORER_URL}
             />
           </div>
@@ -386,26 +386,6 @@ export default function ArticlePage() {
             <p className="text-base text-zinc-500 leading-relaxed mt-4">
               With <em>Confidential x402</em>, the on-chain record reveals that a payment was made — including sender and receiver addresses — but not how much. Privacy is enforced by a combination of Multi-Party Computation (MPC) and Zero-Knowledge Proofs (ZKP), so no single party ever sees the plaintext amount.
             </p>
-          </div>
-
-          {/* More info */}
-          <div id="more-info" style={{ scrollMarginTop: "5rem" }}>
-            <h2 className="text-xl font-medium text-zinc-900 mt-6 mb-3">More information</h2>
-            <p className="text-base text-zinc-500 leading-relaxed mb-3">
-              Want to learn more about confidential payments and the technology behind Merces? Read our blog posts:
-            </p>
-            <ul className="flex flex-col gap-3 pl-4">
-              <li className="text-base text-zinc-500 leading-relaxed list-disc">
-                <a href="https://core.taceo.io/" className="underline underline-offset-4 hover:text-zinc-900 transition-colors text-zinc-700 font-medium">
-                  Blog post 1
-                </a>
-              </li>
-              <li className="text-base text-zinc-500 leading-relaxed list-disc">
-                <a href="https://core.taceo.io/" className="underline underline-offset-4 hover:text-zinc-900 transition-colors text-zinc-700 font-medium">
-                  Blog post 2
-                </a>
-              </li>
-            </ul>
           </div>
 
         </article>

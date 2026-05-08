@@ -10,9 +10,9 @@ import {
   ResponsiveContainer,
   Cell,
 } from "recharts";
+import { X402Mode } from "./X402ModeToggle";
 
 export type PriceTier = "Standard" | "STARTUP" | "GROWTH" | "ENTERPRISE";
-export type X402Mode = "normal" | "confidential";
 
 export const PRICE_TIERS: { tier: PriceTier; label: string; price: string; color: string }[] = [
   { tier: "Standard",   label: "Standard",   price: "1.00", color: "#f4f4f5" },
@@ -65,7 +65,7 @@ function makeRevenueLabel(txMode: X402Mode, data: TierChartDatum[]) {
 
     const cx = x + width / 2;
 
-    if (txMode === "normal") {
+    if (txMode === "standard") {
       return (
         <foreignObject x={cx - 52} y={y - 40} width={104} height={38}>
           <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 2 }}>
@@ -127,7 +127,7 @@ function HiddenFlair() {
 function TierTooltip({ active, payload, txMode }: TooltipProps) {
   if (!active || !payload?.length) return null;
   const d = payload[0].payload;
-  const isNormal = txMode === "normal";
+  const isStandard = txMode === "standard";
   return (
     <div className="rounded-lg border border-zinc-200 bg-white shadow-lg px-3.5 py-3 text-xs flex flex-col gap-1.5 min-w-[140px]">
       <div className="flex items-center gap-2 mb-0.5">
@@ -140,7 +140,7 @@ function TierTooltip({ active, payload, txMode }: TooltipProps) {
       </div>
       <div className="flex justify-between items-center gap-4">
         <span className="text-zinc-500">Payments</span>
-        {isNormal
+        {isStandard
           ? <span className="flex items-center gap-1.5">
               <span className="font-semibold text-zinc-800">{d.count} <span className="font-normal text-zinc-400">({d.pct}%)</span></span>
               <PublicFlair />
@@ -149,7 +149,7 @@ function TierTooltip({ active, payload, txMode }: TooltipProps) {
       </div>
       <div className="flex justify-between items-center gap-4">
         <span className="text-zinc-500">Price</span>
-        {isNormal
+        {isStandard
           ? <span className="flex items-center gap-1.5">
               <span className="font-semibold text-zinc-800">{d.price} USDC</span>
               <PublicFlair />
@@ -158,7 +158,7 @@ function TierTooltip({ active, payload, txMode }: TooltipProps) {
       </div>
       <div className="flex justify-between items-center gap-4">
         <span className="text-zinc-500">Revenue</span>
-        {isNormal
+        {isStandard
           ? <span className="flex items-center gap-1.5">
               <span className="font-semibold text-zinc-800">{formatUSDC(d.revenue)} USDC</span>
               <PublicFlair />
@@ -193,7 +193,9 @@ export default function TierBarChart({
     return <div className="h-52 flex items-center justify-center text-sm text-zinc-400">Loading…</div>;
   }
 
+  const isConfidential = txMode !== "standard";
   const isEmpty = data.every((d) => d.count === 0);
+  const displayData = isConfidential ? data.map((d) => ({ ...d, count: 2 })) : data;
 
   return (
     <div className="flex flex-col gap-4">
@@ -206,13 +208,13 @@ export default function TierBarChart({
         ))}
       </div>
       <ResponsiveContainer width="100%" height={250}>
-        <BarChart data={data} barCategoryGap="28%" margin={{ top: 20, right: 8, left: -16, bottom: 0 }}>
+        <BarChart data={displayData} barCategoryGap="28%" margin={{ top: 20, right: 8, left: -16, bottom: 0 }}>
           <CartesianGrid strokeDasharray="3 3" stroke="#f4f4f5" vertical={false} />
           <XAxis dataKey="label" tick={{ fontSize: 11, fill: "#a1a1aa" }} axisLine={false} tickLine={false} />
-          <YAxis allowDecimals={false} tick={{ fontSize: 11, fill: "#a1a1aa" }} axisLine={false} tickLine={false} />
+          <YAxis allowDecimals={false} tick={{ fontSize: 11, fill: "#a1a1aa" }} axisLine={false} tickLine={false} domain={isConfidential ? [0, 4] : undefined} tickFormatter={isConfidential ? () => "?" : undefined} />
           <Tooltip content={<TierTooltip txMode={txMode} />} cursor={{ fill: "rgba(0,0,0,0.03)", radius: 6 }} />
-          <Bar dataKey="count" radius={[5, 5, 0, 0]} isAnimationActive={!isEmpty} label={{ content: makeRevenueLabel(txMode, data) }}>
-            {data.map(({ tier, color }) => (
+          <Bar dataKey="count" radius={[5, 5, 0, 0]} isAnimationActive={!isEmpty} label={{ content: makeRevenueLabel(txMode, displayData) }}>
+            {displayData.map(({ tier, color }) => (
               <Cell key={tier} fill={tier === "Standard" ? "#d4d4d8" : color} />
             ))}
           </Bar>

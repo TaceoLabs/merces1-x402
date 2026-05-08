@@ -1,3 +1,5 @@
+import { BLOCK_EXPLORER_URL } from "@/lib/constants";
+
 interface PaymentSettleResponse {
   success: boolean;
   transaction?: string;
@@ -12,6 +14,9 @@ interface Props {
 }
 
 export default function PaymentResultDialog({ content, paymentResponse, onClose }: Props) {
+  const txHash = paymentResponse?.transaction;
+  const explorerHref = txHash && BLOCK_EXPLORER_URL ? `${BLOCK_EXPLORER_URL}/tx/${txHash}` : null;
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4" onClick={onClose}>
       <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" />
@@ -21,34 +26,65 @@ export default function PaymentResultDialog({ content, paymentResponse, onClose 
       >
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-zinc-100">
-          <p className="text-sm font-semibold text-[#192b25]">Payment successful</p>
+          <div className="flex items-center gap-2.5">
+            <span className="flex h-5 w-5 items-center justify-center rounded-full bg-[#52ffc5]">
+              <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
+                <path d="M2 5l2.5 2.5L8 3" stroke="#173f36" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+            </span>
+            <p className="text-sm font-semibold text-zinc-900">Payment successful</p>
+          </div>
           <button
             onClick={onClose}
             aria-label="Close"
             className="flex items-center justify-center h-7 w-7 rounded-md text-zinc-400 hover:text-zinc-700 hover:bg-zinc-100 transition-colors cursor-pointer border-0 bg-transparent"
           >
-            <svg width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
               <path d="M1 1L13 13M13 1L1 13" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round"/>
             </svg>
           </button>
         </div>
 
         {/* Body */}
-        <div className="flex flex-col gap-4 p-5 overflow-y-auto max-h-[70vh]">
-          <div>
-            <p className="text-xs font-medium text-zinc-400 uppercase tracking-wider mb-1.5">Response body</p>
+        <div className="flex flex-col gap-5 p-5 overflow-y-auto max-h-[70vh]">
+
+          {paymentResponse && (
+            <div className="flex flex-col gap-3.5">
+              {txHash && (
+                <div className="flex flex-col gap-1">
+                  <p className="text-sm font-semibold text-zinc-700">Transaction</p>
+                  {explorerHref ? (
+                    <a href={explorerHref} target="_blank" rel="noopener noreferrer" className="font-mono text-sm hover:underline" title={txHash}>
+                      {txHash.slice(0, 10)}…{txHash.slice(-8)}
+                    </a>
+                  ) : (
+                    <span className="font-mono text-sm text-zinc-700" title={txHash}>{txHash.slice(0, 10)}…{txHash.slice(-8)}</span>
+                  )}
+                </div>
+              )}
+              {paymentResponse.network && (
+                <div className="flex flex-col gap-1">
+                  <p className="text-sm font-semibold text-zinc-700">Network</p>
+                  <span className="text-sm text-zinc-600">{paymentResponse.network}</span>
+                </div>
+              )}
+              {paymentResponse.payer && (
+                <div className="flex flex-col gap-1">
+                  <p className="text-sm font-semibold text-zinc-700">Payer</p>
+                  <span className="font-mono text-sm text-zinc-600">{paymentResponse.payer}</span>
+                </div>
+              )}
+            </div>
+          )}
+
+          <div className="border-t border-zinc-100" />
+
+          <div className="flex flex-col gap-1">
+            <p className="text-sm font-semibold text-zinc-700">Response body</p>
             <div className="rounded-lg border border-zinc-200 bg-[#f9f8f5] px-4 py-3">
               <pre className="text-sm whitespace-pre-wrap break-all text-zinc-700">{JSON.stringify(content, null, 2)}</pre>
             </div>
           </div>
-          {paymentResponse && (
-            <div>
-              <p className="text-xs font-medium text-zinc-400 uppercase tracking-wider mb-1.5">Payment response</p>
-              <div className="rounded-lg border border-zinc-200 bg-[#f9f8f5] px-4 py-3">
-                <pre className="text-sm whitespace-pre-wrap break-all text-zinc-700">{JSON.stringify(paymentResponse, null, 2)}</pre>
-              </div>
-            </div>
-          )}
         </div>
       </div>
     </div>

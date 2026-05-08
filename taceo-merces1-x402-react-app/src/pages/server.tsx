@@ -3,7 +3,7 @@ import Footer from "@/components/Footer";
 import Sidebar from "@/components/Sidebar";
 import TierBarChart, { type PriceTier, inferPriceTier } from "@/components/TierBarChart";
 import TxTable, { type Transfer } from "@/components/TxTable";
-import X402ModeToggle from "@/components/X402ModeToggle";
+import X402ModeToggle, { X402Mode } from "@/components/X402ModeToggle";
 import { BLOCK_EXPLORER_URL } from "@/lib/constants";
 import { fetchTransactions } from "@/lib/api";
 import { formatUSDC } from "@/lib/utils";
@@ -11,7 +11,7 @@ import { formatUSDC } from "@/lib/utils";
 export default function ServerPage() {
   const [txs, setTxs] = useState<Transfer[]>([]);
   const [txsLoading, setTxsLoading] = useState(true);
-  const [txMode, setTxMode] = useState<"normal" | "confidential">("confidential");
+  const [x402Mode, setX402Mode] = useState<X402Mode>("standard");
 
   const stats = useMemo(() => {
     if (txs.length === 0) return null;
@@ -55,9 +55,12 @@ export default function ServerPage() {
           <div className="flex items-start justify-between gap-4">
             <div>
               <h1 className="text-3xl font-semibold tracking-tight text-zinc-900">Resource Server</h1>
+              <p className="text-base text-zinc-500 mt-5">
+                Shows the perspective of an API-provider that charges different prices per tier.
+              </p>
             </div>
             <div className="pt-1 shrink-0">
-              <X402ModeToggle mode={txMode} onChange={setTxMode} />
+              <X402ModeToggle mode={x402Mode} onChange={setX402Mode} />
             </div>
           </div>
 
@@ -76,7 +79,7 @@ export default function ServerPage() {
             <div className="rounded-lg border border-zinc-200 bg-white p-6 flex flex-col gap-2">
               <div className="flex items-center justify-between gap-2">
                 <p className="text-xs font-medium text-zinc-400 uppercase tracking-wider">Total revenue</p>
-                {txMode === "normal" ? (
+                {x402Mode === "standard" ? (
                   <span className="inline-flex items-center gap-1 text-[10px] font-medium text-red-500 bg-red-50 border border-red-200 px-1.5 py-0.5 rounded-full shrink-0">
                     <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
                     public on-chain
@@ -102,7 +105,7 @@ export default function ServerPage() {
             <div className="rounded-lg border border-zinc-200 bg-white p-6 flex flex-col gap-2">
               <div className="flex items-center justify-between gap-2">
                 <p className="text-xs font-medium text-zinc-400 uppercase tracking-wider">Avg payment</p>
-                {txMode === "normal" ? (
+                {x402Mode === "standard" ? (
                   <span className="inline-flex items-center gap-1 text-[10px] font-medium text-red-500 bg-red-50 border border-red-200 px-1.5 py-0.5 rounded-full shrink-0">
                     <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
                     public on-chain
@@ -132,7 +135,7 @@ export default function ServerPage() {
               In confidential mode, neither the payment amount nor the customer's price tier is visible on-chain. An outside observer cannot reconstruct this chart, the total revenue, or the average payment — the on-chain record contains only opaque commitments. The data here is tracked by the server directly; amounts can also be reconstructed from the MPC network.
             </p>
             <div className="rounded-lg border border-zinc-200 bg-white p-5">
-              <TierBarChart stats={stats} txsLoading={txsLoading} txMode={txMode} />
+              <TierBarChart stats={stats} txsLoading={txsLoading} txMode={x402Mode} />
             </div>
           </div>
 
@@ -145,7 +148,7 @@ export default function ServerPage() {
             <TxTable
               txs={txs}
               txsLoading={txsLoading}
-              txMode={txMode}
+              txMode={x402Mode}
               blockExplorerUrl={BLOCK_EXPLORER_URL}
               emptyMessage="No payments yet."
             />

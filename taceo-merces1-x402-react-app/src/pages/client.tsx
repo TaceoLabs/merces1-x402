@@ -9,7 +9,8 @@ import Sidebar from "@/components/Sidebar";
 import PriceTierSelect from "@/components/PriceTierSelect";
 import PaymentResultDialog from "@/components/PaymentResultDialog";
 import ErrorDialog from "@/components/ErrorDialog";
-import SpinnerButton from "@/components/SpinnerButton";
+import FaucetButton from "@/components/FaucetButton";
+import PayButton from "@/components/PayButton";
 import RequestFlowStepper from "@/components/RequestFlowStepper";
 import { CHAIN_ID, X402_SERVER_URL, FAUCET_URL } from "@/lib/constants";
 import { fetchPrivateBalanceShares } from "@/lib/api";
@@ -163,7 +164,7 @@ export default function ClientPage() {
             <div className="flex items-start justify-between gap-4">
               <div>
                 <h1 className="text-3xl font-semibold tracking-tight text-zinc-900">Client</h1>
-                <p className="text-sm text-zinc-500 mt-5">
+                <p className="text-base text-zinc-500 mt-5">
                   Connect your wallet, use the faucet to get 1,000 testnet USDC to you private wallet.
                   Pay for access to the protected resource using Confidential x402.
                 </p>
@@ -181,7 +182,7 @@ export default function ClientPage() {
                   {/* Left — Balance + Faucet */}
                   <div className="rounded-lg border border-zinc-200 bg-white p-6 flex flex-col">
                     <div className="flex flex-col gap-2">
-                      <p className="text-xs font-medium text-zinc-400 uppercase tracking-wider">Your balance</p>
+                      <p className="text-sm font-medium text-zinc-400 uppercase tracking-wider">Your balance</p>
                       <div className="text-5xl font-semibold text-[#192b25] leading-tight mt-1">
                         {privateBalanceLoading
                           ? <span className="text-zinc-400 text-base font-normal">Loading…</span>
@@ -189,20 +190,12 @@ export default function ClientPage() {
                             ? <>{privateBalance} <span className="text-lg font-medium text-zinc-500">USDC</span></>
                             : <span className="text-zinc-400 text-base font-normal">—</span>}
                       </div>
-                      <p className="text-[10px] text-zinc-400">confidential on-chain balance</p>
                     </div>
 
                     <div className="flex-1" />
 
                     <div className="flex justify-end">
-                      <SpinnerButton
-                        onClick={handleClaim}
-                        loading={faucetClaiming}
-                        loadingLabel="Claiming…"
-                        className="h-9 px-4 rounded-[0.5rem] border border-zinc-200 bg-white text-sm font-medium text-zinc-800 hover:bg-zinc-50 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
-                      >
-                        Send 1,000 USDC
-                      </SpinnerButton>
+                      <FaucetButton onClick={handleClaim} loading={faucetClaiming} />
                     </div>
                     {faucetError && (
                       <ErrorDialog message={faucetError} onClose={() => setFaucetError(null)} />
@@ -213,8 +206,8 @@ export default function ClientPage() {
                   <div className="rounded-lg border border-zinc-200 bg-white p-6 flex flex-col gap-6">
                     <div className="flex flex-col gap-3">
                       <div>
-                        <p className="text-sm font-medium text-zinc-700">Price tier</p>
-                        <p className="text-xs text-zinc-400 mt-0.5">Your rate stays hidden on-chain regardless of which tier you choose.</p>
+                        <p className="text-base font-medium text-zinc-700">Price tier</p>
+                        <p className="text-sm text-zinc-400 mt-0.5">Your rate stays hidden on-chain regardless of which tier you choose.</p>
                       </div>
                       <div className="self-start">
                         <PriceTierSelect value={priceTier} onChange={setPriceTier} />
@@ -223,18 +216,14 @@ export default function ClientPage() {
 
                     <div className="border-t border-zinc-100 pt-5 flex flex-col gap-3">
                       <div>
-                        <p className="text-sm font-medium text-zinc-700">Pay for access</p>
-                        <p className="text-xs text-zinc-400 mt-0.5">Sign a confidential payment and call the protected endpoint.</p>
+                        <p className="text-base font-medium text-zinc-700">Pay for access</p>
+                        <p className="text-sm text-zinc-400 mt-0.5">Sign a confidential payment and call the protected endpoint.</p>
                       </div>
-                      <SpinnerButton
+                      <PayButton
                         onClick={handleAccess}
                         disabled={!walletClient?.account}
                         loading={paying}
-                        loadingLabel="Paying…"
-                        className="h-9 px-4 rounded-[0.5rem] bg-[#52ffc5] text-sm font-semibold text-zinc-900 hover:bg-[#33e0a8] transition-colors cursor-pointer border-0 disabled:opacity-50 disabled:cursor-not-allowed"
-                      >
-                        Access protected content
-                      </SpinnerButton>
+                      />
                     </div>
 
                     {error && (
@@ -247,7 +236,7 @@ export default function ClientPage() {
                 {/* Flow stepper */}
                 <div>
                   <h2 className="text-lg font-semibold text-zinc-900">How it works</h2>
-                  <p className="text-sm text-zinc-500 mt-1 mb-4">Each payment flows through these steps. The ZK proof keeps your exact amount hidden — only you and the counterparty know what was paid.</p>
+                  <p className="text-base text-zinc-500 mt-1 mb-4">Each payment flows through these steps. The ZK proof keeps your exact amount hidden — only you and the counterparty know what was paid.</p>
                   <RequestFlowStepper step={flowStep} />
                 </div>
 
