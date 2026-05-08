@@ -44,7 +44,7 @@ export default function ServerPage() {
   }, []);
 
   return (
-    <div className="flex min-h-screen text-zinc-900 font-sans antialiased">
+    <div className="flex flex-col md:flex-row min-h-screen text-zinc-900 font-sans antialiased">
       <Sidebar />
       <div className="flex-1 flex flex-col min-w-0">
       {/* Main */}
@@ -52,20 +52,20 @@ export default function ServerPage() {
         <div className="w-full max-w-5xl mx-auto flex flex-col gap-8">
 
           {/* Title + toggle */}
-          <div className="flex items-start justify-between gap-4">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
             <div>
               <h1 className="text-3xl font-semibold tracking-tight text-zinc-900">Resource Server</h1>
               <p className="text-base text-zinc-500 mt-5">
                 Shows the perspective of an API-provider that charges different prices per tier.
               </p>
             </div>
-            <div className="pt-1 shrink-0">
+            <div className="sm:pt-1 sm:shrink-0">
               <X402ModeToggle mode={x402Mode} onChange={setX402Mode} />
             </div>
           </div>
 
           {/* Top stats row */}
-          <div className="grid grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             {/* Total payments */}
             <div className="rounded-lg border border-zinc-200 bg-white p-6 flex flex-col gap-2">
               <p className="text-xs font-medium text-zinc-400 uppercase tracking-wider">Total payments</p>

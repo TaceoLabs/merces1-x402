@@ -152,7 +152,7 @@ export default function ClientPage() {
   }
 
   return (
-    <div className="flex min-h-screen text-zinc-900 font-sans antialiased">
+    <div className="flex flex-col md:flex-row min-h-screen text-zinc-900 font-sans antialiased">
       <Sidebar />
       <div className="flex-1 flex flex-col min-w-0">
 
@@ -161,7 +161,7 @@ export default function ClientPage() {
           <div className="w-full max-w-5xl mx-auto flex flex-col gap-8">
 
             {/* Header */}
-            <div className="flex items-start justify-between gap-4">
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
               <div>
                 <h1 className="text-3xl font-semibold tracking-tight text-zinc-900">Client</h1>
                 <p className="text-base text-zinc-500 mt-5">
@@ -169,13 +169,13 @@ export default function ClientPage() {
                   Pay for access to the protected resource using Confidential x402.
                 </p>
               </div>
-              <div className="pt-1 shrink-0">
+              <div className="sm:pt-1 sm:shrink-0">
                 <WalletButton />
               </div>
             </div>
 
             {/* Two-column dashboard */}
-            <div className="grid grid-cols-2 gap-4 items-stretch">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 items-stretch">
 
               {/* Left — Balance + Faucet */}
               <div className="rounded-lg border border-zinc-200 bg-white p-6 flex flex-col">

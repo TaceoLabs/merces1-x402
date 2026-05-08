@@ -182,7 +182,7 @@ export default function ArticlePage() {
   }
 
   return (
-    <div className="flex min-h-screen text-zinc-900 font-sans antialiased" style={{ scrollBehavior: "smooth" }}>
+    <div className="flex flex-col md:flex-row min-h-screen text-zinc-900 font-sans antialiased" style={{ scrollBehavior: "smooth" }}>
       <Sidebar />
       <div className="flex-1 flex flex-col min-w-0">
       <main className="flex-1 flex flex-col px-6 pb-12 lg:px-10">
@@ -193,7 +193,7 @@ export default function ArticlePage() {
         <div className="hidden lg:block lg:flex-none lg:w-52" />
 
         {/* Article — center */}
-        <article className="flex-1 min-w-0 max-w-3xl mx-auto flex flex-col gap-y-4 pt-12">
+        <article className="w-full min-w-0 max-w-3xl mx-auto flex flex-col gap-y-4 pt-12">
 
           {/* Intro */}
           <div id="intro" style={{ scrollMarginTop: "5rem" }}>
