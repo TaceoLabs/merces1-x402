@@ -101,11 +101,9 @@ export default function TxTable({
                   <td className="px-4 py-2.5 text-sm font-semibold">
                     {txMode === "standard" ? (() => {
                       const tier = inferPriceTier(tx.amount);
-                      const { color } = PRICE_TIERS.find((t) => t.tier === tier)!;
-                      const bg = tier === "Standard" ? "#d4d4d8" : color;
-                      const fg = tier === "Standard" ? "#525252" : "#173f36";
+                      const { color, textColor } = PRICE_TIERS.find((t) => t.tier === tier)!;
                       return (
-                        <span className="inline-block px-2 py-0.5 rounded-full text-xs font-semibold" style={{ background: bg, color: fg }}>
+                        <span className="inline-block px-2 py-0.5 rounded-full text-xs font-semibold" style={{ background: color, color: textColor }}>
                           {formatUSDC(tx.amount)} USDC
                         </span>
                       );
