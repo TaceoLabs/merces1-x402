@@ -1,26 +1,44 @@
 {
   "name": "@taceo/confidential-x402",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Confidential x402 scheme by TACEO",
-  "main": "./dist/index.js",
-  "type": "module",
-  "types": "./dist/index.d.ts",
+  "main": "./dist/cjs/index.js",
+  "module": "./dist/esm/index.js",
+  "types": "./dist/cjs/index.d.ts",
   "exports": {
     ".": {
-      "types": "./dist/index.d.ts",
-      "import": "./dist/index.js"
+      "import": {
+        "types": "./dist/esm/index.d.mts",
+        "default": "./dist/esm/index.mjs"
+      },
+      "require": {
+        "types": "./dist/cjs/index.d.ts",
+        "default": "./dist/cjs/index.js"
+      }
     },
     "./server": {
-      "types": "./dist/server/index.d.ts",
-      "import": "./dist/server/index.js"
+      "import": {
+        "types": "./dist/esm/server/index.d.mts",
+        "default": "./dist/esm/server/index.mjs"
+      },
+      "require": {
+        "types": "./dist/cjs/server/index.d.ts",
+        "default": "./dist/cjs/server/index.js"
+      }
     },
     "./client": {
-      "types": "./dist/client/index.d.ts",
-      "import": "./dist/client/index.js"
+      "import": {
+        "types": "./dist/esm/client/index.d.mts",
+        "default": "./dist/esm/client/index.mjs"
+      },
+      "require": {
+        "types": "./dist/cjs/client/index.d.ts",
+        "default": "./dist/cjs/client/index.js"
+      }
     }
   },
   "scripts": {
-    "build": "tsc",
+    "build": "tsup",
     "example:client": "tsx examples/client.ts",
     "example:server": "tsx examples/server.ts"
   },
@@ -31,13 +49,14 @@
   "author": "",
   "license": "ISC",
   "devDependencies": {
-    "@types/node": "^22.12.0",
     "@types/express": "^5.0.1",
-    "tsx": "^4.21.0",
-    "typescript": "^5.9.3",
+    "@types/node": "^22.12.0",
     "@x402/express": "^2.10.0",
     "@x402/fetch": "^2.10.0",
-    "express": "^4.18.2"
+    "express": "^4.18.2",
+    "tsup": "^8.4.0",
+    "tsx": "^4.21.0",
+    "typescript": "^5.9.3"
   },
   "dependencies": {
     "@taceo/merces1-client": "^1.0.0",
