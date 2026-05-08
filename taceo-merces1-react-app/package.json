@@ -11,7 +11,7 @@
   "dependencies": {
     "@rainbow-me/rainbowkit": "^2.2.10",
     "@tanstack/react-query": "^5.90.21",
-    "next": "16.1.6",
+    "next": "16.2.4",
     "react": "19.2.3",
     "react-dom": "19.2.3",
     "@taceo/merces1-client": "^1.0.0",
