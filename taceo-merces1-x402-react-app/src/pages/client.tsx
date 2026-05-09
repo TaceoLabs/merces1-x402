@@ -177,61 +177,44 @@ export default function ClientPage() {
               </div>
             </div>
 
-            {/* Two-column dashboard */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 items-stretch">
+            {/* Dashboard */}
+            <div className="rounded-xl border border-zinc-200 bg-white overflow-hidden">
+              <div className="flex flex-col sm:flex-row divide-y sm:divide-y-0 sm:divide-x divide-zinc-100">
 
-              {/* Left — Balance + Faucet */}
-              <div className="rounded-lg border border-zinc-200 bg-white p-6 flex flex-col">
-                <div className="flex flex-col gap-2">
-                  <p className="text-sm font-medium text-zinc-400 uppercase tracking-wider">Your balance</p>
-                  <div className="text-5xl font-semibold text-[#192b25] leading-tight mt-1">
-                    {privateBalanceLoading
-                      ? <span className="text-zinc-400 text-base font-normal">Loading…</span>
-                      : privateBalance !== null
-                        ? <>{privateBalance} <span className="text-lg font-medium text-zinc-500">USDC</span></>
-                        : <span className="text-zinc-400 text-base font-normal">—</span>}
-                  </div>
-                </div>
-
-                <div className="flex-1" />
-
-                <div className="flex justify-end">
-                  <FaucetButton onClick={handleClaim} disabled={!isConnected} loading={faucetClaiming} />
-                </div>
-                {faucetError && (
-                  <ErrorDialog message={faucetError} onClose={() => setFaucetError(null)} />
-                )}
-              </div>
-
-              {/* Right — Tier + Pay */}
-              <div className="rounded-lg border border-zinc-200 bg-white p-6 flex flex-col gap-6">
-                <div className="flex flex-col gap-3">
+                {/* Balance + Faucet */}
+                <div className="flex-1 p-6 flex flex-col gap-4">
                   <div>
-                    <p className="text-base font-medium text-zinc-700">Price tier</p>
-                    <p className="text-sm text-zinc-400 mt-0.5">Your rate stays hidden on-chain regardless of which tier you choose.</p>
+                    <p className="text-base font-semibold">Private Balance</p>
+                    <div className="mt-2 text-4xl font-semibold text-[#192b25] leading-none">
+                      {privateBalanceLoading
+                        ? <span className="text-zinc-400 text-base font-normal">Loading…</span>
+                        : privateBalance !== null
+                          ? <>{privateBalance} <span className="text-lg font-medium text-zinc-500">USDC</span></>
+                          : <span className="text-zinc-400 text-base font-normal">—</span>}
+                    </div>
                   </div>
-                  <div className="self-start">
-                    <PriceTierSelect value={priceTier} onChange={setPriceTier} />
-                  </div>
-                </div>
-
-                <div className="border-t border-zinc-100 pt-5 flex flex-col gap-3">
                   <div>
-                    <p className="text-base font-medium text-zinc-700">Pay for access</p>
-                    <p className="text-sm text-zinc-400 mt-0.5">Sign a confidential payment and call the protected endpoint.</p>
+                    <FaucetButton onClick={handleClaim} disabled={!isConnected} loading={faucetClaiming} />
                   </div>
-                  <PayButton
-                    onClick={handleAccess}
-                    disabled={!isConnected}
-                    loading={paying}
-                  />
+                  {faucetError && <ErrorDialog message={faucetError} onClose={() => setFaucetError(null)} />}
                 </div>
 
-                {error && (
-                  <ErrorDialog message={error} onClose={() => setError(null)} />
-                )}
-              </div>
+                {/* Tier + Pay */}
+                <div className="flex-1 p-6 flex flex-col gap-5">
+                  <div>
+                    <p className="text-base font-semibold">Pay for access</p>
+                    <p className="text-sm text-zinc-500 mt-1">Choose a price tier and pay to access the protced endpoint. The amount will be hidden on-chain.</p>
+                    <div className="mt-3">
+                      <PriceTierSelect value={priceTier} onChange={setPriceTier} />
+                    </div>
+                    <div className="mt-3">
+                      <PayButton onClick={handleAccess} disabled={!isConnected} loading={paying} />
+                    </div>
+                    {error && <ErrorDialog message={error} onClose={() => setError(null)} />}
+                  </div>
+                </div>
 
+              </div>
             </div>
 
             {/* Flow stepper */}
