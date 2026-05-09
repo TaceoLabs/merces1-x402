@@ -132,15 +132,18 @@ export default function ClientPage() {
         if (address) refreshPrivateBalance(address);
 
         setFlowStep(7);
+        setPaying(false);
       } else {
         setFlowStep(null);
         const msg = await response.text();
         setError(`Request failed (${response.status}): ${msg}`);
+        setPaying(false);
       }
     } catch (e: unknown) {
       clearFlowTimers();
       setFlowStep(null);
       setError(String(e));
+      setPaying(false);
     }
   }
 
@@ -158,7 +161,7 @@ export default function ClientPage() {
 
         {/* Main */}
         <main className="flex-1 flex flex-col px-6 py-12">
-          <div className="w-full max-w-5xl mx-auto flex flex-col gap-8">
+          <div className="w-full max-w-4xl mx-auto flex flex-col gap-8">
 
             {/* Header */}
             <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
@@ -232,10 +235,35 @@ export default function ClientPage() {
             </div>
 
             {/* Flow stepper */}
-            <div>
-              <h2 className="text-lg font-semibold text-zinc-900">How it works</h2>
-              <p className="text-base text-zinc-500 mt-1 mb-4">Each payment flows through these steps. The ZK proof keeps your exact amount hidden — only you and the counterparty know what was paid.</p>
-              <RequestFlowStepper step={flowStep} />
+            <div className="flex flex-col gap-4">
+              <div>
+                <h2 className="text-lg font-semibold text-zinc-900">Request Flow</h2>
+                <p className="text-base text-zinc-500 mt-1">Each payment flows through these steps. The ZK proof keeps your exact amount hidden — only you and the counterparty know what was paid.</p>
+              </div>
+              <div className="grid grid-cols-1 lg:grid-cols-[3fr_1.5fr] gap-4 items-start">
+                <RequestFlowStepper step={flowStep} />
+
+                {/* Right: actor legend */}
+                <div className="rounded-lg border border-zinc-200 bg-white p-6 flex flex-col gap-4">
+                  <div>
+                    <p className="text-base font-semibold mb-3">Actors</p>
+                    <div className="flex flex-col gap-4">
+                      <div>
+                        <span className="inline-block text-[10px] font-medium px-1.5 py-0.5 rounded bg-sky-50 text-sky-600 mb-1.5">client</span>
+                        <p className="text-xs text-zinc-500">Your agent or browser. Initiates requests and generates ZK proofs entirely locally — nothing leaves your device unencrypted.</p>
+                      </div>
+                      <div>
+                        <span className="inline-block text-[10px] font-medium px-1.5 py-0.5 rounded bg-violet-50 text-violet-600 mb-1.5">server</span>
+                        <p className="text-xs text-zinc-500">The protected API. Returns a 402 payment requirements, then serves content once payment is settled.</p>
+                      </div>
+                      <div>
+                        <span className="inline-block text-[10px] font-medium px-1.5 py-0.5 rounded bg-amber-50 text-amber-600 mb-1.5">facilitator</span>
+                        <p className="text-xs text-zinc-500">An independent service that verifies the ZK proof and settles the payment on-chain.</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
 
             {/* Success */}

@@ -49,7 +49,7 @@ export default function ServerPage() {
       <div className="flex-1 flex flex-col min-w-0">
       {/* Main */}
       <main className="flex-1 flex flex-col px-6 py-12">
-        <div className="w-full max-w-5xl mx-auto flex flex-col gap-8">
+        <div className="w-full max-w-4xl mx-auto flex flex-col gap-8">
 
           {/* Title + toggle */}
           <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
@@ -94,9 +94,11 @@ export default function ServerPage() {
               <div className="text-4xl font-semibold text-[#192b25] leading-tight">
                 {txsLoading
                   ? <span className="text-zinc-400 text-base font-normal">Loading…</span>
-                  : stats
-                    ? <>{formatUSDC(stats.totalRevenue)} <span className="text-base font-medium text-zinc-500">USDC</span></>
-                    : <span className="text-zinc-400 text-base font-normal">—</span>}
+                  : x402Mode !== "standard"
+                    ? <span className="text-zinc-300">???</span>
+                    : stats
+                      ? <>{formatUSDC(stats.totalRevenue)} <span className="text-base font-medium text-zinc-500">USDC</span></>
+                      : <span className="text-zinc-400 text-base font-normal">—</span>}
               </div>
               <p className="text-[10px] text-zinc-400">sum of all payments</p>
             </div>
@@ -120,9 +122,11 @@ export default function ServerPage() {
               <div className="text-4xl font-semibold text-[#192b25] leading-tight">
                 {txsLoading
                   ? <span className="text-zinc-400 text-base font-normal">Loading…</span>
-                  : stats
-                    ? <>{formatUSDC(stats.avgPayment, 3)} <span className="text-base font-medium text-zinc-500">USDC</span></>
-                    : <span className="text-zinc-400 text-base font-normal">—</span>}
+                  : x402Mode !== "standard"
+                    ? <span className="text-zinc-300">???</span>
+                    : stats
+                      ? <>{formatUSDC(stats.avgPayment, 3)} <span className="text-base font-medium text-zinc-500">USDC</span></>
+                      : <span className="text-zinc-400 text-base font-normal">—</span>}
               </div>
               <p className="text-[10px] text-zinc-400">per payment</p>
             </div>

@@ -12,10 +12,11 @@ import TxTable, { type Transfer } from "@/components/TxTable";
 import X402ModeToggle, { X402Mode } from "@/components/X402ModeToggle";
 import PaymentResultDialog from "@/components/PaymentResultDialog";
 import ErrorDialog from "@/components/ErrorDialog";
-import SpinnerButton from "@/components/SpinnerButton";
 import { CHAIN_ID, X402_SERVER_URL, FAUCET_URL, X402_SERVER_ADDRESS, BLOCK_EXPLORER_URL } from "@/lib/constants";
 import { fetchPrivateBalanceShares, fetchTransactions } from "@/lib/api";
 import { formatUSDC, truncateAddress } from "@/lib/utils";
+import FaucetButton from "@/components/FaucetButton";
+import PayButton from "@/components/PayButton";
 
 interface PaymentSettleResponse {
   success: boolean;
@@ -170,6 +171,7 @@ export default function ArticlePage() {
       }
     } catch (e: unknown) {
       setError(String(e));
+      setPaying(false);
     } finally {
       setPaying(false);
     }
@@ -179,61 +181,49 @@ export default function ArticlePage() {
     setContent(null);
     setPaymentResponse(null);
     setError(null);
+    setPaying(false);
   }
 
   return (
     <div className="flex flex-col md:flex-row min-h-screen text-zinc-900 font-sans antialiased" style={{ scrollBehavior: "smooth" }}>
       <Sidebar />
       <div className="flex-1 flex flex-col min-w-0">
-      <main className="flex-1 flex flex-col px-6 pb-12 lg:px-10">
-      {/* Body */}
-      <div className="flex flex-col lg:flex-row lg:items-start gap-10 max-w-screen-xl mx-auto w-full">
+        <main className="flex-1 flex flex-col px-6 pb-12 lg:px-10">
+          {/* Body */}
+          <div className="flex flex-col lg:flex-row lg:items-start gap-10 max-w-4xl mx-auto w-full">
 
-        {/* Spacer to balance the TOC and keep the article centered */}
-        <div className="hidden lg:block lg:flex-none lg:w-52" />
+            {/* Article — center */}
+            <article className="w-full min-w-0 max-w-3xl mx-auto flex flex-col gap-y-4 pt-12">
 
-        {/* Article — center */}
-        <article className="w-full min-w-0 max-w-3xl mx-auto flex flex-col gap-y-4 pt-12">
-
-          {/* Intro */}
-          <div id="intro" style={{ scrollMarginTop: "5rem" }}>
-            <h1 className="text-3xl font-medium tracking-tight text-zinc-900 mb-6">Confidential x402</h1>
-            <p className="text-base text-zinc-500 leading-relaxed">
-              <a href="https://x402.org/" className="underline underline-offset-4 hover:text-zinc-900 transition-colors">x402</a> is an open HTTP payment protocol for machine-to-machine payments. A resource server responds with <code>HTTP 402 Payment Required</code> when a request lacks a valid payment. The client attaches a cryptographically signed payment to its next request; the server verifies it and settles it on-chain before responding — no API keys, no subscriptions, no billing infrastructure.
-            </p>
-            <p className="text-base text-zinc-500 leading-relaxed mt-3">
-              The default x402 flow is fully public: every payment is visible on-chain as a plain ERC-20 token transfer. This works for flat-rate APIs, but breaks down once pricing becomes dynamic — per-customer rates, volume discounts, and AI agent spending patterns are all exposed. <em>Merces</em> by <a href="https://taceo.io/" className="underline underline-offset-4 hover:text-zinc-900 transition-colors">TACEO</a> extends x402 with a confidential transfer scheme: the payment settles on-chain, but the amount stays hidden.
-            </p>
-          </div>
-
-          {/* Client */}
-          <div id="client" style={{ scrollMarginTop: "5rem" }}>
-            <h2 className="text-xl font-medium text-zinc-900 mt-6 mb-3">The client</h2>
-
-            {/* Connection + balance line */}
-            {!isConnected ? (
-              <>
+              {/* Intro */}
+              <div id="intro" style={{ scrollMarginTop: "5rem" }}>
+                <h1 className="text-3xl font-medium tracking-tight text-zinc-900 mb-6">Confidential x402</h1>
                 <p className="text-base text-zinc-500 leading-relaxed">
-                  To follow along, connect a wallet first. Your balance will be held as a secret-shared encrypted value distributed across three MPC nodes — no single node knows the plaintext amount.
+                  <a href="https://x402.org/" className="underline underline-offset-4 hover:text-zinc-900 transition-colors">x402</a> is an open HTTP payment protocol for machine-to-machine payments. A resource server responds with <code>HTTP 402 Payment Required</code> when a request lacks a valid payment. The client attaches a cryptographically signed payment to its next request; the server verifies it and settles it on-chain before responding — no API keys, no subscriptions, no billing infrastructure.
                 </p>
-                <div className="mt-4 flex justify-center">
-                  <WalletButton />
-                </div>
-              </>
-            ) : (
-              <>
+                <p className="text-base text-zinc-500 leading-relaxed mt-3">
+                  The default x402 flow is fully public: every payment is visible on-chain as a plain ERC-20 token transfer. This works for flat-rate APIs, but breaks down once pricing becomes dynamic — per-customer rates, volume discounts, and AI agent spending patterns are all exposed. <em>Merces</em> by <a href="https://taceo.io/" className="underline underline-offset-4 hover:text-zinc-900 transition-colors">TACEO</a> extends x402 with a confidential transfer scheme: the payment settles on-chain, but the amount stays hidden.
+                </p>
+              </div>
+
+              {/* Client */}
+              <div id="client" style={{ scrollMarginTop: "5rem" }}>
+                <h2 className="text-xl font-medium text-zinc-900 mt-6 mb-3">The client</h2>
+
                 <p className="text-base text-zinc-500 leading-relaxed">
-                  Your balance is held as a secret-shared encrypted value distributed across three MPC nodes — no single node knows the plaintext amount.
+                  If you want to try it out, connect a wallet and use it to pay with <em>Confidential x402</em>. Your balance is held as a secret-shared encrypted value distributed across three MPC nodes — no single node knows the plaintext amount.
                 </p>
                 <div className="mt-3 flex items-center justify-center gap-3">
                   <WalletButton />
-                  <span className="text-lg font-semibold text-[#192b25]">
-                    {privateBalanceLoading
-                      ? <span className="text-zinc-400 font-normal">loading…</span>
-                      : privateBalance !== null
-                        ? <>{privateBalance} <span className="font-medium text-zinc-400">USDC</span></>
-                        : <span className="text-zinc-400 font-normal">—</span>}
-                  </span>
+                  {isConnected && (
+                    <span className="text-lg font-semibold text-[#192b25]">
+                      {privateBalanceLoading
+                        ? <span className="text-zinc-400 font-normal">loading…</span>
+                        : privateBalance !== null
+                          ? <>{privateBalance} <span className="font-medium text-zinc-400">USDC</span></>
+                          : <span className="text-zinc-400 font-normal">—</span>}
+                    </span>
+                  )}
                 </div>
 
                 <div className="flex flex-col gap-6 mt-6">
@@ -244,14 +234,9 @@ export default function ArticlePage() {
                       Receive 1,000 testnet USDC credited to your private balance. The faucet can be used once every 24 hours.
                     </p>
                     <div className="mt-3 flex justify-center">
-                      <SpinnerButton
-                        onClick={handleClaim}
-                        loading={faucetClaiming}
-                        loadingLabel="Claiming…"
-                        className="h-9 px-4 rounded-[0.5rem] border border-zinc-200 bg-white text-sm font-medium text-zinc-800 hover:bg-zinc-50 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
-                      >
-                        Claim 1,000 USDC from faucet
-                      </SpinnerButton>
+                      <div className="flex justify-end">
+                        <FaucetButton onClick={handleClaim} disabled={!isConnected} loading={faucetClaiming} />
+                      </div>
                       {faucetError && (
                         <ErrorDialog message={faucetError} onClose={() => setFaucetError(null)} />
                       )}
@@ -276,15 +261,11 @@ export default function ArticlePage() {
                       Sign a confidential payment and call the protected endpoint. Your wallet signs a typed-data message; the server verifies and settles it on-chain before responding with the protected content.
                     </p>
                     <div className="mt-3 flex justify-center">
-                      <SpinnerButton
+                      <PayButton
                         onClick={handleAccess}
-                        disabled={!walletClient?.account}
+                        disabled={!isConnected}
                         loading={paying}
-                        loadingLabel="Paying…"
-                        className="h-9 px-4 rounded-[0.5rem] bg-[#52ffc5] text-sm font-semibold text-zinc-900 hover:bg-[#33e0a8] transition-colors cursor-pointer border-0 disabled:opacity-50 disabled:cursor-not-allowed"
-                      >
-                        Access protected content
-                      </SpinnerButton>
+                      />
                     </div>
                   </div>
 
@@ -300,116 +281,114 @@ export default function ArticlePage() {
                     />
                   )}
                 </div>
-              </>
-            )}
-          </div>
+              </div>
 
-          {/* Resource server */}
-          <div id="resource-server" style={{ scrollMarginTop: "5rem" }}>
-            <h2 className="text-xl font-medium text-zinc-900 mt-6 mb-3">The resource server</h2>
-            <p className="text-base text-zinc-500 leading-relaxed">
-              The resource server issues a <code>402 Payment Required</code> challenge when no payment is attached, then forwards the client's signed payload to the TACEO facilitator for verification before serving the protected content. Its accumulated private balance grows with each successful payment — individual amounts are never exposed on-chain. The server tracks them directly, and they can be reconstructed from the MPC network if needed.
-            </p>
+              {/* Resource server */}
+              <div id="resource-server" style={{ scrollMarginTop: "5rem" }}>
+                <h2 className="text-xl font-medium text-zinc-900 mt-6 mb-3">The resource server</h2>
+                <p className="text-base text-zinc-500 leading-relaxed">
+                  The resource server issues a <code>402 Payment Required</code> challenge when no payment is attached, then forwards the client's signed payload to the TACEO facilitator for verification before serving the protected content. Its accumulated private balance grows with each successful payment — individual amounts are never exposed on-chain. The server tracks them directly, and they can be reconstructed from the MPC network if needed.
+                </p>
 
-            {/* Server balance */}
-            <div className="mt-4 flex items-center justify-center gap-3">
-              {X402_SERVER_ADDRESS && (
-                <div className="inline-flex items-center gap-2 h-9 px-3 pr-4 rounded-full border border-zinc-200 bg-[#f4f4f5] text-sm font-semibold text-zinc-800">
-                  <span style={{ height: "1.5rem", width: "1.5rem", borderRadius: "9999px", background: "radial-gradient(120% 95% at 24% 22%, #255b4d 0%, transparent 56%), radial-gradient(95% 95% at 70% 86%, #62ffd1 0%, transparent 62%), linear-gradient(145deg, #173f36 8%, #52ffc5 58%, #e5dbbc 100%)", display: "inline-block", flexShrink: 0 }} />
-                  {truncateAddress(X402_SERVER_ADDRESS)}
+                {/* Server balance */}
+                <div className="mt-4 flex items-center justify-center gap-3">
+                  {X402_SERVER_ADDRESS && (
+                    <div className="inline-flex items-center gap-2 h-9 px-3 pr-4 rounded-full border border-zinc-200 bg-[#f4f4f5] text-sm font-semibold text-zinc-800">
+                      <span style={{ height: "1.5rem", width: "1.5rem", borderRadius: "9999px", background: "radial-gradient(120% 95% at 24% 22%, #255b4d 0%, transparent 56%), radial-gradient(95% 95% at 70% 86%, #62ffd1 0%, transparent 62%), linear-gradient(145deg, #173f36 8%, #52ffc5 58%, #e5dbbc 100%)", display: "inline-block", flexShrink: 0 }} />
+                      {truncateAddress(X402_SERVER_ADDRESS)}
+                    </div>
+                  )}
+                  <span className="text-lg font-semibold text-[#192b25]">
+                    {serverBalanceLoading
+                      ? <span className="text-zinc-400 font-normal">loading…</span>
+                      : serverBalance !== null
+                        ? <>{serverBalance} <span className="font-medium text-zinc-400">USDC</span></>
+                        : <span className="text-zinc-400 font-normal">—</span>}
+                  </span>
                 </div>
-              )}
-              <span className="text-lg font-semibold text-[#192b25]">
-                {serverBalanceLoading
-                  ? <span className="text-zinc-400 font-normal">loading…</span>
-                  : serverBalance !== null
-                    ? <>{serverBalance} <span className="font-medium text-zinc-400">USDC</span></>
-                    : <span className="text-zinc-400 font-normal">—</span>}
-              </span>
-            </div>
 
-            <p className="text-base text-zinc-500 leading-relaxed mt-5">
-              This pricing tier breakdown is reconstructed from the server's records of each payment's plaintext amount and the corresponding price tier. No public on-chain data reveals how many payments were made at each tier, or how much revenue each tier generated. With <em>Standard x402</em>, all this information would be visible on-chain as plain ERC-20 transfers. Switch to <em>Confidential x402</em> to see how it looks on-chain.
-            </p>
+                <p className="text-base text-zinc-500 leading-relaxed mt-5">
+                  This pricing tier breakdown is reconstructed from the server's records of each payment's plaintext amount and the corresponding price tier. No public on-chain data reveals how many payments were made at each tier, or how much revenue each tier generated. With <em>Standard x402</em>, all this information would be visible on-chain as plain ERC-20 transfers. Switch to <em>Confidential x402</em> to see how it looks on-chain.
+                </p>
 
-            {/* Mode toggle */}
-            <div className="flex items-center justify-center mt-5 mb-4">
-              <X402ModeToggle mode={x402Mode} onChange={setX402Mode} />
-            </div>
+                {/* Mode toggle */}
+                <div className="flex items-center justify-center mt-5 mb-4">
+                  <X402ModeToggle mode={x402Mode} onChange={setX402Mode} />
+                </div>
 
-            {/* Pricing tier chart */}
-            <div className="mt-4 rounded-[0.5rem] border border-zinc-200 bg-white p-5 shadow-[0_2px_4px_rgba(0,0,0,0.04)]">
-              <TierBarChart stats={tierStats} txsLoading={txsLoading} txMode={x402Mode} />
-            </div>
+                {/* Pricing tier chart */}
+                <div className="mt-4 rounded-[0.5rem] border border-zinc-200 bg-white p-5 shadow-[0_2px_4px_rgba(0,0,0,0.04)]">
+                  <TierBarChart stats={tierStats} txsLoading={txsLoading} txMode={x402Mode} />
+                </div>
+              </div>
+
+              {/* Transaction log */}
+              <div id="transaction-log" style={{ scrollMarginTop: "5rem" }}>
+                <h2 className="text-xl font-medium text-zinc-900 mt-6 mb-3">On-chain transaction log</h2>
+                <p className="text-base text-zinc-500 leading-relaxed">
+                  Every payment settles as an on-chain transaction. The toggle below switches between two views of the same data — the <em>Standard x402</em> view shows the plaintext amount, while the <em>Confidential x402</em> view shows only the amount commitment that appears on-chain. The amounts never touch the public chain in cleartext.
+                </p>
+
+                {/* Mode toggle */}
+                <div className="flex items-center justify-center mt-5 mb-4">
+                  <X402ModeToggle mode={x402Mode} onChange={setX402Mode} />
+                </div>
+
+                <TxTable
+                  txs={txs}
+                  txsLoading={txsLoading}
+                  txMode={x402Mode}
+                  blockExplorerUrl={BLOCK_EXPLORER_URL}
+                />
+              </div>
+
+              {/* Why privacy matters */}
+              <div id="why-privacy" style={{ scrollMarginTop: "5rem" }}>
+                <h2 className="text-xl font-medium text-zinc-900 mt-6 mb-3">Why payment privacy matters</h2>
+                <p className="text-base text-zinc-500 leading-relaxed mb-3">
+                  Standard x402 settles payments as plain ERC-20 token transfers — every amount is permanently visible on-chain. This works for flat-rate APIs, but breaks down the moment pricing becomes dynamic:
+                </p>
+                <ul className="flex flex-col gap-3 pl-4">
+                  <li className="text-base text-zinc-500 leading-relaxed list-disc">
+                    <span className="font-medium text-zinc-700">Competitors read your pricing strategy off the blockchain.</span>{" "}
+                    Every <code>transferWithAuthorization</code> call exposes exactly what each customer paid — volume discounts, enterprise rates, and promotional pricing become public record.
+                  </li>
+                  <li className="text-base text-zinc-500 leading-relaxed list-disc">
+                    <span className="font-medium text-zinc-700">Per-customer deals are impossible to keep confidential.</span>{" "}
+                    A buyer on a higher tier cites on-chain evidence to demand the rate paid by others.
+                  </li>
+                  <li className="text-base text-zinc-500 leading-relaxed list-disc">
+                    <span className="font-medium text-zinc-700">AI agents reveal their economic strategy.</span>{" "}
+                    Spending patterns across API providers expose which data sources an agent values — and by how much budget it allocates to each.
+                  </li>
+                </ul>
+                <p className="text-base text-zinc-500 leading-relaxed mt-4">
+                  With <em>Confidential x402</em>, the on-chain record reveals that a payment was made — including sender and receiver addresses — but not how much. Privacy is enforced by a combination of Multi-Party Computation (MPC) and Zero-Knowledge Proofs (ZKP), so no single party ever sees the plaintext amount.
+                </p>
+              </div>
+
+            </article>
+
+            {/* TOC — right, sticky */}
+            <aside className="lg:flex-none lg:w-52 lg:sticky lg:top-14 lg:self-start hidden lg:block lg:pt-12">
+              <p className="text-xs font-semibold uppercase tracking-wider text-zinc-400 mb-3 px-2">On this page</p>
+              <nav className="flex flex-col">
+                {tocItems.map(({ label, href }) => (
+                  <a
+                    key={href}
+                    href={href}
+                    className="text-sm text-zinc-500 hover:text-zinc-900 px-2 py-1 rounded transition-colors leading-snug"
+                  >
+                    {label}
+                  </a>
+                ))}
+              </nav>
+            </aside>
+
           </div>
+        </main>
 
-          {/* Transaction log */}
-          <div id="transaction-log" style={{ scrollMarginTop: "5rem" }}>
-            <h2 className="text-xl font-medium text-zinc-900 mt-6 mb-3">On-chain transaction log</h2>
-            <p className="text-base text-zinc-500 leading-relaxed">
-              Every payment settles as an on-chain transaction. The toggle below switches between two views of the same data — the <em>Standard x402</em> view shows the plaintext amount, while the <em>Confidential x402</em> view shows only the amount commitment that appears on-chain. The amounts never touch the public chain in cleartext.
-            </p>
-
-            {/* Mode toggle */}
-            <div className="flex items-center justify-center mt-5 mb-4">
-              <X402ModeToggle mode={x402Mode} onChange={setX402Mode} />
-            </div>
-
-            <TxTable
-              txs={txs}
-              txsLoading={txsLoading}
-              txMode={x402Mode}
-              blockExplorerUrl={BLOCK_EXPLORER_URL}
-            />
-          </div>
-
-          {/* Why privacy matters */}
-          <div id="why-privacy" style={{ scrollMarginTop: "5rem" }}>
-            <h2 className="text-xl font-medium text-zinc-900 mt-6 mb-3">Why payment privacy matters</h2>
-            <p className="text-base text-zinc-500 leading-relaxed mb-3">
-              Standard x402 settles payments as plain ERC-20 token transfers — every amount is permanently visible on-chain. This works for flat-rate APIs, but breaks down the moment pricing becomes dynamic:
-            </p>
-            <ul className="flex flex-col gap-3 pl-4">
-              <li className="text-base text-zinc-500 leading-relaxed list-disc">
-                <span className="font-medium text-zinc-700">Competitors read your pricing strategy off the blockchain.</span>{" "}
-                Every <code>transferWithAuthorization</code> call exposes exactly what each customer paid — volume discounts, enterprise rates, and promotional pricing become public record.
-              </li>
-              <li className="text-base text-zinc-500 leading-relaxed list-disc">
-                <span className="font-medium text-zinc-700">Per-customer deals are impossible to keep confidential.</span>{" "}
-                A buyer on a higher tier cites on-chain evidence to demand the rate paid by others.
-              </li>
-              <li className="text-base text-zinc-500 leading-relaxed list-disc">
-                <span className="font-medium text-zinc-700">AI agents reveal their economic strategy.</span>{" "}
-                Spending patterns across API providers expose which data sources an agent values — and by how much budget it allocates to each.
-              </li>
-            </ul>
-            <p className="text-base text-zinc-500 leading-relaxed mt-4">
-              With <em>Confidential x402</em>, the on-chain record reveals that a payment was made — including sender and receiver addresses — but not how much. Privacy is enforced by a combination of Multi-Party Computation (MPC) and Zero-Knowledge Proofs (ZKP), so no single party ever sees the plaintext amount.
-            </p>
-          </div>
-
-        </article>
-
-        {/* TOC — right, sticky */}
-        <aside className="lg:flex-none lg:w-52 lg:sticky lg:top-14 lg:self-start hidden lg:block lg:pt-12">
-          <p className="text-xs font-semibold uppercase tracking-wider text-zinc-400 mb-3 px-2">On this page</p>
-          <nav className="flex flex-col">
-            {tocItems.map(({ label, href }) => (
-              <a
-                key={href}
-                href={href}
-                className="text-sm text-zinc-500 hover:text-zinc-900 px-2 py-1 rounded transition-colors leading-snug"
-              >
-                {label}
-              </a>
-            ))}
-          </nav>
-        </aside>
-
-      </div>
-      </main>
-
-      <Footer />
+        <Footer />
       </div>
     </div>
   );

@@ -52,11 +52,7 @@ export default function RequestFlowStepper({ step }: Props) {
 
   return (
     <div className="rounded-lg border border-zinc-200 bg-white p-6">
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <p className="text-sm font-medium text-zinc-700">Request flow</p>
-          <p className="text-xs text-zinc-400 mt-0.5">confidential x402 lifecycle</p>
-        </div>
+      <div className="flex items-center justify-between">
         {allDone && (
           <span className="inline-flex items-center gap-1.5 text-xs font-medium text-emerald-700 bg-emerald-50 border border-emerald-200 px-2.5 py-1 rounded-full">
             <svg width="10" height="10" viewBox="0 0 10 10" fill="none">

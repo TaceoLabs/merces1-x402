@@ -1,4 +1,5 @@
 import { useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/router";
 
 const NAV = [
@@ -64,11 +65,11 @@ const Logo = () => (
   <>
     <svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" fill="none" className="shrink-0">
       <rect width="36" height="36" fill="#2C5749" rx="8" />
-      <path fill="#52FFC5" d="m23 8 4.825 4.825L12.61 28.041l-4.826-4.825z" />
+      <path fill="#52FFC5" d="M18 7 L9 11.5 V19 C9 25.5 13 29 18 31 C23 29 27 25.5 27 19 V11.5 Z" />
     </svg>
     <div className="flex flex-col leading-tight whitespace-nowrap">
-      <span className="text-sm font-semibold tracking-tight text-zinc-900">Merces by TACEO</span>
-      <span className="text-xs text-zinc-500">Confidential x402</span>
+      <span className="text-sm font-semibold tracking-tight text-zinc-900">Confidential x402</span>
+      <span className="text-xs text-zinc-500">by TACEO</span>
     </div>
   </>
 );
@@ -82,9 +83,9 @@ export default function Sidebar() {
     <>
       {/* Mobile top bar */}
       <div className="md:hidden sticky top-0 z-30 flex items-center justify-between px-4 py-3 border-b border-zinc-200 bg-[#f9f8f5]">
-        <a href="/" className="flex items-center gap-3">
+        <Link href="/" className="flex items-center gap-3">
           <Logo />
-        </a>
+        </Link>
         <button
           onClick={() => setMobileOpen(true)}
           className="flex items-center justify-center w-9 h-9 rounded-md text-zinc-500 hover:text-zinc-900 hover:bg-zinc-200 transition-colors border-0 bg-transparent cursor-pointer"
@@ -103,9 +104,9 @@ export default function Sidebar() {
         <div className="md:hidden fixed inset-0 z-50 flex flex-col bg-[#f9f8f5]">
           {/* Header */}
           <div className="flex items-center justify-between px-4 py-3 border-b border-zinc-200">
-            <a href="/" className="flex items-center gap-3" onClick={() => setMobileOpen(false)}>
+            <Link href="/" className="flex items-center gap-3" onClick={() => setMobileOpen(false)}>
               <Logo />
-            </a>
+            </Link>
             <button
               onClick={() => setMobileOpen(false)}
               className="flex items-center justify-center w-9 h-9 rounded-md text-zinc-500 hover:text-zinc-900 hover:bg-zinc-200 transition-colors border-0 bg-transparent cursor-pointer"
@@ -127,24 +128,36 @@ export default function Sidebar() {
               return (
                 <div key={href}>
                   {showDivider && <hr className="my-3 border-zinc-200" />}
-                  <a
-                    href={href}
-                    {...(isExternal ? { target: "_blank", rel: "noopener noreferrer" } : {})}
-                    onClick={() => setMobileOpen(false)}
-                    className={`flex items-center gap-4 rounded-xl text-base font-medium px-4 py-3.5 transition-colors ${
-                      isActive ? "bg-[#a7f3d0] text-zinc-900" : "text-zinc-700 hover:bg-[#a7f3d0] hover:text-zinc-900"
-                    }`}
-                  >
-                    {icon}
-                    <span>{label}</span>
-                    {isExternal && (
+                  {isExternal ? (
+                    <a
+                      href={href}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      onClick={() => setMobileOpen(false)}
+                      className={`flex items-center gap-4 rounded-xl text-base font-medium px-4 py-3.5 transition-colors ${
+                        isActive ? "bg-[#a7f3d0] text-zinc-900" : "text-zinc-700 hover:bg-[#a7f3d0] hover:text-zinc-900"
+                      }`}
+                    >
+                      {icon}
+                      <span>{label}</span>
                       <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="ml-auto opacity-40" aria-hidden="true">
                         <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
                         <polyline points="15 3 21 3 21 9" />
                         <line x1="10" y1="14" x2="21" y2="3" />
                       </svg>
-                    )}
-                  </a>
+                    </a>
+                  ) : (
+                    <Link
+                      href={href}
+                      onClick={() => setMobileOpen(false)}
+                      className={`flex items-center gap-4 rounded-xl text-base font-medium px-4 py-3.5 transition-colors ${
+                        isActive ? "bg-[#a7f3d0] text-zinc-900" : "text-zinc-700 hover:bg-[#a7f3d0] hover:text-zinc-900"
+                      }`}
+                    >
+                      {icon}
+                      <span>{label}</span>
+                    </Link>
+                  )}
                 </div>
               );
             })}
@@ -159,12 +172,12 @@ export default function Sidebar() {
         {/* Logo */}
         <div className="pt-5 pb-3 px-2 flex items-center justify-between">
           {!collapsed && (
-            <a
+            <Link
               href="/"
               className="flex items-center gap-3 rounded-lg hover:bg-[#e5fff6] transition-colors px-2 py-2"
             >
               <Logo />
-            </a>
+            </Link>
           )}
           <button
             onClick={() => setCollapsed((c) => !c)}
@@ -195,17 +208,31 @@ export default function Sidebar() {
             return (
               <div key={href}>
                 {showDivider && <hr className="my-2 border-zinc-200" />}
-                <a
-                  href={href}
-                  {...(isExternal ? { target: "_blank", rel: "noopener noreferrer" } : {})}
-                  title={collapsed ? label : undefined}
-                  className={`flex items-center gap-3 rounded-lg text-sm font-medium transition-colors ${
-                    collapsed ? "justify-center px-0 py-2.5" : "px-3 py-2.5"
-                  } ${isActive ? "bg-[#a7f3d0]" : "hover:bg-[#a7f3d0]"}`}
-                >
-                  {icon}
-                  {!collapsed && <span className="whitespace-nowrap">{label}</span>}
-                </a>
+                {isExternal ? (
+                  <a
+                    href={href}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    title={collapsed ? label : undefined}
+                    className={`flex items-center gap-3 rounded-lg text-sm font-medium transition-colors ${
+                      collapsed ? "justify-center px-0 py-2.5" : "px-3 py-2.5"
+                    } ${isActive ? "bg-[#a7f3d0]" : "hover:bg-[#a7f3d0]"}`}
+                  >
+                    {icon}
+                    {!collapsed && <span className="whitespace-nowrap">{label}</span>}
+                  </a>
+                ) : (
+                  <Link
+                    href={href}
+                    title={collapsed ? label : undefined}
+                    className={`flex items-center gap-3 rounded-lg text-sm font-medium transition-colors ${
+                      collapsed ? "justify-center px-0 py-2.5" : "px-3 py-2.5"
+                    } ${isActive ? "bg-[#a7f3d0]" : "hover:bg-[#a7f3d0]"}`}
+                  >
+                    {icon}
+                    {!collapsed && <span className="whitespace-nowrap">{label}</span>}
+                  </Link>
+                )}
               </div>
             );
           })}

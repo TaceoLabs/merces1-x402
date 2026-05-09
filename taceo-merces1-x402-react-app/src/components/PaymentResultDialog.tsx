@@ -86,6 +86,16 @@ export default function PaymentResultDialog({ content, paymentResponse, onClose 
             </div>
           </div>
         </div>
+
+        {/* Footer */}
+        <div className="flex justify-end px-5 py-4 border-t border-zinc-100">
+          <button
+            onClick={onClose}
+            className="inline-flex items-center justify-center h-8 px-4 rounded-lg bg-green-50 border border-green-200 text-sm font-medium text-green-700 hover:bg-green-100 transition-colors cursor-pointer"
+          >
+            Close
+          </button>
+        </div>
       </div>
     </div>
   );
