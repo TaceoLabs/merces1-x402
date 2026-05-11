@@ -31,7 +31,7 @@ const LINKS = [
   {
     href: "/server",
     label: "Resource Server",
-    description: "See the server's payment history, revenue stats, and pricing tier breakdown — all reconstructed from MPC shares.",
+    description: "See the server's payment history, revenue stats, and pricing tier breakdown with and without Confidential x402.",
     icon: (
       <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
         <rect width="20" height="8" x="2" y="2" rx="2" />
@@ -45,7 +45,7 @@ const LINKS = [
 
 export default function Home() {
   return (
-    <div className="flex min-h-screen text-zinc-900 font-sans antialiased">
+    <div className="flex flex-col md:flex-row min-h-screen text-zinc-900 font-sans antialiased">
       <Sidebar />
       <div className="flex-1 flex flex-col min-w-0">
         <main className="flex-1 flex flex-col justify-center px-6 py-20 gap-12">
@@ -60,10 +60,10 @@ export default function Home() {
                 <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" />
                 <line x1="1" y1="1" x2="23" y2="23" />
               </svg>
-              Privacy-preserving payments
+              Private agentic payments
             </div>
             <p className="text-base text-zinc-500 leading-relaxed">
-              Merces extends the x402 HTTP payment protocol with MPC-based confidential transfers — payments settle on-chain, but amounts stay hidden from everyone except the parties involved.
+              Confidential x402 is a privacy extension to the x402 payment protocol that hides payment amounts from public view while keeping the full payment flow onchain and verifiable.
             </p>
           </div>
 

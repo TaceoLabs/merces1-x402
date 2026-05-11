@@ -19,6 +19,7 @@ export default function PriceTierSelect({ value, onChange, className }: PriceTie
   const radixValue = value || "Standard";
 
   return (
+    <div className="inline-flex items-center gap-3">
     <Select.Root
       value={radixValue}
       onValueChange={(v) => onChange(v === "Standard" ? "" : v)}
@@ -28,7 +29,7 @@ export default function PriceTierSelect({ value, onChange, className }: PriceTie
       >
         <span
           className="w-2 h-2 rounded-sm shrink-0"
-          style={{ background: selected.tier === "Standard" ? "#d4d4d8" : selected.color }}
+          style={{ background: selected.color }}
         />
         <Select.Value />
         <Select.Icon>
@@ -55,7 +56,7 @@ export default function PriceTierSelect({ value, onChange, className }: PriceTie
                 >
                   <span
                     className="w-2 h-2 rounded-sm shrink-0"
-                    style={{ background: tier.tier === "Standard" ? "#d4d4d8" : tier.color }}
+                    style={{ background: tier.color }}
                   />
                   <Select.ItemText>{label}</Select.ItemText>
                   <span className="ml-auto text-xs text-zinc-400">${price}</span>
@@ -66,5 +67,9 @@ export default function PriceTierSelect({ value, onChange, className }: PriceTie
         </Select.Content>
       </Select.Portal>
     </Select.Root>
+    <span className="text-lg font-semibold text-[#192b25]">
+      {selected.price} <span className="font-medium text-zinc-400">USDC</span>
+    </span>
+    </div>
   );
 }

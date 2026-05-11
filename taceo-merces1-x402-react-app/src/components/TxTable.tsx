@@ -2,10 +2,9 @@ import { useState, useMemo } from "react";
 import { inferPriceTier, PRICE_TIERS } from "@/components/TierBarChart";
 import { type Transfer } from "@/lib/api";
 import { formatUSDC, truncateAddress } from "@/lib/utils";
+import { X402Mode } from "./X402ModeToggle";
 
 export type { Transfer };
-
-type X402Mode = "normal" | "confidential";
 
 const PAGE_SIZE = 5;
 
@@ -56,7 +55,7 @@ export default function TxTable({
               <th className="px-4 py-3 text-xs font-medium text-zinc-500 uppercase tracking-wider w-1/5">
                 <span className="flex items-center gap-2">
                   Amount
-                  {txMode === "normal" ? (
+                  {txMode === "standard" ? (
                     <span className="inline-flex items-center gap-1 text-[10px] font-medium text-red-500 bg-red-50 border border-red-200 px-1.5 py-0.5 rounded-full normal-case tracking-normal">
                       <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" /><circle cx="12" cy="12" r="3" /></svg>
                       public
@@ -88,9 +87,9 @@ export default function TxTable({
 
               return (
                 <tr key={tx.id} className="border-t border-zinc-100 hover:bg-zinc-50 transition-colors">
-                  <td className="px-4 py-2.5 text-sm font-semibold">
+                  <td className="px-4 py-2.5 text-sm font-semibold underline">
                     {explorerHref
-                      ? <a href={explorerHref} target="_blank" rel="noopener noreferrer" title={tx.txHash ?? undefined} className="hover:underline">{txLabel}</a>
+                      ? <a href={explorerHref} target="_blank" rel="noopener noreferrer" title={tx.txHash ?? undefined}>{txLabel}</a>
                       : <span title={tx.txHash ?? undefined}>{txLabel}</span>}
                   </td>
                   <td className="px-4 py-2.5 text-sm font-mono text-zinc-600" title={tx.sender}>
@@ -100,18 +99,16 @@ export default function TxTable({
                     {truncateAddress(tx.receiver)}
                   </td>
                   <td className="px-4 py-2.5 text-sm font-semibold">
-                    {txMode === "normal" ? (() => {
+                    {txMode === "standard" ? (() => {
                       const tier = inferPriceTier(tx.amount);
-                      const { color } = PRICE_TIERS.find((t) => t.tier === tier)!;
-                      const bg = tier === "Standard" ? "#d4d4d8" : color;
-                      const fg = tier === "Standard" ? "#525252" : "#173f36";
+                      const { color, textColor } = PRICE_TIERS.find((t) => t.tier === tier)!;
                       return (
-                        <span className="inline-block px-2 py-0.5 rounded-full text-xs font-semibold" style={{ background: bg, color: fg }}>
+                        <span className="inline-block px-2 py-0.5 rounded-full text-xs font-semibold" style={{ background: color, color: textColor }}>
                           {formatUSDC(tx.amount)} USDC
                         </span>
                       );
                     })() : (
-                      <span className="text-zinc-700 font-mono">{tx.amountCommitment.slice(0, 4)}…{tx.amountCommitment.slice(-4)}</span>
+                      <span className="text-zinc-700 font-mono">•••••••</span>
                     )}
                   </td>
                   <td className="px-4 py-2.5">

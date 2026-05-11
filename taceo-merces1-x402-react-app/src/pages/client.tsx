@@ -9,7 +9,8 @@ import Sidebar from "@/components/Sidebar";
 import PriceTierSelect from "@/components/PriceTierSelect";
 import PaymentResultDialog from "@/components/PaymentResultDialog";
 import ErrorDialog from "@/components/ErrorDialog";
-import SpinnerButton from "@/components/SpinnerButton";
+import FaucetButton from "@/components/FaucetButton";
+import PayButton from "@/components/PayButton";
 import RequestFlowStepper from "@/components/RequestFlowStepper";
 import { CHAIN_ID, X402_SERVER_URL, FAUCET_URL } from "@/lib/constants";
 import { fetchPrivateBalanceShares } from "@/lib/api";
@@ -131,15 +132,18 @@ export default function ClientPage() {
         if (address) refreshPrivateBalance(address);
 
         setFlowStep(7);
+        setPaying(false);
       } else {
         setFlowStep(null);
         const msg = await response.text();
         setError(`Request failed (${response.status}): ${msg}`);
+        setPaying(false);
       }
     } catch (e: unknown) {
       clearFlowTimers();
       setFlowStep(null);
       setError(String(e));
+      setPaying(false);
     }
   }
 
@@ -151,115 +155,107 @@ export default function ClientPage() {
   }
 
   return (
-    <div className="flex min-h-screen text-zinc-900 font-sans antialiased">
+    <div className="flex flex-col md:flex-row min-h-screen text-zinc-900 font-sans antialiased">
       <Sidebar />
       <div className="flex-1 flex flex-col min-w-0">
 
         {/* Main */}
         <main className="flex-1 flex flex-col px-6 py-12">
-          <div className="w-full max-w-5xl mx-auto flex flex-col gap-8">
+          <div className="w-full max-w-4xl mx-auto flex flex-col gap-8">
 
             {/* Header */}
-            <div className="flex items-start justify-between gap-4">
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
               <div>
                 <h1 className="text-3xl font-semibold tracking-tight text-zinc-900">Client</h1>
-                <p className="text-sm text-zinc-500 mt-5">
+                <p className="text-base text-zinc-500 mt-5">
                   Connect your wallet, use the faucet to get 1,000 testnet USDC to you private wallet.
                   Pay for access to the protected resource using Confidential x402.
                 </p>
               </div>
-              <div className="pt-1 shrink-0">
+              <div className="sm:pt-1 sm:shrink-0">
                 <WalletButton />
               </div>
             </div>
 
-            {isConnected && (
-              <>
-                {/* Two-column dashboard */}
-                <div className="grid grid-cols-2 gap-4 items-stretch">
+            {/* Dashboard */}
+            <div className="rounded-xl border border-zinc-200 bg-white overflow-hidden">
+              <div className="flex flex-col sm:flex-row divide-y sm:divide-y-0 sm:divide-x divide-zinc-100">
 
-                  {/* Left — Balance + Faucet */}
-                  <div className="rounded-lg border border-zinc-200 bg-white p-6 flex flex-col">
-                    <div className="flex flex-col gap-2">
-                      <p className="text-xs font-medium text-zinc-400 uppercase tracking-wider">Your balance</p>
-                      <div className="text-5xl font-semibold text-[#192b25] leading-tight mt-1">
-                        {privateBalanceLoading
-                          ? <span className="text-zinc-400 text-base font-normal">Loading…</span>
-                          : privateBalance !== null
-                            ? <>{privateBalance} <span className="text-lg font-medium text-zinc-500">USDC</span></>
-                            : <span className="text-zinc-400 text-base font-normal">—</span>}
-                      </div>
-                      <p className="text-[10px] text-zinc-400">confidential on-chain balance</p>
+                {/* Balance + Faucet */}
+                <div className="flex-1 p-6 flex flex-col gap-4">
+                  <div>
+                    <p className="text-base font-semibold">Private Balance</p>
+                    <div className="mt-2 text-4xl font-semibold text-[#192b25] leading-none">
+                      {privateBalanceLoading
+                        ? <span className="text-zinc-400 text-base font-normal">Loading…</span>
+                        : privateBalance !== null
+                          ? <>{privateBalance} <span className="text-lg font-medium text-zinc-500">USDC</span></>
+                          : <span className="text-zinc-400 text-base font-normal">—</span>}
                     </div>
-
-                    <div className="flex-1" />
-
-                    <div className="flex justify-end">
-                      <SpinnerButton
-                        onClick={handleClaim}
-                        loading={faucetClaiming}
-                        loadingLabel="Claiming…"
-                        className="h-9 px-4 rounded-[0.5rem] border border-zinc-200 bg-white text-sm font-medium text-zinc-800 hover:bg-zinc-50 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
-                      >
-                        Send 1,000 USDC
-                      </SpinnerButton>
-                    </div>
-                    {faucetError && (
-                      <ErrorDialog message={faucetError} onClose={() => setFaucetError(null)} />
-                    )}
                   </div>
-
-                  {/* Right — Tier + Pay */}
-                  <div className="rounded-lg border border-zinc-200 bg-white p-6 flex flex-col gap-6">
-                    <div className="flex flex-col gap-3">
-                      <div>
-                        <p className="text-sm font-medium text-zinc-700">Price tier</p>
-                        <p className="text-xs text-zinc-400 mt-0.5">Your rate stays hidden on-chain regardless of which tier you choose.</p>
-                      </div>
-                      <div className="self-start">
-                        <PriceTierSelect value={priceTier} onChange={setPriceTier} />
-                      </div>
-                    </div>
-
-                    <div className="border-t border-zinc-100 pt-5 flex flex-col gap-3">
-                      <div>
-                        <p className="text-sm font-medium text-zinc-700">Pay for access</p>
-                        <p className="text-xs text-zinc-400 mt-0.5">Sign a confidential payment and call the protected endpoint.</p>
-                      </div>
-                      <SpinnerButton
-                        onClick={handleAccess}
-                        disabled={!walletClient?.account}
-                        loading={paying}
-                        loadingLabel="Paying…"
-                        className="h-9 px-4 rounded-[0.5rem] bg-[#52ffc5] text-sm font-semibold text-zinc-900 hover:bg-[#33e0a8] transition-colors cursor-pointer border-0 disabled:opacity-50 disabled:cursor-not-allowed"
-                      >
-                        Access protected content
-                      </SpinnerButton>
-                    </div>
-
-                    {error && (
-                      <ErrorDialog message={error} onClose={() => setError(null)} />
-                    )}
+                  <div>
+                    <FaucetButton onClick={handleClaim} disabled={!isConnected} loading={faucetClaiming} />
                   </div>
-
+                  {faucetError && <ErrorDialog message={faucetError} onClose={() => setFaucetError(null)} />}
                 </div>
 
-                {/* Flow stepper */}
-                <div>
-                  <h2 className="text-lg font-semibold text-zinc-900">How it works</h2>
-                  <p className="text-sm text-zinc-500 mt-1 mb-4">Each payment flows through these steps. The ZK proof keeps your exact amount hidden — only you and the counterparty know what was paid.</p>
-                  <RequestFlowStepper step={flowStep} />
+                {/* Tier + Pay */}
+                <div className="flex-1 p-6 flex flex-col gap-5">
+                  <div>
+                    <p className="text-base font-semibold">Pay for access</p>
+                    <p className="text-sm text-zinc-500 mt-1">Choose a price tier and pay to access the protected endpoint. The amount will be hidden on-chain.</p>
+                    <div className="mt-3">
+                      <PriceTierSelect value={priceTier} onChange={setPriceTier} />
+                    </div>
+                    <div className="mt-3">
+                      <PayButton onClick={handleAccess} disabled={!isConnected} loading={paying} />
+                    </div>
+                    {error && <ErrorDialog message={error} onClose={() => setError(null)} />}
+                  </div>
                 </div>
 
-                {/* Success */}
-                {content && flowStep === 7 && (
-                  <PaymentResultDialog
-                    content={content}
-                    paymentResponse={paymentResponse}
-                    onClose={reset}
-                  />
-                )}
-              </>
+              </div>
+            </div>
+
+            {/* Flow stepper */}
+            <div className="flex flex-col gap-4">
+              <div>
+                <h2 className="text-lg font-semibold text-zinc-900">Request Flow</h2>
+                <p className="text-base text-zinc-500 mt-1">Each payment flows through these steps. MPC and ZK proof ensure that no payment amount are visible on-chain.</p>
+              </div>
+              <div className="grid grid-cols-1 lg:grid-cols-[3fr_1.5fr] gap-4 items-start">
+                <RequestFlowStepper step={flowStep} />
+
+                {/* Right: actor legend */}
+                <div className="rounded-lg border border-zinc-200 bg-white p-6 flex flex-col gap-4">
+                  <div>
+                    <p className="text-base font-semibold mb-3">Actors</p>
+                    <div className="flex flex-col gap-4">
+                      <div>
+                        <span className="inline-block text-[10px] font-medium px-1.5 py-0.5 rounded bg-sky-50 text-sky-600 mb-1.5">client</span>
+                        <p className="text-xs text-zinc-500">Your agent or browser. Initiates requests and generates ZK proofs entirely locally — nothing leaves your device unencrypted.</p>
+                      </div>
+                      <div>
+                        <span className="inline-block text-[10px] font-medium px-1.5 py-0.5 rounded bg-violet-50 text-violet-600 mb-1.5">server</span>
+                        <p className="text-xs text-zinc-500">The protected API. Returns 402 payment requirements, then serves content once payment is settled.</p>
+                      </div>
+                      <div>
+                        <span className="inline-block text-[10px] font-medium px-1.5 py-0.5 rounded bg-amber-50 text-amber-600 mb-1.5">facilitator</span>
+                        <p className="text-xs text-zinc-500">An off-chain service that verifies the ZK proof and settles the payment on-chain.</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Success */}
+            {content && flowStep === 7 && (
+              <PaymentResultDialog
+                content={content}
+                paymentResponse={paymentResponse}
+                onClose={reset}
+              />
             )}
           </div>
         </main>

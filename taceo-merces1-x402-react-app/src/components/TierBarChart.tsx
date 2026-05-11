@@ -10,15 +10,15 @@ import {
   ResponsiveContainer,
   Cell,
 } from "recharts";
+import { X402Mode } from "./X402ModeToggle";
 
 export type PriceTier = "Standard" | "STARTUP" | "GROWTH" | "ENTERPRISE";
-export type X402Mode = "normal" | "confidential";
 
-export const PRICE_TIERS: { tier: PriceTier; label: string; price: string; color: string }[] = [
-  { tier: "Standard",   label: "Standard",   price: "1.00", color: "#f4f4f5" },
-  { tier: "STARTUP",    label: "STARTUP",    price: "0.20", color: "#52ffc5" },
-  { tier: "GROWTH",     label: "GROWTH",     price: "0.80", color: "#a7f3d0" },
-  { tier: "ENTERPRISE", label: "ENTERPRISE", price: "1.50", color: "#d1fae5" },
+export const PRICE_TIERS: { tier: PriceTier; label: string; price: string; color: string; textColor: string }[] = [
+  { tier: "Standard",   label: "Standard",   price: "1.00", color: "#52ffc5", textColor: "#475569" },
+  { tier: "STARTUP",    label: "STARTUP",    price: "0.20", color: "#fde68a", textColor: "#92400e" },
+  { tier: "GROWTH",     label: "GROWTH",     price: "0.80", color: "#bfdbfe", textColor: "#1e40af" },
+  { tier: "ENTERPRISE", label: "ENTERPRISE", price: "1.50", color: "#c4b5fd", textColor: "#5b21b6" },
 ];
 
 export function inferPriceTier(amount: bigint): PriceTier {
@@ -41,6 +41,7 @@ interface TierChartDatum {
   label: string;
   price: string;
   color: string;
+  textColor: string;
   count: number;
   revenue: bigint;
   pct: number;
@@ -65,7 +66,7 @@ function makeRevenueLabel(txMode: X402Mode, data: TierChartDatum[]) {
 
     const cx = x + width / 2;
 
-    if (txMode === "normal") {
+    if (txMode === "standard") {
       return (
         <foreignObject x={cx - 52} y={y - 40} width={104} height={38}>
           <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 2 }}>
@@ -127,20 +128,20 @@ function HiddenFlair() {
 function TierTooltip({ active, payload, txMode }: TooltipProps) {
   if (!active || !payload?.length) return null;
   const d = payload[0].payload;
-  const isNormal = txMode === "normal";
+  const isStandard = txMode === "standard";
   return (
     <div className="rounded-lg border border-zinc-200 bg-white shadow-lg px-3.5 py-3 text-xs flex flex-col gap-1.5 min-w-[140px]">
       <div className="flex items-center gap-2 mb-0.5">
         <span
           className="px-2 py-0.5 rounded font-semibold text-[11px]"
-          style={{ background: d.color, color: d.tier === "Standard" ? "#525252" : "#173f36" }}
+          style={{ background: d.color, color: d.textColor }}
         >
           {d.label}
         </span>
       </div>
       <div className="flex justify-between items-center gap-4">
         <span className="text-zinc-500">Payments</span>
-        {isNormal
+        {isStandard
           ? <span className="flex items-center gap-1.5">
               <span className="font-semibold text-zinc-800">{d.count} <span className="font-normal text-zinc-400">({d.pct}%)</span></span>
               <PublicFlair />
@@ -149,7 +150,7 @@ function TierTooltip({ active, payload, txMode }: TooltipProps) {
       </div>
       <div className="flex justify-between items-center gap-4">
         <span className="text-zinc-500">Price</span>
-        {isNormal
+        {isStandard
           ? <span className="flex items-center gap-1.5">
               <span className="font-semibold text-zinc-800">{d.price} USDC</span>
               <PublicFlair />
@@ -158,7 +159,7 @@ function TierTooltip({ active, payload, txMode }: TooltipProps) {
       </div>
       <div className="flex justify-between items-center gap-4">
         <span className="text-zinc-500">Revenue</span>
-        {isNormal
+        {isStandard
           ? <span className="flex items-center gap-1.5">
               <span className="font-semibold text-zinc-800">{formatUSDC(d.revenue)} USDC</span>
               <PublicFlair />
@@ -178,11 +179,11 @@ export default function TierBarChart({
   txsLoading: boolean;
   txMode: X402Mode;
 }) {
-  const data: TierChartDatum[] = PRICE_TIERS.map(({ tier, label, price, color }) => {
+  const data: TierChartDatum[] = PRICE_TIERS.map(({ tier, label, price, color, textColor }) => {
     const count = stats?.tierCounts[tier] ?? 0;
     const total = stats ? Object.values(stats.tierCounts).reduce((a, b) => a + b, 0) : 0;
     return {
-      tier, label, price, color,
+      tier, label, price, color, textColor,
       count,
       revenue: stats?.tierRevenue[tier] ?? BigInt(0),
       pct: total > 0 ? Math.round((count / total) * 100) : 0,
@@ -193,27 +194,29 @@ export default function TierBarChart({
     return <div className="h-52 flex items-center justify-center text-sm text-zinc-400">Loading…</div>;
   }
 
+  const isConfidential = txMode !== "standard";
   const isEmpty = data.every((d) => d.count === 0);
+  const displayData = isConfidential ? data.map((d) => ({ ...d, count: 2 })) : data;
 
   return (
     <div className="flex flex-col gap-4">
       <div className="flex items-center gap-3 flex-wrap">
         {PRICE_TIERS.map(({ tier, label, color }) => (
           <span key={tier} className="flex items-center gap-1.5 text-xs text-zinc-500">
-            <span className="w-2.5 h-2.5 rounded-sm shrink-0" style={{ background: tier === "Standard" ? "#d4d4d8" : color }} />
+            <span className="w-2.5 h-2.5 rounded-sm shrink-0" style={{ background: color }} />
             {label}
           </span>
         ))}
       </div>
       <ResponsiveContainer width="100%" height={250}>
-        <BarChart data={data} barCategoryGap="28%" margin={{ top: 20, right: 8, left: -16, bottom: 0 }}>
+        <BarChart data={displayData} barCategoryGap="28%" margin={{ top: 20, right: 8, left: -16, bottom: 0 }}>
           <CartesianGrid strokeDasharray="3 3" stroke="#f4f4f5" vertical={false} />
           <XAxis dataKey="label" tick={{ fontSize: 11, fill: "#a1a1aa" }} axisLine={false} tickLine={false} />
-          <YAxis allowDecimals={false} tick={{ fontSize: 11, fill: "#a1a1aa" }} axisLine={false} tickLine={false} />
+          <YAxis allowDecimals={false} tick={{ fontSize: 11, fill: "#a1a1aa" }} axisLine={false} tickLine={false} domain={isConfidential ? [0, 4] : undefined} tickFormatter={isConfidential ? () => "?" : undefined} />
           <Tooltip content={<TierTooltip txMode={txMode} />} cursor={{ fill: "rgba(0,0,0,0.03)", radius: 6 }} />
-          <Bar dataKey="count" radius={[5, 5, 0, 0]} isAnimationActive={!isEmpty} label={{ content: makeRevenueLabel(txMode, data) }}>
-            {data.map(({ tier, color }) => (
-              <Cell key={tier} fill={tier === "Standard" ? "#d4d4d8" : color} />
+          <Bar dataKey="count" radius={[5, 5, 0, 0]} isAnimationActive={!isEmpty} label={{ content: makeRevenueLabel(txMode, displayData) }}>
+            {displayData.map(({ tier, color }) => (
+              <Cell key={tier} fill={color} />
             ))}
           </Bar>
         </BarChart>

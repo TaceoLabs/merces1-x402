@@ -1,4 +1,4 @@
-export type X402Mode = "normal" | "confidential";
+export type X402Mode = "standard" | "confidential";
 
 export default function X402ModeToggle({
   mode,
@@ -11,11 +11,11 @@ export default function X402ModeToggle({
     <div className="flex items-center gap-3">
       <button
         type="button"
-        onClick={() => onChange("normal")}
+        onClick={() => onChange("standard")}
         className="border-0 bg-transparent p-0 cursor-pointer"
       >
-        <span className={`text-sm leading-5 tracking-[-0.01em] ${mode === "normal" ? "text-[#192b25] font-semibold" : "text-zinc-400 font-normal"}`}>
-          Normal x402
+        <span className={`text-sm leading-5 tracking-[-0.01em] ${mode === "standard" ? "text-[#192b25] font-semibold" : "text-zinc-400 font-normal"}`}>
+          Standard x402
         </span>
       </button>
       <button
@@ -23,7 +23,7 @@ export default function X402ModeToggle({
         role="switch"
         aria-label="Transaction mode"
         aria-checked={mode === "confidential"}
-        onClick={() => onChange(mode === "confidential" ? "normal" : "confidential")}
+        onClick={() => onChange(mode === "confidential" ? "standard" : "confidential")}
         className="relative flex w-14 items-center rounded-full border border-zinc-200 bg-[#f2f2f2] p-[3px] cursor-pointer focus-visible:outline-none"
         style={{ height: "calc(1.5rem + 6px)" }}
       >
