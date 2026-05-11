@@ -78,7 +78,10 @@ tracing = "0.1.43"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 uuid = "1"
 x402-axum = { version = "1.4" }
+x402-chain-eip155 = { version = "1.4" }
+x402-facilitator-local = { version = "1.4" }
 x402-reqwest = { version = "1.4" }
+x402-types = { version = "1.4" }
 
 # This profile can be used for CI in pull requests.
 [profile.ci-dev]
