@@ -16,7 +16,7 @@ exclude = ["circom-witness-rs"]
 
 [workspace.package]
 edition = "2024"
-rust-version = "1.90"
+rust-version = "1.91"
 readme = "./README.md"
 homepage = "https://www.taceo.io"
 repository = "https://github.com/TaceoLabs/Merces1_updated"

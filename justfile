@@ -5,6 +5,7 @@ FACILITATOR_PRIVATE_KEY := "0x5de4111afa1a4b94908f83103eb1f1706367c2e68ca870fc3f
 FAUCET_PRIVATE_KEY := "0x7c852118294e51e653712a81e05800f419141751be58f605c371e15141b007a6"
 X402_SERVER_ADDRESS := "0x23618e81E3f5cdF7f54C3d65f7FBc0aBf5B21E8f"
 X402_CLIENT_ADDRESS := "0xa0Ee7A142d267C1f36714E4a8F75612F20a79720"
+X402_CLIENT_PRIVATE_KEY := "0x2a871d0798f97d79848a013d4936a73bf4cc922c825d33c1cf7073dff6d409c6"
 PTAU_FILE := "phase2_17.ptau"
 PTAU_URL := "https://storage.googleapis.com/zkevm/ptau/powersOfTau28_hez_final_17.ptau"
 
@@ -255,7 +256,7 @@ run-x402-client:
     echo ""
     echo "balance before: $(just get-balance {{ X402_CLIENT_ADDRESS }})"
     echo "running x402 client example.."
-    cargo run --release -p taceo-merces1-x402 --example client
+    PRIVATE_KEY={{ X402_CLIENT_PRIVATE_KEY }} SERVER_URL=http://localhost:8081 cargo run --release --features client -p taceo-merces1-x402 --example client
     echo "balance before: $(just get-balance {{ X402_CLIENT_ADDRESS }})"
 
 run-x402-client-js:
@@ -266,7 +267,8 @@ run-x402-client-js:
     echo ""
     echo "balance before: $(just get-balance {{ X402_CLIENT_ADDRESS }})"
     echo "running x402 js client example.."
-    cd taceo-merces1-x402-js && npm run example:client
+    cd taceo-merces1-x402-js
+    PRIVATE_KEY={{ X402_CLIENT_PRIVATE_KEY }} SERVER_URL=http://localhost:8081 npm run example:client
     echo "balance after: $(just get-balance {{ X402_CLIENT_ADDRESS }})"
 
 get-balance address:

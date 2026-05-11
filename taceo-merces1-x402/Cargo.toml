@@ -9,33 +9,73 @@ repository.workspace = true
 license.workspace = true
 publish.workspace = true
 
+[[example]]
+name = "client"
+required-features = ["client"]
+
+[[example]]
+name = "server"
+required-features = ["server"]
+
 [dependencies]
 alloy = { workspace = true, features = ["full"] }
 ark-babyjubjub.workspace = true
 ark-bn254.workspace = true
-ark-ff.workspace = true
-ark-groth16.workspace = true
+ark-ff = { workspace = true, optional = true }
+ark-groth16 = { workspace = true, optional = true }
 ark-serde-compat = { workspace = true, features = ["babyjubjub"] }
-async-trait.workspace = true
-axum.workspace = true
-client = { path = "../client" }
-contract-rs = { path = "../contract-rs" }
-eyre.workspace = true
-groth16-material.workspace = true
-mpc-core.workspace = true
-rand.workspace = true
-rand_chacha.workspace = true
-reqwest = { workspace = true, features = ["json", "rustls"] }
+async-trait = { workspace = true, optional = true }
+client = { path = "../client", optional = true }
+contract-rs = { path = "../contract-rs", optional = true }
+groth16-material = { workspace = true, optional = true }
+mpc-core = { workspace = true, optional = true }
+rand = { workspace = true, optional = true }
+rand_chacha = { workspace = true, optional = true }
+reqwest = { workspace = true, features = ["json", "rustls"], optional = true }
 serde = { workspace = true }
-serde_json.workspace = true
-taceo-circom-types = { workspace = true, features = ["groth16"] }
-taceo-groth16.workspace = true
-thiserror.workspace = true
-tokio = { workspace = true, features = ["macros"] }
-tracing = { workspace = true }
-uuid = { workspace = true, features = ["serde", "v4"] }
-x402-axum = { workspace = true, features = ["telemetry"] }
+serde_json = { workspace = true, optional = true }
+taceo-circom-types = { workspace = true, features = ["bn254", "groth16", "proof"] }
+taceo-groth16 = { workspace = true, optional = true }
+thiserror = { workspace = true, optional = true }
+tokio = { workspace = true, features = ["macros"], optional = true }
+tracing = { workspace = true, optional = true }
+uuid = { workspace = true, features = ["serde", "v4"], optional = true }
 x402-chain-eip155 = { version = "1.4", features = ["client", "facilitator"] }
-x402-facilitator-local = { version = "1.4" }
-x402-reqwest = { workspace = true, features = ["telemetry"] }
+x402-facilitator-local = { version = "1.4", optional = true }
 x402-types = { version = "1.4" }
+
+[dev-dependencies]
+axum.workspace = true
+eyre.workspace = true
+reqwest = { workspace = true, features = ["json", "rustls"] }
+x402-axum = { workspace = true, features = ["telemetry"] }
+x402-reqwest = { workspace = true, features = ["telemetry"] }
+
+[features]
+client = [
+  "dep:async-trait",
+  "dep:client",
+  "dep:contract-rs",
+  "dep:groth16-material",
+  "dep:rand",
+  "dep:rand_chacha",
+  "dep:serde_json",
+  "dep:tokio",
+]
+facilitator = [
+  "dep:ark-ff",
+  "dep:ark-groth16",
+  "dep:client",
+  "dep:contract-rs",
+  "dep:mpc-core",
+  "dep:rand",
+  "dep:reqwest",
+  "dep:serde_json",
+  "dep:taceo-groth16",
+  "dep:thiserror",
+  "dep:tokio",
+  "dep:tracing",
+  "dep:uuid",
+  "dep:x402-facilitator-local",
+]
+server = ["dep:serde_json", "dep:tokio"]

@@ -1,18 +1,18 @@
-use alloy::primitives::Address;
+use alloy::primitives::{Address, address};
 
-// #[cfg(feature = "server")]
+#[cfg(feature = "server")]
 pub mod server;
-// #[cfg(feature = "server")]
+#[cfg(feature = "server")]
 pub use server::*;
 
-// #[cfg(feature = "facilitator")]
+#[cfg(feature = "facilitator")]
 pub mod facilitator;
-// #[cfg(feature = "facilitator")]
+#[cfg(feature = "facilitator")]
 pub use facilitator::*;
 
-// #[cfg(feature = "client")]
+#[cfg(feature = "client")]
 pub mod client;
-// #[cfg(feature = "client")]
+#[cfg(feature = "client")]
 pub use client::*;
 
 pub mod types;
@@ -43,7 +43,7 @@ impl ConfidentialUSDC {
 
         Eip155ConfidentialTokenDeployment {
             chain_reference,
-            address: Address::default(), // TODO?
+            address: Address::default(),
             decimals: 6,
         }
     }
@@ -55,7 +55,7 @@ impl ConfidentialUSDC {
 
         Eip155ConfidentialTokenDeployment {
             chain_reference,
-            address: Address::default(), // TODO?
+            address: address!("0x4Ee80fFA1332525A8Cd100E1edf72Fe066f01c10"),
             decimals: 6,
         }
     }

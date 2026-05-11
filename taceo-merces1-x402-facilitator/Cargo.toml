@@ -23,7 +23,9 @@ secrecy = { workspace = true, features = ["serde"] }
 serde = { workspace = true }
 serde_json.workspace = true
 taceo-circom-types = { workspace = true, features = ["groth16"] }
-taceo-merces1-x402 = { path = "../taceo-merces1-x402" }
+taceo-merces1-x402 = { path = "../taceo-merces1-x402", features = [
+  "facilitator"
+] }
 taceo-nodes-common = { workspace = true, features = ["serde", "web3"] }
 taceo-nodes-observability.workspace = true
 tokio = { workspace = true, features = ["macros", "rt-multi-thread"] }
