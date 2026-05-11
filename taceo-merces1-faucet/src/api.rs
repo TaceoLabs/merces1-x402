@@ -17,7 +17,7 @@ const COOLDOWN: Duration = Duration::from_secs(24 * 60 * 60);
 /// Represents all possible API errors.
 #[derive(Debug, thiserror::Error)]
 pub(crate) enum Error {
-    #[error("Try again in after 24h")]
+    #[error("Try again after 24h")]
     TooManyRequests,
     #[error(transparent)]
     InternalServerError(#[from] eyre::Report),
