@@ -66,7 +66,7 @@ serde = { version = "1", features = ["derive"] }
 serde_json = { version = "1" }
 sha2 = { version = "0.10", features = ["compress"] }
 sqlx = "0.8"
-taceo-circom-types = { version = "0.2.2", default-features = false }
+taceo-circom-types = { version = "0.2.5", default-features = false }
 taceo-groth16 = "0.1.3"
 taceo-nodes-common = { version = "0.5.1", default-features = false }
 taceo-nodes-observability = "0.1"
