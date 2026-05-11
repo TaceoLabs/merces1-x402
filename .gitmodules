@@ -9,4 +9,4 @@
 	url = https://github.com/TaceoLabs/babyjubjub-solidity
 [submodule "circom-witness-rs"]
 	path = circom-witness-rs
-	url = git@github.com:TaceoLabs/circom-witness-rs.git
+	url = https://github.com/TaceoLabs/circom-witness-rs.git
