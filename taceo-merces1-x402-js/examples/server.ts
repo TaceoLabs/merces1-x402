@@ -3,9 +3,8 @@ import { paymentMiddleware, x402ResourceServer } from "@x402/express";
 import { HTTPFacilitatorClient } from "@x402/core/server";
 import { ConfidentialEvmScheme } from "../src/server/scheme";
 
-const address = process.env.ADDRESS as `0x${string}` || "0x70997970C51812dc3A010C7d01b50e0d17dc79C8";
-
-const facilitatorUrl = process.env.FACILITATOR_URL || "http://localhost:8080";
+const address = process.env.ADDRESS as `0x${string}`;
+const facilitatorUrl = process.env.FACILITATOR_URL;
 const facilitatorClient = new HTTPFacilitatorClient({ url: facilitatorUrl });
 
 const app = express();
@@ -33,6 +32,6 @@ app.get("/api/protected", (req, res) => {
   res.send("protected content");
 });
 
-app.listen(8081, () => {
-  console.log(`Server listening at http://localhost:${8081}`);
+app.listen(8080, () => {
+  console.log(`Server listening at http://localhost:${8080}`);
 });

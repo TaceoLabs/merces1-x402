@@ -2,8 +2,8 @@ import { x402Client, wrapFetchWithPayment, x402HTTPClient } from "@x402/fetch";
 import { ConfidentialEvmScheme } from "../src/client/scheme";
 import { privateKeyToAccount } from "viem/accounts";
 
-const privateKey = process.env.PRIVATE_KEY as `0x${string}` || "0x2a871d0798f97d79848a013d4936a73bf4cc922c825d33c1cf7073dff6d409c6";
-const serverUrl = process.env.SERVER_URL || "http://localhost:8081";
+const privateKey = process.env.PRIVATE_KEY as `0x${string}`;
+const serverUrl = process.env.SERVER_URL;
 
 async function main(): Promise<void> {
   const signer = privateKeyToAccount(privateKey);
@@ -33,5 +33,3 @@ main().catch(error => {
 }).finally(() => {
   process.exit(0);
 });
-
-
