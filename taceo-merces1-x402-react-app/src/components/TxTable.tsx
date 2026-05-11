@@ -87,9 +87,9 @@ export default function TxTable({
 
               return (
                 <tr key={tx.id} className="border-t border-zinc-100 hover:bg-zinc-50 transition-colors">
-                  <td className="px-4 py-2.5 text-sm font-semibold">
+                  <td className="px-4 py-2.5 text-sm font-semibold underline">
                     {explorerHref
-                      ? <a href={explorerHref} target="_blank" rel="noopener noreferrer" title={tx.txHash ?? undefined} className="hover:underline">{txLabel}</a>
+                      ? <a href={explorerHref} target="_blank" rel="noopener noreferrer" title={tx.txHash ?? undefined}>{txLabel}</a>
                       : <span title={tx.txHash ?? undefined}>{txLabel}</span>}
                   </td>
                   <td className="px-4 py-2.5 text-sm font-mono text-zinc-600" title={tx.sender}>

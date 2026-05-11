@@ -203,7 +203,7 @@ export default function ClientPage() {
                 <div className="flex-1 p-6 flex flex-col gap-5">
                   <div>
                     <p className="text-base font-semibold">Pay for access</p>
-                    <p className="text-sm text-zinc-500 mt-1">Choose a price tier and pay to access the protced endpoint. The amount will be hidden on-chain.</p>
+                    <p className="text-sm text-zinc-500 mt-1">Choose a price tier and pay to access the protected endpoint. The amount will be hidden on-chain.</p>
                     <div className="mt-3">
                       <PriceTierSelect value={priceTier} onChange={setPriceTier} />
                     </div>
@@ -221,7 +221,7 @@ export default function ClientPage() {
             <div className="flex flex-col gap-4">
               <div>
                 <h2 className="text-lg font-semibold text-zinc-900">Request Flow</h2>
-                <p className="text-base text-zinc-500 mt-1">Each payment flows through these steps. The ZK proof keeps your exact amount hidden — only you and the counterparty know what was paid.</p>
+                <p className="text-base text-zinc-500 mt-1">Each payment flows through these steps. MPC and ZK proof ensure that no payment amount are visible on-chain.</p>
               </div>
               <div className="grid grid-cols-1 lg:grid-cols-[3fr_1.5fr] gap-4 items-start">
                 <RequestFlowStepper step={flowStep} />
@@ -237,11 +237,11 @@ export default function ClientPage() {
                       </div>
                       <div>
                         <span className="inline-block text-[10px] font-medium px-1.5 py-0.5 rounded bg-violet-50 text-violet-600 mb-1.5">server</span>
-                        <p className="text-xs text-zinc-500">The protected API. Returns a 402 payment requirements, then serves content once payment is settled.</p>
+                        <p className="text-xs text-zinc-500">The protected API. Returns 402 payment requirements, then serves content once payment is settled.</p>
                       </div>
                       <div>
                         <span className="inline-block text-[10px] font-medium px-1.5 py-0.5 rounded bg-amber-50 text-amber-600 mb-1.5">facilitator</span>
-                        <p className="text-xs text-zinc-500">An independent service that verifies the ZK proof and settles the payment on-chain.</p>
+                        <p className="text-xs text-zinc-500">An off-chain service that verifies the ZK proof and settles the payment on-chain.</p>
                       </div>
                     </div>
                   </div>

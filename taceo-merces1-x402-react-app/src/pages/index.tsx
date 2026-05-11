@@ -31,7 +31,7 @@ const LINKS = [
   {
     href: "/server",
     label: "Resource Server",
-    description: "See the server's payment history, revenue stats, and pricing tier breakdown — all reconstructed from MPC shares.",
+    description: "See the server's payment history, revenue stats, and pricing tier breakdown with and without Confidential x402.",
     icon: (
       <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
         <rect width="20" height="8" x="2" y="2" rx="2" />
@@ -63,7 +63,7 @@ export default function Home() {
               Private agentic payments
             </div>
             <p className="text-base text-zinc-500 leading-relaxed">
-              Merces extends the x402 HTTP payment protocol with MPC-based confidential transfers — payments settle on-chain, but amounts stay hidden from everyone except the parties involved.
+              Confidential x402 is a privacy extension to the x402 payment protocol that hides payment amounts from public view while keeping the full payment flow onchain and verifiable.
             </p>
           </div>
 

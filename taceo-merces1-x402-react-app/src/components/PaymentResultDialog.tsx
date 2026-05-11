@@ -54,7 +54,7 @@ export default function PaymentResultDialog({ content, paymentResponse, onClose 
                 <div className="flex flex-col gap-1">
                   <p className="text-sm font-semibold text-zinc-700">Transaction</p>
                   {explorerHref ? (
-                    <a href={explorerHref} target="_blank" rel="noopener noreferrer" className="font-mono text-sm hover:underline" title={txHash}>
+                    <a href={explorerHref} target="_blank" rel="noopener noreferrer" className="font-mono text-sm underline" title={txHash}>
                       {txHash.slice(0, 10)}…{txHash.slice(-8)}
                     </a>
                   ) : (
@@ -81,7 +81,7 @@ export default function PaymentResultDialog({ content, paymentResponse, onClose 
 
           <div className="flex flex-col gap-1">
             <p className="text-sm font-semibold text-zinc-700">Response body</p>
-            <div className="rounded-lg border border-zinc-200 bg-[#f9f8f5] px-4 py-3">
+            <div className="rounded-lg border border-zinc-200 px-4 py-3">
               <pre className="text-sm whitespace-pre-wrap break-all text-zinc-700">{JSON.stringify(content, null, 2)}</pre>
             </div>
           </div>

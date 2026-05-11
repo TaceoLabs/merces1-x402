@@ -136,7 +136,7 @@ export default function ServerPage() {
           <div>
             <h2 className="text-lg font-semibold text-zinc-700 mb-1">Pricing tier breakdown</h2>
             <p className="text-base text-zinc-500 leading-relaxed mb-3">
-              In confidential mode, neither the payment amount nor the customer's price tier is visible on-chain. An outside observer cannot reconstruct this chart, the total revenue, or the average payment — the on-chain record contains only opaque commitments. The data here is tracked by the server directly; amounts can also be reconstructed from the MPC network.
+              In confidential mode, neither the payment amount nor the customer's price tier is visible on-chain. An outside observer cannot reconstruct this chart, the total revenue, or the average payment — the on-chain record contains only opaque commitments.
             </p>
             <div className="rounded-lg border border-zinc-200 bg-white p-5">
               <TierBarChart stats={stats} txsLoading={txsLoading} txMode={x402Mode} />
@@ -147,7 +147,7 @@ export default function ServerPage() {
           <div>
             <h2 className="text-lg font-semibold text-zinc-700 mb-1">Payment history</h2>
             <p className="text-base text-zinc-500 leading-relaxed mb-3">
-              A full log of every x402 payment received by this server. In confidential mode, amounts and price tiers are never exposed on-chain — the server tracks them directly, and they can be reconstructed from the MPC network if needed.
+              A full log of every x402 payment received by this server. In confidential mode, amounts and price tiers are never exposed on-chain — the server can track them directly.
             </p>
             <TxTable
               txs={txs}

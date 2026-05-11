@@ -258,7 +258,7 @@ export default function ArticlePage() {
                   <div>
                     <p className="text-base text-zinc-500 leading-relaxed">
                       <span className="font-medium text-zinc-700">Pay for access.</span>{" "}
-                      Sign a confidential payment and call the protected endpoint. Your wallet signs a typed-data message; the server verifies and settles it on-chain before responding with the protected content.
+                      Sign a confidential payment, generate the ZK proof and call the protected endpoint.
                     </p>
                     <div className="mt-3 flex justify-center">
                       <PayButton
@@ -287,7 +287,7 @@ export default function ArticlePage() {
               <div id="resource-server" style={{ scrollMarginTop: "5rem" }}>
                 <h2 className="text-xl font-medium text-zinc-900 mt-6 mb-3">The resource server</h2>
                 <p className="text-base text-zinc-500 leading-relaxed">
-                  The resource server issues a <code>402 Payment Required</code> challenge when no payment is attached, then forwards the client's signed payload to the TACEO facilitator for verification before serving the protected content. Its accumulated private balance grows with each successful payment — individual amounts are never exposed on-chain. The server tracks them directly, and they can be reconstructed from the MPC network if needed.
+                  The resource server issues a <code>402 Payment Required</code> challenge when no payment is attached, then forwards the client's signed payload to the facilitator for verification and settlement before serving the protected content. Its accumulated private balance grows with each successful payment — individual amounts are never exposed on-chain. The server tracks them directly, and they can be reconstructed from the MPC network if needed.
                 </p>
 
                 {/* Server balance */}
@@ -308,7 +308,7 @@ export default function ArticlePage() {
                 </div>
 
                 <p className="text-base text-zinc-500 leading-relaxed mt-5">
-                  This pricing tier breakdown is reconstructed from the server's records of each payment's plaintext amount and the corresponding price tier. No public on-chain data reveals how many payments were made at each tier, or how much revenue each tier generated. With <em>Standard x402</em>, all this information would be visible on-chain as plain ERC-20 transfers. Switch to <em>Confidential x402</em> to see how it looks on-chain.
+                  No public on-chain data reveals how many payments were made at each tier, or how much revenue each tier generated. With <em>Standard x402</em>, all this information would be visible on-chain as plain ERC-20 transfers. Switch to <em>Confidential x402</em> to see how it looks on-chain.
                 </p>
 
                 {/* Mode toggle */}
@@ -355,7 +355,7 @@ export default function ArticlePage() {
                   </li>
                   <li className="text-base text-zinc-500 leading-relaxed list-disc">
                     <span className="font-medium text-zinc-700">Per-customer deals are impossible to keep confidential.</span>{" "}
-                    A buyer on a higher tier cites on-chain evidence to demand the rate paid by others.
+                    Volume discounts, enterprise rates, and promotional pricing are all public record.
                   </li>
                   <li className="text-base text-zinc-500 leading-relaxed list-disc">
                     <span className="font-medium text-zinc-700">AI agents reveal their economic strategy.</span>{" "}
