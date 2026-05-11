@@ -7600,25 +7600,12 @@ dependencies = [
 
 [[package]]
 name = "taceo-ark-serde-compat"
-version = "0.4.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0a9a63a8ccb028bc47205f82ef207be4950c3f8afc39a6515d4c2b530bf41e3e"
-dependencies = [
- "ark-bls12-381",
- "ark-bn254",
- "ark-ec",
- "ark-ff 0.5.0",
- "ark-serialize 0.5.0",
- "num-bigint 0.4.6",
- "serde",
-]
-
-[[package]]
-name = "taceo-ark-serde-compat"
 version = "0.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "18fcd6f55fec9dd131019bdc0319db2271915056607b75bf8b8bc0a6ec496347"
 dependencies = [
+ "ark-bls12-381",
+ "ark-bn254",
  "ark-ec",
  "ark-ff 0.5.0",
  "ark-serialize 0.5.0",
@@ -7629,9 +7616,9 @@ dependencies = [
 
 [[package]]
 name = "taceo-circom-types"
-version = "0.2.3"
+version = "0.2.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0ad03e9d126fb248cc8f8bfecd5f1220195e0a6694b4d605f051cc3ac78f36ad"
+checksum = "a4ae56552ed9a44722d293640d5aedd90b9940284bf1f1bf4df727b3ce5bc34b"
 dependencies = [
  "ark-bls12-381",
  "ark-bn254",
@@ -7643,11 +7630,10 @@ dependencies = [
  "ark-serialize 0.5.0",
  "ark-std 0.5.0",
  "byteorder",
- "num-traits",
  "rayon",
  "serde",
  "serde_json",
- "taceo-ark-serde-compat 0.4.2",
+ "taceo-ark-serde-compat",
  "thiserror 2.0.18",
  "tracing",
 ]
@@ -7781,7 +7767,7 @@ dependencies = [
  "serde",
  "sqlx",
  "taceo-ark-babyjubjub",
- "taceo-ark-serde-compat 0.5.0",
+ "taceo-ark-serde-compat",
  "taceo-merces1-x402",
  "taceo-nodes-common",
  "taceo-nodes-observability",
@@ -7813,7 +7799,7 @@ dependencies = [
  "serde",
  "serde_json",
  "taceo-ark-babyjubjub",
- "taceo-ark-serde-compat 0.5.0",
+ "taceo-ark-serde-compat",
  "taceo-circom-types",
  "taceo-groth16",
  "taceo-groth16-material",
@@ -7843,7 +7829,7 @@ dependencies = [
  "serde",
  "serde_json",
  "taceo-ark-babyjubjub",
- "taceo-ark-serde-compat 0.5.0",
+ "taceo-ark-serde-compat",
  "taceo-circom-types",
  "taceo-merces1-x402",
  "taceo-nodes-common",
