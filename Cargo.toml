@@ -19,7 +19,7 @@ edition = "2024"
 rust-version = "1.91"
 readme = "./README.md"
 homepage = "https://www.taceo.io"
-repository = "https://github.com/TaceoLabs/Merces1_updated"
+repository = "https://github.com/TaceoLabs/merces1-x402"
 license = "MIT OR Apache-2.0"
 publish = false
 
