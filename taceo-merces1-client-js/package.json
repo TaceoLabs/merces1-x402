@@ -1,7 +1,16 @@
 {
   "name": "@taceo/merces1-client",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Client for TACEO:Merces1",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/TaceoLabs/merces1-x402",
+    "directory": "taceo-merces1-client-js"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
   "main": "./dist/index.js",
   "type": "module",
   "types": "./dist/index.d.ts",
@@ -16,8 +25,6 @@
     "client.zkey"
   ],
   "keywords": [],
-  "author": "",
-  "license": "ISC",
   "devDependencies": {
     "typescript": "^5.9.3"
   },
