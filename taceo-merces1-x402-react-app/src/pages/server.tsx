@@ -56,7 +56,7 @@ export default function ServerPage() {
             <div>
               <h1 className="text-3xl font-semibold tracking-tight text-zinc-900">Resource Server</h1>
               <p className="text-base text-zinc-500 mt-5">
-                Shows public onchain info about an API-provider that offers different price tiers.
+                Shows onchain info about an API-provider that offers different price tiers.
               </p>
               <div className="mt-3 border-l-4 border-zinc-300 bg-zinc-100 px-4 py-2.5 rounded-r-md">
                 <p className="text-xs font-semibold text-zinc-500 uppercase tracking-wide mb-0.5 flex items-center gap-1.5">
