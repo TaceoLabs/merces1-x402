@@ -92,7 +92,7 @@ export default function ServerPage() {
                 {x402Mode === "standard" ? (
                   <span className="inline-flex items-center gap-1 text-[10px] font-medium text-red-500 bg-red-50 border border-red-200 px-1.5 py-0.5 rounded-full shrink-0">
                     <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
-                    public on-chain
+                    public onchain
                   </span>
                 ) : (
                   <span className="inline-flex items-center gap-1 text-[10px] font-medium text-zinc-400 bg-zinc-100 border border-zinc-200 px-1.5 py-0.5 rounded-full shrink-0">
@@ -120,7 +120,7 @@ export default function ServerPage() {
                 {x402Mode === "standard" ? (
                   <span className="inline-flex items-center gap-1 text-[10px] font-medium text-red-500 bg-red-50 border border-red-200 px-1.5 py-0.5 rounded-full shrink-0">
                     <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
-                    public on-chain
+                    public onchain
                   </span>
                 ) : (
                   <span className="inline-flex items-center gap-1 text-[10px] font-medium text-zinc-400 bg-zinc-100 border border-zinc-200 px-1.5 py-0.5 rounded-full shrink-0">
@@ -146,7 +146,7 @@ export default function ServerPage() {
           <div>
             <h2 className="text-lg font-semibold text-zinc-700 mb-1">Pricing tier breakdown</h2>
             <p className="text-base text-zinc-500 leading-relaxed mb-3">
-              In confidential mode, neither the payment amount nor the customer's price tier is visible on-chain. An outside observer cannot reconstruct this chart, the total revenue, or the average payment — the on-chain record contains only opaque commitments.
+              In confidential mode, neither the payment amount nor the customer's price tier is visible onchain. An outside observer cannot reconstruct this chart, the total revenue, or the average payment — the onchain record contains only opaque commitments.
             </p>
             <div className="rounded-lg border border-zinc-200 bg-white p-5">
               <TierBarChart stats={stats} txsLoading={txsLoading} txMode={x402Mode} />
@@ -157,7 +157,7 @@ export default function ServerPage() {
           <div>
             <h2 className="text-lg font-semibold text-zinc-700 mb-1">Payment history</h2>
             <p className="text-base text-zinc-500 leading-relaxed mb-3">
-              A full log of every x402 payment received by this server. In confidential mode, amounts and price tiers are never exposed on-chain — the server can track them directly.
+              A full log of every x402 payment received by this server. In confidential mode, amounts and price tiers are never exposed onchain — the server can track them directly.
             </p>
             <TxTable
               txs={txs}

@@ -30,7 +30,7 @@ const tocItems = [
   { label: "Confidential x402", href: "#intro" },
   { label: "The client", href: "#client" },
   { label: "The resource server", href: "#resource-server" },
-  { label: "On-chain transactions", href: "#transaction-log" },
+  { label: "Onchain transactions", href: "#transaction-log" },
   { label: "Why privacy matters", href: "#why-privacy" },
 ];
 
@@ -199,10 +199,10 @@ export default function ArticlePage() {
               <div id="intro" style={{ scrollMarginTop: "5rem" }}>
                 <h1 className="text-3xl font-medium tracking-tight text-zinc-900 mb-6">Confidential x402</h1>
                 <p className="text-base text-zinc-500 leading-relaxed">
-                  <a href="https://x402.org/" className="underline underline-offset-4 hover:text-zinc-900 transition-colors">x402</a> is an open HTTP payment protocol for machine-to-machine payments. A resource server responds with <code>HTTP 402 Payment Required</code> when a request lacks a valid payment. The client attaches a cryptographically signed payment to its next request; the server verifies it and settles it on-chain before responding — no API keys, no subscriptions, no billing infrastructure.
+                  <a href="https://x402.org/" className="underline underline-offset-4 hover:text-zinc-900 transition-colors">x402</a> is an open HTTP payment protocol for machine-to-machine payments. A resource server responds with <code>HTTP 402 Payment Required</code> when a request lacks a valid payment. The client attaches a cryptographically signed payment to its next request; the server verifies it and settles it onchain before responding — no API keys, no subscriptions, no billing infrastructure.
                 </p>
                 <p className="text-base text-zinc-500 leading-relaxed mt-3">
-                  The default x402 flow is fully public: every payment is visible on-chain as a plain ERC-20 token transfer. This works for flat-rate APIs, but breaks down once pricing becomes dynamic — per-customer rates, volume discounts, and AI agent spending patterns are all exposed. <em>Merces</em> by <a href="https://taceo.io/" className="underline underline-offset-4 hover:text-zinc-900 transition-colors">TACEO</a> extends x402 with a confidential transfer scheme: the payment settles on-chain, but the amount stays hidden.
+                  The default x402 flow is fully public: every payment is visible onchain as a plain ERC-20 token transfer. This works for flat-rate APIs, but breaks down once pricing becomes dynamic — per-customer rates, volume discounts, and AI agent spending patterns are all exposed. <em>Merces</em> by <a href="https://taceo.io/" className="underline underline-offset-4 hover:text-zinc-900 transition-colors">TACEO</a> extends x402 with a confidential transfer scheme: the payment settles onchain, but the amount stays hidden.
                 </p>
               </div>
 
@@ -247,7 +247,7 @@ export default function ArticlePage() {
                   <div>
                     <p className="text-base text-zinc-500 leading-relaxed">
                       <span className="font-medium text-zinc-700">Select a price tier.</span>{" "}
-                      The resource server applies per-customer pricing. Choose a tier — whatever rate you pay stays hidden on-chain.
+                      The resource server applies per-customer pricing. Choose a tier — whatever rate you pay stays hidden onchain.
                     </p>
                     <div className="mt-3 flex justify-center">
                       <PriceTierSelect value={priceTier} onChange={setPriceTier} />
@@ -287,7 +287,7 @@ export default function ArticlePage() {
               <div id="resource-server" style={{ scrollMarginTop: "5rem" }}>
                 <h2 className="text-xl font-medium text-zinc-900 mt-6 mb-3">The resource server</h2>
                 <p className="text-base text-zinc-500 leading-relaxed">
-                  The resource server issues a <code>402 Payment Required</code> challenge when no payment is attached, then forwards the client's signed payload to the facilitator for verification and settlement before serving the protected content. Its accumulated private balance grows with each successful payment — individual amounts are never exposed on-chain. The server tracks them directly, and they can be reconstructed from the MPC network if needed.
+                  The resource server issues a <code>402 Payment Required</code> challenge when no payment is attached, then forwards the client's signed payload to the facilitator for verification and settlement before serving the protected content. Its accumulated private balance grows with each successful payment — individual amounts are never exposed onchain. The server tracks them directly, and they can be reconstructed from the MPC network if needed.
                 </p>
 
                 {/* Server balance */}
@@ -308,7 +308,7 @@ export default function ArticlePage() {
                 </div>
 
                 <p className="text-base text-zinc-500 leading-relaxed mt-5">
-                  No public on-chain data reveals how many payments were made at each tier, or how much revenue each tier generated. With <em>Standard x402</em>, all this information would be visible on-chain as plain ERC-20 transfers. Switch to <em>Confidential x402</em> to see how it looks on-chain.
+                  No public onchain data reveals how many payments were made at each tier, or how much revenue each tier generated. With <em>Standard x402</em>, all this information would be visible onchain as plain ERC-20 transfers. Switch to <em>Confidential x402</em> to see how it looks onchain.
                 </p>
 
                 {/* Mode toggle */}
@@ -324,9 +324,9 @@ export default function ArticlePage() {
 
               {/* Transaction log */}
               <div id="transaction-log" style={{ scrollMarginTop: "5rem" }}>
-                <h2 className="text-xl font-medium text-zinc-900 mt-6 mb-3">On-chain transaction log</h2>
+                <h2 className="text-xl font-medium text-zinc-900 mt-6 mb-3">Onchain transaction log</h2>
                 <p className="text-base text-zinc-500 leading-relaxed">
-                  Every payment settles as an on-chain transaction. The toggle below switches between two views of the same data — the <em>Standard x402</em> view shows the plaintext amount, while the <em>Confidential x402</em> view shows only the amount commitment that appears on-chain. The amounts never touch the public chain in cleartext.
+                  Every payment settles as an onchain transaction. The toggle below switches between two views of the same data — the <em>Standard x402</em> view shows the plaintext amount, while the <em>Confidential x402</em> view shows only the amount commitment that appears onchain. The amounts never touch the public chain in cleartext.
                 </p>
 
                 {/* Mode toggle */}
@@ -346,7 +346,7 @@ export default function ArticlePage() {
               <div id="why-privacy" style={{ scrollMarginTop: "5rem" }}>
                 <h2 className="text-xl font-medium text-zinc-900 mt-6 mb-3">Why payment privacy matters</h2>
                 <p className="text-base text-zinc-500 leading-relaxed mb-3">
-                  Standard x402 settles payments as plain ERC-20 token transfers — every amount is permanently visible on-chain. This works for flat-rate APIs, but breaks down the moment pricing becomes dynamic:
+                  Standard x402 settles payments as plain ERC-20 token transfers — every amount is permanently visible onchain. This works for flat-rate APIs, but breaks down the moment pricing becomes dynamic:
                 </p>
                 <ul className="flex flex-col gap-3 pl-4">
                   <li className="text-base text-zinc-500 leading-relaxed list-disc">
@@ -363,7 +363,7 @@ export default function ArticlePage() {
                   </li>
                 </ul>
                 <p className="text-base text-zinc-500 leading-relaxed mt-4">
-                  With <em>Confidential x402</em>, the on-chain record reveals that a payment was made — including sender and receiver addresses — but not how much. Privacy is enforced by a combination of Multi-Party Computation (MPC) and Zero-Knowledge Proofs (ZKP), so no single party ever sees the plaintext amount.
+                  With <em>Confidential x402</em>, the onchain record reveals that a payment was made — including sender and receiver addresses — but not how much. Privacy is enforced by a combination of Multi-Party Computation (MPC) and Zero-Knowledge Proofs (ZKP), so no single party ever sees the plaintext amount.
                 </p>
               </div>
 
