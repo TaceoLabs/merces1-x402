@@ -194,7 +194,7 @@ export default function ClientPage() {
                     </div>
                   </div>
                   <div>
-                    <FaucetButton onClick={handleClaim} disabled={!isConnected} loading={faucetClaiming} tooltip={!isConnected ? "Connect a wallet first" : undefined} />
+                    <FaucetButton onClick={handleClaim} disabled={!isConnected} loading={faucetClaiming} />
                   </div>
                   {faucetError && <ErrorDialog message={faucetError} onClose={() => setFaucetError(null)} />}
                 </div>
@@ -208,7 +208,7 @@ export default function ClientPage() {
                       <PriceTierSelect value={priceTier} onChange={setPriceTier} />
                     </div>
                     <div className="mt-3">
-                      <PayButton onClick={handleAccess} disabled={!isConnected} loading={paying} tooltip={!isConnected ? "Connect a wallet first" : undefined} />
+                      <PayButton onClick={handleAccess} disabled={!isConnected} loading={paying} />
                     </div>
                     {error && <ErrorDialog message={error} onClose={() => setError(null)} />}
                   </div>
