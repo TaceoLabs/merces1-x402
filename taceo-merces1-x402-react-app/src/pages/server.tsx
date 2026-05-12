@@ -148,13 +148,13 @@ export default function ServerPage() {
             <div>
               <h2 className="text-lg font-semibold text-zinc-700 mb-1">Pricing tier breakdown</h2>
               <p className="text-base text-zinc-500 leading-relaxed mb-3">
-                In confidential mode, neither the payment amount nor the customer's price tier is visible onchain. An outside observer cannot reconstruct this chart, the total revenue, or the average payment — the onchain record contains only opaque commitments.
+                In confidential mode, neither the payment amount nor the customer's price tier is visible onchain. An outside observer cannot reconstruct this chart, the total revenue, or the average payment, as the onchain record contains only opaque commitments.
               </p>
               <div className="flex justify-center mb-4 md:hidden">
                 <X402ModeToggle mode={x402Mode} onChange={setX402Mode} />
               </div>
               <div className="rounded-lg border border-zinc-200 bg-white p-5">
-                <TierBarChart stats={stats} txsLoading={txsLoading} txMode={x402Mode} />
+                <TierBarChart stats={stats} txsLoading={txsLoading} txMode={x402Mode} onRefresh={refresh} />
               </div>
             </div>
 
@@ -162,7 +162,7 @@ export default function ServerPage() {
             <div>
               <h2 className="text-lg font-semibold text-zinc-700 mb-1">Payment history</h2>
               <p className="text-base text-zinc-500 leading-relaxed mb-3">
-                A full log of every x402 payment received by this server. In confidential mode, amounts and price tiers are never exposed onchain — the server can track them directly.
+                A full log of every x402 payment received by this server. In confidential mode, amounts and price tiers are never exposed onchain, but the server can track them directly.
               </p>
               <div className="flex justify-center mb-4 md:hidden">
                 <X402ModeToggle mode={x402Mode} onChange={setX402Mode} />
@@ -173,6 +173,7 @@ export default function ServerPage() {
                 txMode={x402Mode}
                 blockExplorerUrl={BLOCK_EXPLORER_URL}
                 emptyMessage="No payments yet."
+                onRefresh={refresh}
               />
             </div>
 

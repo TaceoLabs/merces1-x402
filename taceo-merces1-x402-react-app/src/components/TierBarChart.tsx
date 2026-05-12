@@ -170,14 +170,48 @@ function TierTooltip({ active, payload, txMode }: TooltipProps) {
   );
 }
 
+function RefreshButton({ onClick, loading }: { onClick: () => void; loading: boolean }) {
+  return (
+    <>
+      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+      <button
+        onClick={onClick}
+        disabled={loading}
+        title="Refresh"
+        className="inline-flex items-center justify-center size-7 rounded-md text-zinc-400 hover:text-zinc-600 hover:bg-zinc-100 transition-colors border-0 bg-transparent cursor-pointer disabled:cursor-not-allowed ml-auto"
+      >
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          width="14"
+          height="14"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2.5"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          aria-hidden="true"
+          style={loading ? { animation: "spin 1s linear infinite" } : undefined}
+        >
+          <polyline points="23 4 23 10 17 10" />
+          <polyline points="1 20 1 14 7 14" />
+          <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15" />
+        </svg>
+      </button>
+    </>
+  );
+}
+
 export default function TierBarChart({
   stats,
   txsLoading,
   txMode,
+  onRefresh,
 }: {
   stats: TierStats | null;
   txsLoading: boolean;
   txMode: X402Mode;
+  onRefresh?: () => void;
 }) {
   const data: TierChartDatum[] = PRICE_TIERS.map(({ tier, label, price, color, textColor }) => {
     const count = stats?.tierCounts[tier] ?? 0;
@@ -190,16 +224,16 @@ export default function TierBarChart({
     };
   });
 
-  if (txsLoading) {
-    return <div className="h-52 flex items-center justify-center text-sm text-zinc-400">Loading…</div>;
-  }
-
   const isConfidential = txMode !== "standard";
   const isEmpty = data.every((d) => d.count === 0);
   const displayData = isConfidential ? data.map((d) => ({ ...d, count: 2 })) : data;
 
+  if (txsLoading && isEmpty) {
+    return <div className="h-[294px] flex items-center justify-center text-sm text-zinc-400">Loading…</div>;
+  }
+
   return (
-    <div className="flex flex-col gap-4">
+    <div className={`flex flex-col gap-4 transition-opacity duration-150 ${txsLoading ? "opacity-50 pointer-events-none" : ""}`}>
       <div className="flex items-center gap-3 flex-wrap">
         {PRICE_TIERS.map(({ tier, label, color }) => (
           <span key={tier} className="flex items-center gap-1.5 text-xs text-zinc-500">
@@ -207,9 +241,10 @@ export default function TierBarChart({
             {label}
           </span>
         ))}
+        {onRefresh && <RefreshButton onClick={onRefresh} loading={txsLoading} />}
       </div>
       <ResponsiveContainer width="100%" height={250}>
-        <BarChart data={displayData} barCategoryGap="28%" margin={{ top: 20, right: 8, left: -16, bottom: 0 }}>
+        <BarChart data={displayData} barCategoryGap="28%" margin={{ top: 36, right: 8, left: -16, bottom: 0 }}>
           <CartesianGrid strokeDasharray="3 3" stroke="#f4f4f5" vertical={false} />
           <XAxis dataKey="label" tick={{ fontSize: 11, fill: "#a1a1aa" }} axisLine={false} tickLine={false} />
           <YAxis allowDecimals={false} tick={{ fontSize: 11, fill: "#a1a1aa" }} axisLine={false} tickLine={false} domain={isConfidential ? [0, 4] : undefined} tickFormatter={isConfidential ? () => "?" : undefined} />

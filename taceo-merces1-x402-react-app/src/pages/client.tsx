@@ -233,7 +233,7 @@ export default function ClientPage() {
                     <div className="flex flex-col gap-4">
                       <div>
                         <span className="inline-block text-[10px] font-medium px-1.5 py-0.5 rounded bg-sky-50 text-sky-600 mb-1.5">client</span>
-                        <p className="text-xs text-zinc-500">Your agent or browser. Initiates requests and generates ZK proofs entirely locally — nothing leaves your device unencrypted.</p>
+                        <p className="text-xs text-zinc-500">Your agent or browser. Initiates requests and generates ZK proofs entirely locally.</p>
                       </div>
                       <div>
                         <span className="inline-block text-[10px] font-medium px-1.5 py-0.5 rounded bg-violet-50 text-violet-600 mb-1.5">server</span>
