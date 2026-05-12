@@ -47,121 +47,139 @@ export default function ServerPage() {
     <div className="flex flex-col md:flex-row min-h-screen text-zinc-900 font-sans antialiased">
       <Sidebar />
       <div className="flex-1 flex flex-col min-w-0">
-      {/* Main */}
-      <main className="flex-1 flex flex-col px-6 py-12">
-        <div className="w-full max-w-4xl mx-auto flex flex-col gap-8">
+        {/* Main */}
+        <main className="flex-1 flex flex-col px-6 py-12">
+          <div className="w-full max-w-4xl mx-auto flex flex-col gap-8">
 
-          {/* Title + toggle */}
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+            {/* Title + toggle */}
+            <div className="flex flex-col gap-4">
+              <div>
+                <h1 className="text-3xl font-semibold tracking-tight text-zinc-900">Resource Server</h1>
+                <p className="text-base text-zinc-500 mt-5">
+                  Shows onchain info about an API-provider that offers different price tiers.
+                </p>
+                <div className="mt-3 border-l-4 border-zinc-300 bg-zinc-100 px-4 py-2.5 rounded-r-md">
+                  <p className="text-xs font-semibold text-zinc-500 uppercase tracking-wide mb-0.5 flex items-center gap-1.5">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10" /><line x1="12" y1="16" x2="12" y2="12" /><line x1="12" y1="8" x2="12.01" y2="8" /></svg>
+                    Note
+                  </p>
+                  <p className="text-sm text-zinc-600">
+                    The API provider always has full visibility into payment details regardless of which x402 mode is used.
+                  </p>
+                </div>
+              </div>
+            </div>
+
             <div>
-              <h1 className="text-3xl font-semibold tracking-tight text-zinc-900">Resource Server</h1>
-              <p className="text-base text-zinc-500 mt-5">
-                Shows the perspective of an API-provider that charges different prices per tier.
+              <div className="flex justify-center mb-4">
+                <X402ModeToggle mode={x402Mode} onChange={setX402Mode} />
+              </div>
+
+              {/* Top stats row */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                {/* Total payments */}
+                <div className="rounded-lg border border-zinc-200 bg-white p-6 flex flex-col gap-2">
+                  <p className="text-xs font-medium text-zinc-400 uppercase tracking-wider">Total payments</p>
+                  <div className="text-4xl font-semibold text-[#192b25] leading-tight">
+                    {txsLoading ? <span className="text-zinc-400 text-base font-normal">Loading…</span> : txs.length}
+                  </div>
+                  <p className="text-[10px] text-zinc-400">all-time</p>
+                </div>
+
+                {/* Total revenue */}
+                <div className="rounded-lg border border-zinc-200 bg-white p-6 flex flex-col gap-2">
+                  <div className="flex items-center justify-between gap-2">
+                    <p className="text-xs font-medium text-zinc-400 uppercase tracking-wider">Total revenue</p>
+                    {x402Mode === "standard" ? (
+                      <span className="inline-flex items-center gap-1 text-[10px] font-medium text-red-500 bg-red-50 border border-red-200 px-1.5 py-0.5 rounded-full shrink-0">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" /><circle cx="12" cy="12" r="3" /></svg>
+                        public onchain
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center gap-1 text-[10px] font-medium text-zinc-400 bg-zinc-100 border border-zinc-200 px-1.5 py-0.5 rounded-full shrink-0">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" /><line x1="1" y1="1" x2="23" y2="23" /></svg>
+                        hidden
+                      </span>
+                    )}
+                  </div>
+                  <div className="text-4xl font-semibold text-[#192b25] leading-tight">
+                    {txsLoading
+                      ? <span className="text-zinc-400 text-base font-normal">Loading…</span>
+                      : x402Mode !== "standard"
+                        ? <span className="text-zinc-300">???</span>
+                        : stats
+                          ? <>{formatUSDC(stats.totalRevenue)} <span className="text-base font-medium text-zinc-500">USDC</span></>
+                          : <span className="text-zinc-400 text-base font-normal">—</span>}
+                  </div>
+                  <p className="text-[10px] text-zinc-400">sum of all payments</p>
+                </div>
+
+                {/* Average payment */}
+                <div className="rounded-lg border border-zinc-200 bg-white p-6 flex flex-col gap-2">
+                  <div className="flex items-center justify-between gap-2">
+                    <p className="text-xs font-medium text-zinc-400 uppercase tracking-wider">Avg payment</p>
+                    {x402Mode === "standard" ? (
+                      <span className="inline-flex items-center gap-1 text-[10px] font-medium text-red-500 bg-red-50 border border-red-200 px-1.5 py-0.5 rounded-full shrink-0">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" /><circle cx="12" cy="12" r="3" /></svg>
+                        public onchain
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center gap-1 text-[10px] font-medium text-zinc-400 bg-zinc-100 border border-zinc-200 px-1.5 py-0.5 rounded-full shrink-0">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" /><line x1="1" y1="1" x2="23" y2="23" /></svg>
+                        hidden
+                      </span>
+                    )}
+                  </div>
+                  <div className="text-4xl font-semibold text-[#192b25] leading-tight">
+                    {txsLoading
+                      ? <span className="text-zinc-400 text-base font-normal">Loading…</span>
+                      : x402Mode !== "standard"
+                        ? <span className="text-zinc-300">???</span>
+                        : stats
+                          ? <>{formatUSDC(stats.avgPayment, 3)} <span className="text-base font-medium text-zinc-500">USDC</span></>
+                          : <span className="text-zinc-400 text-base font-normal">—</span>}
+                  </div>
+                  <p className="text-[10px] text-zinc-400">per payment</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Promo tier breakdown */}
+            <div>
+              <h2 className="text-lg font-semibold text-zinc-700 mb-1">Pricing tier breakdown</h2>
+              <p className="text-base text-zinc-500 leading-relaxed mb-3">
+                In confidential mode, neither the payment amount nor the customer's price tier is visible onchain. An outside observer cannot reconstruct this chart, the total revenue, or the average payment — the onchain record contains only opaque commitments.
               </p>
+              <div className="flex justify-center mb-4 md:hidden">
+                <X402ModeToggle mode={x402Mode} onChange={setX402Mode} />
+              </div>
+              <div className="rounded-lg border border-zinc-200 bg-white p-5">
+                <TierBarChart stats={stats} txsLoading={txsLoading} txMode={x402Mode} />
+              </div>
             </div>
-            <div className="sm:pt-1 sm:shrink-0">
-              <X402ModeToggle mode={x402Mode} onChange={setX402Mode} />
+
+            {/* Payments table */}
+            <div>
+              <h2 className="text-lg font-semibold text-zinc-700 mb-1">Payment history</h2>
+              <p className="text-base text-zinc-500 leading-relaxed mb-3">
+                A full log of every x402 payment received by this server. In confidential mode, amounts and price tiers are never exposed onchain — the server can track them directly.
+              </p>
+              <div className="flex justify-center mb-4 md:hidden">
+                <X402ModeToggle mode={x402Mode} onChange={setX402Mode} />
+              </div>
+              <TxTable
+                txs={txs}
+                txsLoading={txsLoading}
+                txMode={x402Mode}
+                blockExplorerUrl={BLOCK_EXPLORER_URL}
+                emptyMessage="No payments yet."
+              />
             </div>
+
           </div>
+        </main>
 
-          {/* Top stats row */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            {/* Total payments */}
-            <div className="rounded-lg border border-zinc-200 bg-white p-6 flex flex-col gap-2">
-              <p className="text-xs font-medium text-zinc-400 uppercase tracking-wider">Total payments</p>
-              <div className="text-4xl font-semibold text-[#192b25] leading-tight">
-                {txsLoading ? <span className="text-zinc-400 text-base font-normal">Loading…</span> : txs.length}
-              </div>
-              <p className="text-[10px] text-zinc-400">all-time</p>
-            </div>
-
-            {/* Total revenue */}
-            <div className="rounded-lg border border-zinc-200 bg-white p-6 flex flex-col gap-2">
-              <div className="flex items-center justify-between gap-2">
-                <p className="text-xs font-medium text-zinc-400 uppercase tracking-wider">Total revenue</p>
-                {x402Mode === "standard" ? (
-                  <span className="inline-flex items-center gap-1 text-[10px] font-medium text-red-500 bg-red-50 border border-red-200 px-1.5 py-0.5 rounded-full shrink-0">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
-                    public on-chain
-                  </span>
-                ) : (
-                  <span className="inline-flex items-center gap-1 text-[10px] font-medium text-zinc-400 bg-zinc-100 border border-zinc-200 px-1.5 py-0.5 rounded-full shrink-0">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
-                    hidden
-                  </span>
-                )}
-              </div>
-              <div className="text-4xl font-semibold text-[#192b25] leading-tight">
-                {txsLoading
-                  ? <span className="text-zinc-400 text-base font-normal">Loading…</span>
-                  : x402Mode !== "standard"
-                    ? <span className="text-zinc-300">???</span>
-                    : stats
-                      ? <>{formatUSDC(stats.totalRevenue)} <span className="text-base font-medium text-zinc-500">USDC</span></>
-                      : <span className="text-zinc-400 text-base font-normal">—</span>}
-              </div>
-              <p className="text-[10px] text-zinc-400">sum of all payments</p>
-            </div>
-
-            {/* Average payment */}
-            <div className="rounded-lg border border-zinc-200 bg-white p-6 flex flex-col gap-2">
-              <div className="flex items-center justify-between gap-2">
-                <p className="text-xs font-medium text-zinc-400 uppercase tracking-wider">Avg payment</p>
-                {x402Mode === "standard" ? (
-                  <span className="inline-flex items-center gap-1 text-[10px] font-medium text-red-500 bg-red-50 border border-red-200 px-1.5 py-0.5 rounded-full shrink-0">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
-                    public on-chain
-                  </span>
-                ) : (
-                  <span className="inline-flex items-center gap-1 text-[10px] font-medium text-zinc-400 bg-zinc-100 border border-zinc-200 px-1.5 py-0.5 rounded-full shrink-0">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
-                    hidden
-                  </span>
-                )}
-              </div>
-              <div className="text-4xl font-semibold text-[#192b25] leading-tight">
-                {txsLoading
-                  ? <span className="text-zinc-400 text-base font-normal">Loading…</span>
-                  : x402Mode !== "standard"
-                    ? <span className="text-zinc-300">???</span>
-                    : stats
-                      ? <>{formatUSDC(stats.avgPayment, 3)} <span className="text-base font-medium text-zinc-500">USDC</span></>
-                      : <span className="text-zinc-400 text-base font-normal">—</span>}
-              </div>
-              <p className="text-[10px] text-zinc-400">per payment</p>
-            </div>
-          </div>
-
-          {/* Promo tier breakdown */}
-          <div>
-            <h2 className="text-lg font-semibold text-zinc-700 mb-1">Pricing tier breakdown</h2>
-            <p className="text-base text-zinc-500 leading-relaxed mb-3">
-              In confidential mode, neither the payment amount nor the customer's price tier is visible on-chain. An outside observer cannot reconstruct this chart, the total revenue, or the average payment — the on-chain record contains only opaque commitments.
-            </p>
-            <div className="rounded-lg border border-zinc-200 bg-white p-5">
-              <TierBarChart stats={stats} txsLoading={txsLoading} txMode={x402Mode} />
-            </div>
-          </div>
-
-          {/* Payments table */}
-          <div>
-            <h2 className="text-lg font-semibold text-zinc-700 mb-1">Payment history</h2>
-            <p className="text-base text-zinc-500 leading-relaxed mb-3">
-              A full log of every x402 payment received by this server. In confidential mode, amounts and price tiers are never exposed on-chain — the server can track them directly.
-            </p>
-            <TxTable
-              txs={txs}
-              txsLoading={txsLoading}
-              txMode={x402Mode}
-              blockExplorerUrl={BLOCK_EXPLORER_URL}
-              emptyMessage="No payments yet."
-            />
-          </div>
-
-        </div>
-      </main>
-
-      <Footer />
+        <Footer />
       </div>
     </div>
   );
