@@ -52,16 +52,26 @@ export default function ServerPage() {
         <div className="w-full max-w-4xl mx-auto flex flex-col gap-8">
 
           {/* Title + toggle */}
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+          <div className="flex flex-col gap-4">
             <div>
               <h1 className="text-3xl font-semibold tracking-tight text-zinc-900">Resource Server</h1>
               <p className="text-base text-zinc-500 mt-5">
-                Shows the perspective of an API-provider that charges different prices per tier.
+                Shows public onchain info about an API-provider that offers different price tiers.
               </p>
+              <div className="mt-3 border-l-4 border-zinc-300 bg-zinc-100 px-4 py-2.5 rounded-r-md">
+                <p className="text-xs font-semibold text-zinc-500 uppercase tracking-wide mb-0.5 flex items-center gap-1.5">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+                  Note
+                </p>
+                <p className="text-sm text-zinc-600">
+                  The API provider always has full visibility into payment details regardless of which x402 mode is used.
+                </p>
+              </div>
             </div>
-            <div className="sm:pt-1 sm:shrink-0">
-              <X402ModeToggle mode={x402Mode} onChange={setX402Mode} />
-            </div>
+          </div>
+
+          <div className="flex justify-center">
+            <X402ModeToggle mode={x402Mode} onChange={setX402Mode} />
           </div>
 
           {/* Top stats row */}
