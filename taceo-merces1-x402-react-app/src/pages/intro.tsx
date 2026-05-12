@@ -235,7 +235,7 @@ export default function ArticlePage() {
                     </p>
                     <div className="mt-3 flex justify-center">
                       <div className="flex justify-end">
-                        <FaucetButton onClick={handleClaim} disabled={!isConnected} loading={faucetClaiming} />
+                        <FaucetButton onClick={handleClaim} disabled={!isConnected} loading={faucetClaiming} tooltip={!isConnected ? "Connect a wallet first" : undefined} />
                       </div>
                       {faucetError && (
                         <ErrorDialog message={faucetError} onClose={() => setFaucetError(null)} />
@@ -265,6 +265,7 @@ export default function ArticlePage() {
                         onClick={handleAccess}
                         disabled={!isConnected}
                         loading={paying}
+                        tooltip={!isConnected ? "Connect a wallet first" : undefined}
                       />
                     </div>
                   </div>
