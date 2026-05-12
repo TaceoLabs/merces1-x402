@@ -25,18 +25,49 @@ function buildPaginationItems(currentPage: number, totalPages: number): (number 
 }
 
 
+function RefreshButton({ onClick, loading }: { onClick: () => void; loading: boolean }) {
+  return (
+    <button
+      onClick={onClick}
+      disabled={loading}
+      title="Refresh"
+      className="inline-flex items-center justify-center size-7 rounded-md text-zinc-400 hover:text-zinc-600 hover:bg-zinc-100 transition-colors border-0 bg-transparent cursor-pointer disabled:cursor-not-allowed"
+    >
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        width="14"
+        height="14"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        aria-hidden="true"
+        style={loading ? { animation: "spin 1s linear infinite" } : undefined}
+      >
+        <polyline points="23 4 23 10 17 10" />
+        <polyline points="1 20 1 14 7 14" />
+        <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15" />
+      </svg>
+    </button>
+  );
+}
+
 export default function TxTable({
   txs,
   txsLoading,
   txMode,
   blockExplorerUrl,
   emptyMessage = "No transactions yet.",
+  onRefresh,
 }: {
   txs: Transfer[];
   txsLoading: boolean;
   txMode: X402Mode;
   blockExplorerUrl?: string;
   emptyMessage?: string;
+  onRefresh?: () => void;
 }) {
   const [currentPage, setCurrentPage] = useState(1);
   const totalPages = Math.ceil(txs.length / PAGE_SIZE);
@@ -45,6 +76,7 @@ export default function TxTable({
 
   return (
     <div>
+      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
       <div className="overflow-x-auto rounded-[0.5rem] border border-zinc-200 bg-white shadow-[0_2px_4px_rgba(0,0,0,0.04)]">
         <table className="w-full min-w-[36rem] border-collapse text-left">
           <thead>
@@ -68,7 +100,12 @@ export default function TxTable({
                   )}
                 </span>
               </th>
-              <th className="px-4 py-3 text-xs font-medium text-zinc-500 uppercase tracking-wider w-1/5">Timestamp</th>
+              <th className="px-4 py-3 text-xs font-medium text-zinc-500 uppercase tracking-wider w-1/5">
+                <span className="flex items-center justify-between">
+                  Timestamp
+                  {onRefresh && <RefreshButton onClick={onRefresh} loading={txsLoading} />}
+                </span>
+              </th>
             </tr>
           </thead>
           <tbody>
