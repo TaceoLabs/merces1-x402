@@ -34,7 +34,7 @@ export async function fetchPrivateBalanceShares(address: Address): Promise<bigin
 }
 
 export async function fetchTransactions(): Promise<Transfer[]> {
-  const params = new URLSearchParams({ limit: "100", type: "Transfer" });
+  const params = new URLSearchParams({ type: "Transfer" });
   if (X402_SERVER_ADDRESS) params.set("receiver", X402_SERVER_ADDRESS);
   const fetchFromNode = async (url: string, i: number): Promise<RawTransfer[]> => {
     const res = await fetch(`${url}/transactions?${params}`);
