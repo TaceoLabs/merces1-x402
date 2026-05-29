@@ -1,4 +1,4 @@
-FROM rust:1.95 AS builder
+FROM rust:1.96 AS builder
 WORKDIR /app
 
 ARG SERVICE_NAME
@@ -13,7 +13,7 @@ RUN cargo build --release --package $SERVICE_NAME
 RUN mv target/release/$SERVICE_NAME /app/bin
 
 # Build healthcheck
-FROM rust:1.95 AS healthcheck-builder
+FROM rust:1.96 AS healthcheck-builder
 RUN cargo install simple-web-healthcheck
 
 FROM gcr.io/distroless/cc-debian13:nonroot AS runtime
