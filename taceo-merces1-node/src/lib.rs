@@ -352,7 +352,7 @@ async fn process_queue(
         &mut tx,
     )
     .await?;
-    let receipt = receipt.map(|receipt| receipt.transaction_hash);
+    let tx_hash = receipt.map(|receipt| receipt.transaction_hash);
     for (action, valid) in actions.into_iter().zip(valid) {
         if !valid {
             continue;
@@ -363,7 +363,7 @@ async fn process_queue(
                     Address::default(),
                     receiver,
                     TransactionKind::Deposit,
-                    receipt,
+                    tx_hash,
                     Some(amount),
                     None,
                     None,
@@ -376,7 +376,7 @@ async fn process_queue(
                     sender,
                     Address::default(),
                     TransactionKind::Withdraw,
-                    receipt,
+                    tx_hash,
                     Some(amount),
                     None,
                     None,
@@ -389,7 +389,7 @@ async fn process_queue(
                     sender,
                     receiver,
                     TransactionKind::Transfer,
-                    receipt,
+                    tx_hash,
                     None,
                     Some(amount_commitment),
                     Some(amount_share),
