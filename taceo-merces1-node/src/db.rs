@@ -167,11 +167,15 @@ impl DbPool {
                 .serialize_with_mode(&mut buf, ark_serialize::Compress::No)
                 .context("while serializing share")?;
 
-            sqlx::query(
+            // In case a previous pending share exists for the same address, a previous tx must have failed to commit.
+            // If we processed the same update again, we want to overwrite the pending share with the same value.
+            // If the action got removed from the queue, but not persisted in the db, the pending share would be different, and we want to error in that case to avoid losing the pending update.
+            let result = sqlx::query(
                 "
                 INSERT INTO map (address, pending)
                 VALUES ($1, $2)
                 ON CONFLICT (address) DO UPDATE SET pending = EXCLUDED.pending
+                WHERE map.pending IS NULL OR map.pending = EXCLUDED.pending
                 ",
             )
             .bind(address.as_slice())
@@ -179,6 +183,13 @@ impl DbPool {
             .execute(&mut *tx)
             .await
             .context("while upserting share")?;
+
+            // If now rows were affected, it means there was a conflict with an existing pending share that has a different value than the one we are trying to set, which means we have a pending share that is not yet committed, and we are trying to set a different pending share for the same address, which is a conflict that should be resolved before we can proceed with setting a new pending share for the same address.
+            if result.rows_affected() == 0 {
+                return Err(eyre::eyre!(
+                    "pending share conflict for address {address}: already set to a different value"
+                ));
+            }
         }
         tx.commit().await?;
 
