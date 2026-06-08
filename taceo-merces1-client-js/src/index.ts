@@ -624,18 +624,15 @@ function compressG2(
   const d = Fp.sqrt(Fp.add(Fp.sqr(y0_pos), Fp.sqr(y1_pos)));
   const hint = !hasFpSqrt(Fp.mul(Fp.add(y0_pos, d), half));
 
-  const y2 = { c0: y0_pos, c1: y1_pos };
-  const y_computed = Fp2.sqrt(y2);
+  // Compute candidateSqrt matching Rust's Fq2::sqrt() — no normalization
+  const d_inner = hint
+    ? Fp.mul(Fp.sub(y0_pos, d), half)
+    : Fp.mul(Fp.add(y0_pos, d), half);
+  const a0 = Fp.sqrt(d_inner);
+  const a1 = Fp.mul(Fp.mul(y1_pos, half), Fp.inv(a0));
+  const sign = Fp.eql(a0, y.c0) && Fp.eql(a1, y.c1) ? 0n : 1n;
   const b0_base = x.c0 << 2n;
-  const b1 = x.c1;
-
-  if (Fp2.eql(y_computed, y)) {
-    return [b0_base | (hint ? 2n : 0n), b1];
-  } else if (Fp2.eql(Fp2.neg(y_computed), y)) {
-    return [b0_base | (hint ? 3n : 1n), b1];
-  } else {
-    throw new Error('compressG2: y is neither sqrt nor -sqrt, point not on curve');
-  }
+  return [b0_base | (hint ? 2n : 0n) | sign, x.c1];
 }
 
 /**
