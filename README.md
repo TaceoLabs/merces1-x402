@@ -36,5 +36,5 @@ The confidential x402 demo frontend is deployed at: https://confidential-x402.ta
 ### Smart Contracts (Base Sepolia)
 
 - USDC Contract: [0x4Ee80fFA1332525A8Cd100E1edf72Fe066f01c10](https://sepolia.basescan.org/address/0x4Ee80fFA1332525A8Cd100E1edf72Fe066f01c10)
-- Merces Contract: [0x6AA4dd47444154A1E4424D08622EF6e96bf66de6](https://sepolia.basescan.org/address/0x6AA4dd47444154A1E4424D08622EF6e96bf66de6)
+- Merces Contract: [0x2A07183Ec9cFFCED639C9Cb33BE106FD81d59E16](https://sepolia.basescan.org/address/0x2A07183Ec9cFFCED639C9Cb33BE106FD81d59E16)
 
