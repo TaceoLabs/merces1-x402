@@ -44,6 +44,12 @@ async fn run() -> eyre::Result<()> {
                 .with_list_parse_key("service.rpc.http_urls")
                 .try_parsing(true),
         )
+        // try_parsing coerces large integers to f64, losing precision. Override
+        // mpc_sk with the raw env var string so it is never touched by float parsing.
+        .set_override_option(
+            "service.mpc_sk",
+            std::env::var("MERCES1_NODE__SERVICE__MPC_SK").ok(),
+        )?
         .build()?
         .try_deserialize::<Merces1NodeConfig>()?;
 
