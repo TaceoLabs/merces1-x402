@@ -130,6 +130,8 @@ pub async fn start(
     let num_items = contract.get_queue_size(&http_provider).await?;
     tracing::debug!("Action queue size on startup: {num_items}");
 
+    // TODO if more than `NUM_TRANSACTIONS` are in queue here, we will miss them here and pick them up only when a new events is emitted.
+    // This is not ideal but it should work out eventually, every new event will just process more actions until we catch up.
     process_queue(
         &contract,
         &http_provider,
