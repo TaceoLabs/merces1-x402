@@ -589,7 +589,10 @@ async fn settle_payment<P: Provider>(
             payload.payload.signature.clone(),
         )
         .await
-        .map_err(|e| Eip155ConfidentialError::ContractCall(e.to_string()))?;
+        .map_err(|e| {
+            tracing::error!("Error while transfer_from: {e:?}");
+            Eip155ConfidentialError::ContractCall(e.to_string())
+        })?;
 
     tracing::debug!("Waiting for ProcessedMPC event with action index {action_index}...");
     let (pos, log) = contract
