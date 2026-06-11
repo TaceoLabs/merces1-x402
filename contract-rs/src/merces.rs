@@ -5,15 +5,17 @@ use crate::{
     merces::Merces::{ActionItem, Ciphertext, MercesInstance},
 };
 use alloy::{
+    contract::{CallBuilder, CallDecoder},
     hex,
-    network::Ethereum,
+    network::{Ethereum, EthereumWallet, NetworkTransactionBuilder},
     primitives::{Address, B256, Bytes, FixedBytes, Log, U256, keccak256},
     providers::{DynProvider, PendingTransactionBuilder, Provider},
-    rpc::types::{Filter, TransactionReceipt},
+    rpc::types::{Filter, TransactionReceipt, TransactionRequest},
     sol,
     sol_types::{
         Eip712Domain, SolCall, SolConstructor, SolEvent, SolStruct, SolValue, eip712_domain,
     },
+    transports::RpcError,
 };
 use ark_bn254::Bn254;
 use ark_ff::PrimeField;
@@ -65,6 +67,17 @@ fn merces_interface_id() -> [u8; 4] {
     }
 
     id
+}
+
+fn is_already_known(err: &alloy::transports::TransportError) -> bool {
+    if let RpcError::ErrorResp(payload) = err
+        && payload.code == -32000
+        && payload.message.contains("already known")
+    {
+        true
+    } else {
+        false
+    }
 }
 
 impl MercesContract {
@@ -496,6 +509,7 @@ impl MercesContract {
     pub async fn transfer_from<P: Provider>(
         &self,
         provider: &P,
+        wallet: &EthereumWallet,
         sender: Address,
         receiver: Address,
         amount_commitment: ark_bn254::Fr,
@@ -514,24 +528,18 @@ impl MercesContract {
         let beta = super::bn254_fr_to_u256(beta);
         let proof = Self::compress_proof(&proof);
 
-        let receipt = contract
-            .transferFrom(
-                sender,
-                receiver,
-                amount_commitment,
-                beta,
-                ciphertext,
-                proof,
-                nonce,
-                deadline,
-                signature,
-            )
-            .send()
-            .await
-            .context("while broadcasting transferFrom to network")?
-            .get_receipt()
-            .await
-            .context("while receiving receipt for transferFrom")?;
+        let call = contract.transferFrom(
+            sender,
+            receiver,
+            amount_commitment,
+            beta,
+            ciphertext,
+            proof,
+            nonce,
+            deadline,
+            signature,
+        );
+        let receipt = send_transaction_handle_already_known(provider, call, wallet).await?;
 
         if receipt.status() {
             tracing::info!(
@@ -552,9 +560,11 @@ impl MercesContract {
         Ok((action_index, receipt))
     }
 
+    #[expect(clippy::too_many_arguments)]
     pub async fn process_mpc(
         &self,
         provider: &DynProvider,
+        wallet: &EthereumWallet,
         num_transactions: usize,
         commitments: [U256; Self::BATCH_SIZE * 2],
         valid: [bool; Self::BATCH_SIZE],
@@ -566,20 +576,14 @@ impl MercesContract {
         let beta = super::bn254_fr_to_u256(beta);
         let proof = Self::compress_proof(&proof);
 
-        let receipt = contract
-            .processMPC(
-                U256::from(num_transactions),
-                commitments,
-                valid,
-                beta,
-                proof,
-            )
-            .send()
-            .await
-            .context("while broadcasting to network")?
-            .get_receipt()
-            .await
-            .context("while receiving receipt for transaction")?;
+        let call = contract.processMPC(
+            U256::from(num_transactions),
+            commitments,
+            valid,
+            beta,
+            proof,
+        );
+        let receipt = send_transaction_handle_already_known(provider, call, wallet).await?;
 
         if receipt.status() {
             tracing::info!(
@@ -728,5 +732,45 @@ impl MercesContract {
             .await
             .context("while calling balanceCommitments")?;
         Ok(commitment != U256::ZERO)
+    }
+}
+
+async fn send_transaction_handle_already_known<P: Provider, D: CallDecoder>(
+    provider: &P,
+    call: CallBuilder<&&P, D>,
+    wallet: &EthereumWallet,
+) -> eyre::Result<TransactionReceipt> {
+    let from = wallet.default_signer().address();
+    let tx = call.from(from).into_transaction_request();
+    let sendable = provider.fill_transaction(tx).await?;
+    let tx_req = TransactionRequest::from_transaction(sendable.tx);
+    let envelope = tx_req
+        .build(wallet)
+        .await
+        .map_err(|e| eyre::eyre!("failed to sign transaction: {e}"))?;
+    let tx_hash = *envelope.tx_hash();
+
+    let send_result = provider.send_tx_envelope(envelope).await;
+    match send_result {
+        Ok(pending) => pending
+            .get_receipt()
+            .await
+            .context("while receiving receipt for transaction"),
+        Err(e) if is_already_known(&e) => {
+            tracing::warn!(
+                "broadcast returned 'already known', polling for receipt via tx hash {tx_hash}"
+            );
+            tokio::time::timeout(std::time::Duration::from_secs(30), async {
+                loop {
+                    if let Some(receipt) = provider.get_transaction_receipt(tx_hash).await? {
+                        return eyre::Ok(receipt);
+                    }
+                    tokio::time::sleep(std::time::Duration::from_secs(2)).await;
+                }
+            })
+            .await
+            .context("timeout while waiting for receipt after 'already known'")?
+        }
+        Err(e) => eyre::bail!("error sending transaction: {e:?}"),
     }
 }

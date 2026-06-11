@@ -6,6 +6,7 @@
 
 use std::str::FromStr;
 
+use alloy::network::EthereumWallet;
 use alloy::primitives::{Address, TxHash, U256};
 use alloy::providers::{PendingTransactionError, Provider};
 use alloy::transports::TransportError;
@@ -95,6 +96,7 @@ impl From<Eip155ConfidentialError> for X402SchemeFacilitatorError {
 /// on EVM chains using the V2 protocol.
 pub struct V2Eip155ConfidentialFacilitator<P> {
     provider: P,
+    wallet: EthereumWallet,
     chain_id: u64,
     signer_address: Address,
     contract_address: Address,
@@ -105,8 +107,10 @@ pub struct V2Eip155ConfidentialFacilitator<P> {
 
 impl<P> V2Eip155ConfidentialFacilitator<P> {
     /// Creates a new V2 EIP-155 confidential scheme facilitator with the given provider.
+    #[expect(clippy::too_many_arguments)]
     pub fn new(
         provider: P,
+        wallet: EthereumWallet,
         chain_id: u64,
         signer_address: Address,
         contract_address: Address,
@@ -116,6 +120,7 @@ impl<P> V2Eip155ConfidentialFacilitator<P> {
     ) -> Self {
         Self {
             provider,
+            wallet,
             chain_id,
             signer_address,
             contract_address,
@@ -171,7 +176,8 @@ impl<P: Provider> V2Eip155ConfidentialFacilitator<P> {
             requirements,
         )
         .await?;
-        let tx_hash = settle_payment(&self.provider, self.contract_address, payload).await?;
+        let tx_hash =
+            settle_payment(&self.provider, &self.wallet, self.contract_address, payload).await?;
         Ok(v2::SettleResponse::Success {
             payer: payload.payload.authorization.from.to_string(),
             transaction: tx_hash.to_string(),
@@ -562,6 +568,7 @@ async fn assert_valid_payment<P: Provider>(
 
 async fn settle_payment<P: Provider>(
     provider: &P,
+    wallet: &EthereumWallet,
     contract_address: Address,
     payload: &PaymentPayload,
 ) -> Result<TxHash, Eip155ConfidentialError> {
@@ -570,6 +577,7 @@ async fn settle_payment<P: Provider>(
     let (action_index, receipt) = contract
         .transfer_from(
             provider,
+            wallet,
             payload.payload.authorization.from,
             payload.payload.authorization.to,
             payload.payload.authorization.amount_commitment,

@@ -16,6 +16,7 @@ use std::{
 
 pub struct Mpc {
     provider: DynProvider,
+    wallet: EthereumWallet,
     signer: Address,
     mpc_keys: Keys,
     proving_key: Arc<Groth16Material>,
@@ -30,11 +31,12 @@ impl Mpc {
         rng: &mut R,
     ) -> eyre::Result<Self> {
         let signer = wallet.default_signer().address();
-        let provider = crate::connect_rpc(rpc.expose_secret(), wallet)
+        let provider = crate::connect_rpc(rpc.expose_secret(), wallet.clone())
             .await
             .expect("Failed to connect to RPC");
         Ok(Self {
             provider,
+            wallet,
             signer,
             proving_key,
             mpc_keys: Keys::random(rng),
@@ -139,6 +141,7 @@ impl Mpc {
         let res = contract
             .process_mpc(
                 &self.provider,
+                &self.wallet,
                 applied_transactions,
                 commitments.try_into().unwrap(),
                 valids.try_into().unwrap(),

@@ -38,6 +38,7 @@ pub async fn start(config: X402FacilitatorServiceConfig) -> eyre::Result<Router>
 
     let facilitator = Arc::new(V2Eip155ConfidentialFacilitator::new(
         provider.inner(),
+        wallet,
         chain_id,
         wallet_address,
         config.merces_contract,

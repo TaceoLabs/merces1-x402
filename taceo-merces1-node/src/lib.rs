@@ -135,6 +135,7 @@ pub async fn start(
     process_queue(
         &contract,
         &http_provider,
+        &wallet,
         &network,
         config.party_id,
         mpc_sk,
@@ -153,6 +154,7 @@ pub async fn start(
         let map = Arc::clone(&map);
         let network = network.clone();
         let http_provider = http_provider.clone();
+        let wallet = wallet.clone();
         let db = db.clone();
         async move {
             let _drop_guard = cancellation_token.drop_guard_ref();
@@ -186,6 +188,7 @@ pub async fn start(
                 process_queue(
                     &contract,
                     &http_provider,
+                    &wallet,
                     &network,
                     config.party_id,
                     mpc_sk,
@@ -221,6 +224,7 @@ pub async fn start(
 async fn process_queue(
     contract: &MercesContract,
     provider: &DynProvider,
+    wallet: &EthereumWallet,
     network: &TcpNetworkHandler,
     party_id: usize,
     my_key: ark_babyjubjub::Fr,
@@ -319,6 +323,7 @@ async fn process_queue(
         let (_, receipt) = contract
             .process_mpc(
                 provider,
+                wallet,
                 applied_transactions,
                 commitments.try_into().unwrap(),
                 valid.clone().try_into().unwrap(),
