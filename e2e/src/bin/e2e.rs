@@ -1,4 +1,5 @@
 use alloy::{
+    network::EthereumWallet,
     primitives::U256,
     providers::{DynProvider, Provider},
 };
@@ -97,8 +98,9 @@ async fn main() -> eyre::Result<ExitCode> {
     .await?;
     // Facilitator: a third-party EOA that submits transferFrom on behalf of a client.
     // It pays gas and is msg.sender, but the client authorizes via EIP-712 signature.
+    let facilitator_wallet = wallets.wallets[4].clone();
     let facilitator_provider: DynProvider =
-        e2e::connect_rpc(anvil_rpc.expose_secret(), wallets.wallets[4].clone()).await?;
+        e2e::connect_rpc(anvil_rpc.expose_secret(), facilitator_wallet.clone()).await?;
 
     tracing::info!("Deploying contracts...");
     let deploytoken = if cli.erc20_token {
@@ -119,6 +121,7 @@ async fn main() -> eyre::Result<ExitCode> {
         deployer,
         mpc,
         facilitator_provider,
+        facilitator_wallet,
         contracts.0,
         contracts.1,
     )
@@ -132,6 +135,7 @@ async fn run_test(
     deployer: Deployer,
     mut mpc: Mpc,
     facilitator_provider: DynProvider,
+    facilitator_wallet: EthereumWallet,
     merces_contract: MercesContract,
     token_contract: Option<USDCTokenContract>,
 ) -> eyre::Result<()> {
@@ -158,6 +162,7 @@ async fn run_test(
         &deployer,
         &mut mpc,
         &facilitator_provider,
+        &facilitator_wallet,
         &merces_contract,
         &token_contract,
     )
@@ -252,6 +257,7 @@ async fn testcase_transfer_from(
     _deployer: &Deployer,
     mpc: &mut Mpc,
     facilitator_provider: &DynProvider,
+    facilitator_wallet: &EthereumWallet,
     merces_contract: &MercesContract,
     token_contract: &Option<USDCTokenContract>,
 ) -> eyre::Result<()> {
@@ -294,7 +300,7 @@ async fn testcase_transfer_from(
     merces_contract
         .transfer_from(
             facilitator_provider,
-            mpc.get_wallet(),
+            facilitator_wallet,
             signed.sender,
             signed.receiver,
             signed.amount_commitment,

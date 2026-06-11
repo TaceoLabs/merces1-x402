@@ -52,10 +52,6 @@ impl Mpc {
         self.signer
     }
 
-    pub fn get_wallet(&self) -> &EthereumWallet {
-        &self.wallet
-    }
-
     pub fn public_keys(&self) -> PublicKeys {
         self.mpc_keys.public_keys()
     }
