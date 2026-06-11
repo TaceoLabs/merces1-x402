@@ -294,6 +294,7 @@ async fn testcase_transfer_from(
     merces_contract
         .transfer_from(
             facilitator_provider,
+            mpc.get_wallet(),
             signed.sender,
             signed.receiver,
             signed.amount_commitment,
