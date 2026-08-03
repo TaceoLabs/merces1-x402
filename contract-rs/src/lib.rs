@@ -2,15 +2,80 @@ pub mod merces;
 pub mod token;
 pub mod verifiers;
 
+use std::time::Duration;
+
 use crate::{merces::MercesContract, token::USDCTokenContract};
 use alloy::{
     hex,
+    network::Ethereum,
     primitives::{Address, Bytes, TxKind, U256},
-    providers::{DynProvider, Provider},
-    rpc::types::TransactionRequest,
+    providers::{DynProvider, PendingTransactionBuilder, Provider},
+    rpc::types::{TransactionReceipt, TransactionRequest},
 };
 use ark_ff::PrimeField;
 use eyre::{Context, ContextCompat};
+
+/// How many times to re-poll for a receipt after the initial fetch came up empty.
+const RECEIPT_POLL_ATTEMPTS: usize = 10;
+
+/// How long to wait between receipt polls.
+const RECEIPT_POLL_INTERVAL: Duration = Duration::from_secs(2);
+
+/// Waits for the receipt of an already-broadcast transaction, re-polling by
+/// transaction hash if the RPC does not serve the receipt right away.
+///
+/// [`PendingTransactionBuilder::get_receipt`] fails with `NullResp` ("server
+/// returned a null response when a non-null response was expected") when the
+/// heartbeat sees the transaction confirmed but the immediately following
+/// `eth_getTransactionReceipt` returns `null` — common behind a load-balanced
+/// endpoint where the backend answering the second call has not caught up yet.
+/// That error is *not* covered by the transport-level retry policy in
+/// `taceo-nodes-common`, which only retries HTTP-level and rate-limit failures.
+///
+/// Retrying matters because the transaction is already on chain at this point.
+/// Reporting a missing receipt as a failed submission makes the caller believe
+/// its state transition did not happen when it did, which leaves persisted
+/// state behind the chain.
+pub async fn await_receipt(
+    provider: &DynProvider,
+    pending: PendingTransactionBuilder<Ethereum>,
+) -> eyre::Result<TransactionReceipt> {
+    let tx_hash = *pending.tx_hash();
+
+    match pending.get_receipt().await {
+        Ok(receipt) => return Ok(receipt),
+        Err(err) => {
+            tracing::warn!("no receipt for transaction {tx_hash} yet ({err:#}), re-polling");
+        }
+    }
+
+    for attempt in 1..=RECEIPT_POLL_ATTEMPTS {
+        tokio::time::sleep(RECEIPT_POLL_INTERVAL).await;
+        match provider.get_transaction_receipt(tx_hash).await {
+            Ok(Some(receipt)) => {
+                tracing::info!("got receipt for transaction {tx_hash} on poll {attempt}");
+                return Ok(receipt);
+            }
+            Ok(None) => {
+                tracing::warn!(
+                    "still no receipt for transaction {tx_hash} (poll {attempt}/{RECEIPT_POLL_ATTEMPTS})"
+                );
+            }
+            Err(err) => {
+                tracing::warn!(
+                    "failed to fetch receipt for transaction {tx_hash} (poll {attempt}/{RECEIPT_POLL_ATTEMPTS}): {err:#}"
+                );
+            }
+        }
+    }
+
+    // The transaction may well be on chain despite this - the caller must not
+    // assume it was dropped.
+    eyre::bail!(
+        "could not fetch receipt for transaction {tx_hash} after {RECEIPT_POLL_ATTEMPTS} polls, \
+         it may still have been included on chain"
+    )
+}
 
 #[derive(Clone, Debug)]
 pub struct DecodedCiphertext {
