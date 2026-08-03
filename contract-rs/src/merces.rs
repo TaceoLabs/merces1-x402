@@ -566,7 +566,7 @@ impl MercesContract {
         let beta = super::bn254_fr_to_u256(beta);
         let proof = Self::compress_proof(&proof);
 
-        let receipt = contract
+        let pending = contract
             .processMPC(
                 U256::from(num_transactions),
                 commitments,
@@ -576,8 +576,8 @@ impl MercesContract {
             )
             .send()
             .await
-            .context("while broadcasting to network")?
-            .get_receipt()
+            .context("while broadcasting to network")?;
+        let receipt = super::await_receipt(provider, pending)
             .await
             .context("while receiving receipt for transaction")?;
 
