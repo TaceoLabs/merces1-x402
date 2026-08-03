@@ -83,6 +83,8 @@ ignore = [
   { id = "RUSTSEC-2023-0089", reason = "atomic-polyfill is unmaintained, circom-witness-rs is using it still." },
   { id = "RUSTSEC-2026-0097", reason = "can't upgrade due to transative deps. Doesn't affect us because we don't enable the log feature" },
   { id = "RUSTSEC-2026-0173", reason = "proc-macro-error2 is unmaintained, pinned by alloy" },
+  { id = "RUSTSEC-2026-0194", reason = "ignore vulnerability in quick-xml, locked by swanky/ocelot, not used at runtime" },
+  { id = "RUSTSEC-2026-0195", reason = "ignore vulnerability in quick-xml, locked by swanky/ocelot, not used at runtime" },
 ]
 # If this is true, then cargo deny will use the git executable to fetch advisory database.
 # If this is false, then it uses a built-in git library.
