@@ -19,7 +19,7 @@ use ark_bn254::Bn254;
 use ark_ff::PrimeField;
 use ark_groth16::Proof;
 use eyre::{Context, ContextCompat};
-use taceo_nodes_common::Environment;
+use taceo_nodes_common::{Environment, web3::GetReceiptExt};
 use tracing::instrument;
 
 // Codegen from ABI file to interact with the contract.
@@ -253,7 +253,7 @@ impl MercesContract {
             .send()
             .await
             .context("while broadcasting to network")?
-            .get_receipt()
+            .get_receipt_with_default_retry()
             .await
             .context("while receiving receipt for transaction")?;
 
@@ -354,7 +354,7 @@ impl MercesContract {
             .send()
             .await
             .context("while broadcasting to network")?
-            .get_receipt()
+            .get_receipt_with_default_retry()
             .await
             .context("while receiving receipt for transaction")?;
 
@@ -387,7 +387,7 @@ impl MercesContract {
             .send()
             .await
             .context("while broadcasting to network")?
-            .get_receipt()
+            .get_receipt_with_default_retry()
             .await
             .context("while receiving receipt for transaction")?;
 
@@ -431,7 +431,7 @@ impl MercesContract {
             .send()
             .await
             .context("while broadcasting to network")?
-            .get_receipt()
+            .get_receipt_with_default_retry()
             .await
             .context("while receiving receipt for transaction")?;
 
@@ -529,7 +529,7 @@ impl MercesContract {
             .send()
             .await
             .context("while broadcasting transferFrom to network")?
-            .get_receipt()
+            .get_receipt_with_default_retry()
             .await
             .context("while receiving receipt for transferFrom")?;
 
@@ -566,7 +566,7 @@ impl MercesContract {
         let beta = super::bn254_fr_to_u256(beta);
         let proof = Self::compress_proof(&proof);
 
-        let pending = contract
+        let receipt = contract
             .processMPC(
                 U256::from(num_transactions),
                 commitments,
@@ -576,8 +576,8 @@ impl MercesContract {
             )
             .send()
             .await
-            .context("while broadcasting to network")?;
-        let receipt = super::await_receipt(provider, pending)
+            .context("while broadcasting to network")?
+            .get_receipt_with_default_retry()
             .await
             .context("while receiving receipt for transaction")?;
 
@@ -672,7 +672,7 @@ impl MercesContract {
         pending: PendingTransactionBuilder<Ethereum>,
     ) -> eyre::Result<(usize, TransactionReceipt)> {
         let receipt = pending
-            .get_receipt()
+            .get_receipt_with_default_retry()
             .await
             .context("while receiving receipt for transaction")?;
 

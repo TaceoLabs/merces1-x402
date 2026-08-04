@@ -5,6 +5,7 @@ use alloy::{
     sol,
 };
 use eyre::Context;
+use taceo_nodes_common::web3::GetReceiptExt;
 
 // Codegen from ABI file to interact with the contract.
 sol!(
@@ -49,7 +50,7 @@ impl USDCTokenContract {
             .send()
             .await
             .context("while broadcasting to network")?
-            .get_receipt()
+            .get_receipt_with_default_retry()
             .await
             .context("while registering watcher for transaction")?;
 
@@ -81,7 +82,7 @@ impl USDCTokenContract {
             .send()
             .await
             .context("while broadcasting to network")?
-            .get_receipt()
+            .get_receipt_with_default_retry()
             .await
             .context("while registering watcher for transaction")?;
 
@@ -109,7 +110,7 @@ impl USDCTokenContract {
             .send()
             .await
             .context("while broadcasting to network")?
-            .get_receipt()
+            .get_receipt_with_default_retry()
             .await
             .context("while registering watcher for transaction")?;
 
@@ -138,7 +139,7 @@ impl USDCTokenContract {
             .send()
             .await
             .context("while broadcasting to network")?
-            .get_receipt()
+            .get_receipt_with_default_retry()
             .await
             .context("while registering watcher for transaction")?;
 

@@ -64,7 +64,7 @@ impl Client {
 
         let http_rpc_url = Url::from_str(config.http_rpc_url.expose_secret())
             .context("invalid HTTP RPC URL in configuration")?;
-        let provider = HttpRpcProviderBuilder::with_default_values(vec![http_rpc_url])
+        let provider = HttpRpcProviderBuilder::with_default_values(vec![http_rpc_url])?
             .confirmations_poll_interval(config.confirmations_poll_interval)
             .environment(config.environment)
             .wallet(signer.into())
