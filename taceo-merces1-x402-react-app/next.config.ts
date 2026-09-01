@@ -30,6 +30,25 @@ const nextConfig: NextConfig = {
       },
     ];
   },
+  webpack: (config) => {
+    config.resolve ??= {};
+    // wagmi/connectors is a single barrel export, so importing `walletConnect` from it still
+    // pulls in the other connectors' modules (metaMask, baseAccount, coinbaseWallet, safe, ...)
+    // at bundle time. We only use the WalletConnect connector, so alias away the wallet SDKs
+    // those other connectors depend on but that aren't installed as full dependencies here.
+    config.resolve.alias = {
+      ...(config.resolve.alias ?? {}),
+      "@react-native-async-storage/async-storage": false,
+      "@base-org/account": false,
+      "@coinbase/wallet-sdk": false,
+      "@metamask/sdk": false,
+      "@safe-global/safe-apps-sdk": false,
+      "@safe-global/safe-apps-provider": false,
+      porto: false,
+      "porto/internal": false,
+    };
+    return config;
+  },
 };
 
 export default nextConfig;
