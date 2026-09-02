@@ -288,9 +288,8 @@ pub(crate) fn poseidon2_plain_circom_commitment_helper<
 
     let mut result = Vec::with_capacity(I);
     let mut traces = Vec::with_capacity(I);
-    for input in input.chunks_exact(T) {
-        let (state, trace) = hasher
-            .plain_permutation_intermediate(input.try_into().expect("we take exact chunks"))?;
+    for input in input.as_chunks::<T>().0 {
+        let (state, trace) = hasher.plain_permutation_intermediate(*input)?;
         let trace = ComponentAcceleratorOutput::new(
             state.iter().map(|x| (*x).into()).collect(),
             trace.into_iter().map(|x| x.into()).collect(),
