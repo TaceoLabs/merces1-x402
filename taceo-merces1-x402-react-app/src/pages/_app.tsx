@@ -5,7 +5,6 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { config } from "@/config/wagmi";
 import { Analytics } from "@vercel/analytics/next"
 import Script from "next/script";
-import MetaMaskMobileToast from "@/components/MetaMaskMobileToast";
 
 const queryClient = new QueryClient();
 
@@ -17,7 +16,6 @@ export default function App({ Component, pageProps }: AppProps) {
           <Component {...pageProps} />
         </QueryClientProvider>
       </WagmiProvider>
-      <MetaMaskMobileToast />
       <Analytics />
       <Script
         id="matomo"
