@@ -1,17 +1,27 @@
-import { useState } from "react";
+import { ScanLine, Wallet } from "lucide-react";
+import { useState, type ReactNode } from "react";
 import { type Connector, useAccount, useConnect, useConnectors, useDisconnect } from "wagmi";
 
 function truncateAddress(address: string) {
   return `${address.slice(0, 4)}…${address.slice(-4)}`;
 }
 
-function ConnectorOptionRow({ name, onClick }: { name: string; onClick: () => void }) {
+function ConnectorOptionRow({
+  name,
+  icon,
+  onClick,
+}: {
+  name: string;
+  icon: ReactNode;
+  onClick: () => void;
+}) {
   return (
     <button
       type="button"
       onClick={onClick}
-      className="flex w-full items-center rounded-lg px-3 py-2.5 text-left text-sm font-medium text-zinc-800 transition-colors hover:bg-zinc-50 cursor-pointer border-0 bg-transparent"
+      className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-sm font-medium text-zinc-800 transition-colors hover:bg-zinc-50 cursor-pointer border-0 bg-transparent"
     >
+      {icon}
       {name}
     </button>
   );
@@ -60,6 +70,16 @@ export default function WalletButton() {
                   <ConnectorOptionRow
                     key={connector.uid}
                     name={connector.name}
+                    icon={
+                      connector.icon ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img src={connector.icon} alt="" className="size-8 rounded-lg object-cover" />
+                      ) : (
+                        <span className="flex size-8 items-center justify-center rounded-lg bg-zinc-100">
+                          <Wallet className="size-4 text-zinc-500" />
+                        </span>
+                      )
+                    }
                     onClick={() => handleSelectConnector(connector)}
                   />
                 ))}
@@ -67,6 +87,11 @@ export default function WalletButton() {
                   <ConnectorOptionRow
                     key={walletConnectConnector.uid}
                     name="WalletConnect"
+                    icon={
+                      <span className="flex size-8 items-center justify-center rounded-lg bg-[#3396FF]">
+                        <ScanLine className="size-4 text-white" />
+                      </span>
+                    }
                     onClick={() => handleSelectConnector(walletConnectConnector)}
                   />
                 )}
