@@ -15,9 +15,7 @@ import * as snarkjs from 'snarkjs';
 const witnessWasmUrl = new URL('../client.wasm', import.meta.url);
 const zkeyUrl = new URL('../client.zkey', import.meta.url);
 
-const BN254_PRIME = BigInt(
-  '0x30644e72e131a029b85045b68181585d2833e84879b9709143e1f593f0000001',
-);
+const BN254_PRIME = BigInt('0x30644e72e131a029b85045b68181585d2833e84879b9709143e1f593f0000001');
 
 export async function fetchWitnessWasm(): Promise<Uint8Array | string> {
   if (typeof window === 'undefined') {
@@ -26,13 +24,13 @@ export async function fetchWitnessWasm(): Promise<Uint8Array | string> {
   } else {
     // Browser/webpack: fetch the wasm file and cache it in memory
     return fetch(witnessWasmUrl.href)
-      .then(res => {
+      .then((res) => {
         if (!res.ok) {
           throw new Error(`Failed to fetch witnessWasm: ${res.status} ${res.statusText}`);
         }
         return res.arrayBuffer();
       })
-      .then(buffer => {
+      .then((buffer) => {
         return new Uint8Array(buffer);
       });
   }
@@ -45,13 +43,13 @@ export async function fetchZkey(): Promise<Uint8Array | string> {
   } else {
     // Browser/webpack: fetch the zkey file and cache it in memory
     return fetch(zkeyUrl.href)
-      .then(res => {
+      .then((res) => {
         if (!res.ok) {
           throw new Error(`Failed to fetch zkey: ${res.status} ${res.statusText}`);
         }
         return res.arrayBuffer();
       })
-      .then(buffer => {
+      .then((buffer) => {
         return new Uint8Array(buffer);
       });
   }
@@ -60,56 +58,105 @@ export async function fetchZkey(): Promise<Uint8Array | string> {
 export class InvalidTransactionError extends Error {
   constructor(message: string) {
     super(message);
-    this.name = "InvalidTransactionError";
+    this.name = 'InvalidTransactionError';
   }
 }
 
 export class CannotTransferToSelfError extends Error {
   constructor(message: string) {
     super(message);
-    this.name = "CannotTransferToSelfError";
+    this.name = 'CannotTransferToSelfError';
   }
 }
 
 export class InsufficientBalanceError extends Error {
   constructor(message: string) {
     super(message);
-    this.name = "InsufficientBalanceError";
+    this.name = 'InsufficientBalanceError';
   }
 }
 
 export class ProofError extends Error {
   constructor(message: string) {
     super(message);
-    this.name = "ProofError";
+    this.name = 'ProofError';
   }
 }
 
 export class InvalidAmountError extends Error {
   constructor(message: string) {
     super(message);
-    this.name = "InvalidAmountError";
+    this.name = 'InvalidAmountError';
   }
 }
 
 export class TimeoutError extends Error {
   constructor(message: string) {
     super(message);
-    this.name = "TimeoutError";
+    this.name = 'TimeoutError';
   }
 }
 
-export type Token = { type: 'Native' } | { type: 'ERC20', address: Address };
+export type Token = { type: 'Native' } | { type: 'ERC20'; address: Address };
 
 type RawTransaction =
-  | { Deposit: { id: number; receiver: string; tx_hash: string | null; amount: string; timestamp: string } }
-  | { Withdraw: { id: number; sender: string; tx_hash: string | null; amount: string; timestamp: string } }
-  | { Transfer: { id: number; sender: string; receiver: string; tx_hash: string | null; amount_commitment: string; amount_share: string; timestamp: string } };
+  | {
+      Deposit: {
+        id: number;
+        receiver: string;
+        tx_hash: string | null;
+        amount: string;
+        timestamp: string;
+      };
+    }
+  | {
+      Withdraw: {
+        id: number;
+        sender: string;
+        tx_hash: string | null;
+        amount: string;
+        timestamp: string;
+      };
+    }
+  | {
+      Transfer: {
+        id: number;
+        sender: string;
+        receiver: string;
+        tx_hash: string | null;
+        amount_commitment: string;
+        amount_share: string;
+        timestamp: string;
+      };
+    };
 
 export type Transaction =
-  | { type: 'Deposit'; id: number; receiver: Address; txHash: string | null; amount: bigint; timestamp: string }
-  | { type: 'Withdraw'; id: number; sender: Address; txHash: string | null; amount: bigint; timestamp: string }
-  | { type: 'Transfer'; id: number; sender: Address; receiver: Address; txHash: string | null; amountCommitment: bigint; amount: bigint; timestamp: string };
+  | {
+      type: 'Deposit';
+      id: number;
+      receiver: Address;
+      txHash: string | null;
+      amount: bigint;
+      timestamp: string;
+    }
+  | {
+      type: 'Withdraw';
+      id: number;
+      sender: Address;
+      txHash: string | null;
+      amount: bigint;
+      timestamp: string;
+    }
+  | {
+      type: 'Transfer';
+      id: number;
+      sender: Address;
+      receiver: Address;
+      txHash: string | null;
+      amountCommitment: bigint;
+      amount: bigint;
+      timestamp: string;
+    };
 
 export interface TransferProof {
   compressedProof: [string, string, string, string];
@@ -149,7 +196,15 @@ export class Client {
   txReceiptTimeout: number = 30_000;
   mpcEventTimeout: number = 30_000;
 
-  constructor({ nodeUrls, contractAddress, walletClient, publicClient, token, txReceiptTimeout, mpcEventTimeout }: ClientArgs) {
+  constructor({
+    nodeUrls,
+    contractAddress,
+    walletClient,
+    publicClient,
+    token,
+    txReceiptTimeout,
+    mpcEventTimeout,
+  }: ClientArgs) {
     this.nodeUrls = nodeUrls;
     this.contractAddress = contractAddress;
     this.token = token;
@@ -174,7 +229,6 @@ export class Client {
     this.zkey = await fetchZkey();
     return this.zkey;
   }
-
 
   private async getMpcPks(): Promise<AffinePoint<bigint>[]> {
     if (this.mpcPks) {
@@ -262,7 +316,6 @@ export class Client {
     return (balanceShare0 + balanceShare1 + balanceShare2) % BN254_PRIME;
   }
 
-
   public async getNativeBalance(): Promise<bigint> {
     const address = this.walletClient.account!.address;
     return await this.publicClient.getBalance({ address });
@@ -283,13 +336,12 @@ export class Client {
     }
   }
 
-  public async deposit(
-    amount: bigint,
-  ): Promise<{ queuedTxHash: string, completedTxHash: string }> {
+  public async deposit(amount: bigint): Promise<{ queuedTxHash: string; completedTxHash: string }> {
     if (amount <= 0n) {
       throw new InvalidAmountError('Amount must be greater than zero');
     }
-    const balance = this.token.type === 'Native' ? await this.getNativeBalance() : await this.getErc20Balance();
+    const balance =
+      this.token.type === 'Native' ? await this.getNativeBalance() : await this.getErc20Balance();
     if (balance < amount) {
       throw new InsufficientBalanceError(`Insufficient balance: ${balance} < ${amount}`);
     }
@@ -304,12 +356,18 @@ export class Client {
         chain: this.walletClient.chain,
       });
       const hash = await this.walletClient.writeContract(request);
-      const receipt = await this.publicClient.waitForTransactionReceipt({ hash, timeout: this.txReceiptTimeout });
+      const receipt = await this.publicClient.waitForTransactionReceipt({
+        hash,
+        timeout: this.txReceiptTimeout,
+      });
       const blockNumber = receipt.blockNumber;
       const log = receipt.logs[0]!;
       const { args } = decodeEventLog({ abi: merces, data: log.data, topics: log.topics });
       const actionIndex = (args as unknown as { actionIndex: bigint }).actionIndex;
-      return { queuedTxHash: hash, completedTxHash: await this.waitForProcessedMPC(actionIndex, blockNumber) };
+      return {
+        queuedTxHash: hash,
+        completedTxHash: await this.waitForProcessedMPC(actionIndex, blockNumber),
+      };
     } else {
       const approve = await this.publicClient.simulateContract({
         address: this.token.address,
@@ -320,7 +378,10 @@ export class Client {
         chain: this.walletClient.chain,
       });
       const approveHash = await this.walletClient.writeContract(approve.request);
-      await this.publicClient.waitForTransactionReceipt({ hash: approveHash, timeout: this.txReceiptTimeout });
+      await this.publicClient.waitForTransactionReceipt({
+        hash: approveHash,
+        timeout: this.txReceiptTimeout,
+      });
       const deposit = await this.publicClient.simulateContract({
         address: this.contractAddress,
         abi: merces,
@@ -330,18 +391,24 @@ export class Client {
         chain: this.walletClient.chain,
       });
       const hash = await this.walletClient.writeContract(deposit.request);
-      const receipt = await this.publicClient.waitForTransactionReceipt({ hash, timeout: this.txReceiptTimeout });
+      const receipt = await this.publicClient.waitForTransactionReceipt({
+        hash,
+        timeout: this.txReceiptTimeout,
+      });
       const blockNumber = receipt.blockNumber;
       const log = receipt.logs[0]!;
       const { args } = decodeEventLog({ abi: merces, data: log.data, topics: log.topics });
       const actionIndex = (args as unknown as { actionIndex: bigint }).actionIndex;
-      return { queuedTxHash: hash, completedTxHash: await this.waitForProcessedMPC(actionIndex, blockNumber) };
+      return {
+        queuedTxHash: hash,
+        completedTxHash: await this.waitForProcessedMPC(actionIndex, blockNumber),
+      };
     }
   }
 
   public async withdraw(
     amount: bigint,
-  ): Promise<{ queuedTxHash: string, completedTxHash: string }> {
+  ): Promise<{ queuedTxHash: string; completedTxHash: string }> {
     if (amount <= 0n) {
       throw new InvalidAmountError('Amount must be greater than zero');
     }
@@ -358,18 +425,24 @@ export class Client {
       chain: this.walletClient.chain,
     });
     const hash = await this.walletClient.writeContract(withdraw.request);
-    const receipt = await this.publicClient.waitForTransactionReceipt({ hash, timeout: this.txReceiptTimeout });
+    const receipt = await this.publicClient.waitForTransactionReceipt({
+      hash,
+      timeout: this.txReceiptTimeout,
+    });
     const blockNumber = receipt.blockNumber;
     const log = receipt.logs[0]!;
     const { args } = decodeEventLog({ abi: merces, data: log.data, topics: log.topics });
     const actionIndex = (args as unknown as { actionIndex: bigint }).actionIndex;
-    return { queuedTxHash: hash, completedTxHash: await this.waitForProcessedMPC(actionIndex, blockNumber) };
+    return {
+      queuedTxHash: hash,
+      completedTxHash: await this.waitForProcessedMPC(actionIndex, blockNumber),
+    };
   }
 
   public async transfer(
     receiver: Address,
     amount: bigint,
-  ): Promise<{ queuedTxHash: string, completedTxHash: string }> {
+  ): Promise<{ queuedTxHash: string; completedTxHash: string }> {
     const sender = this.walletClient.account!.address;
     const mpcPks = await this.getMpcPks();
     if (amount <= 0n) {
@@ -389,39 +462,66 @@ export class Client {
     try {
       ({ proof, publicSignals } = await snarkjs.groth16.fullProve(inputs, witnessWasm, zkey));
     } catch (e) {
-      throw new ProofError(`Proof or witness generation failed: ${e instanceof Error ? e.message : String(e)}`);
+      throw new ProofError(
+        `Proof or witness generation failed: ${e instanceof Error ? e.message : String(e)}`,
+      );
     }
     const beta = publicSignals[0]!;
     const transfer = await this.publicClient.simulateContract({
       address: this.contractAddress,
       abi: merces,
       functionName: 'transfer',
-      args: [receiver, amountCommitment, BigInt(beta), encodeCiphertexts(ciphertexts, senderPk), compressProof(proof)],
+      args: [
+        receiver,
+        amountCommitment,
+        BigInt(beta),
+        encodeCiphertexts(ciphertexts, senderPk),
+        compressProof(proof),
+      ],
       account: this.walletClient.account!,
       chain: this.walletClient.chain,
     });
     const hash = await this.walletClient.writeContract(transfer.request);
-    const receipt = await this.publicClient.waitForTransactionReceipt({ hash, timeout: this.txReceiptTimeout });
+    const receipt = await this.publicClient.waitForTransactionReceipt({
+      hash,
+      timeout: this.txReceiptTimeout,
+    });
     const blockNumber = receipt.blockNumber;
     const log = receipt.logs[0]!;
     const { args } = decodeEventLog({ abi: merces, data: log.data, topics: log.topics });
     const actionIndex = (args as unknown as { actionIndex: bigint }).actionIndex;
-    return { queuedTxHash: hash, completedTxHash: await this.waitForProcessedMPC(actionIndex, blockNumber) };
+    return {
+      queuedTxHash: hash,
+      completedTxHash: await this.waitForProcessedMPC(actionIndex, blockNumber),
+    };
   }
 
-  private async waitForProcessedMPC(
-    actionIndex: bigint,
-    fromBlock: bigint
-  ): Promise<string> {
+  private async waitForProcessedMPC(actionIndex: bigint, fromBlock: bigint): Promise<string> {
     const { promise, resolve, reject } = Promise.withResolvers<string>();
     let settled = false;
-    const settle = (txHash: string) => { if (!settled) { settled = true; clearTimeout(timer); resolve(txHash); } };
-    const fail = (err: unknown) => { if (!settled) { settled = true; clearTimeout(timer); reject(err); } };
+    const settle = (txHash: string) => {
+      if (!settled) {
+        settled = true;
+        clearTimeout(timer);
+        resolve(txHash);
+      }
+    };
+    const fail = (err: unknown) => {
+      if (!settled) {
+        settled = true;
+        clearTimeout(timer);
+        reject(err);
+      }
+    };
 
+    /* eslint-disable-next-line @typescript-eslint/no-explicit-any -- log shape differs between watchContractEvent and getContractEvents callers */
     const handleLog = (log: any) => {
       const { args } = decodeEventLog({ abi: merces, data: log.data, topics: log.topics });
-      const { actionIndices, valid } = args as unknown as { actionIndices: bigint[], valid: boolean[] };
-      const idx = actionIndices.findIndex(i => i === actionIndex);
+      const { actionIndices, valid } = args as unknown as {
+        actionIndices: bigint[];
+        valid: boolean[];
+      };
+      const idx = actionIndices.findIndex((i) => i === actionIndex);
       if (idx === -1) return false;
       if (valid[idx] === true) {
         settle(log.transactionHash!);
@@ -447,7 +547,7 @@ export class Client {
       onError: (err) => {
         unwatch();
         fail(err);
-      }
+      },
     });
 
     const timer = setTimeout(() => {
@@ -456,28 +556,42 @@ export class Client {
     }, this.mpcEventTimeout);
 
     // also check past logs
-    this.publicClient.getContractEvents({
-      address: this.contractAddress,
-      abi: merces,
-      eventName: 'ProcessedMPC',
-      fromBlock,
-    }).then(logs => {
-      for (const log of logs) {
-        if (handleLog(log)) {
-          unwatch();
-          return;
+    this.publicClient
+      .getContractEvents({
+        address: this.contractAddress,
+        abi: merces,
+        eventName: 'ProcessedMPC',
+        fromBlock,
+      })
+      .then((logs) => {
+        for (const log of logs) {
+          if (handleLog(log)) {
+            unwatch();
+            return;
+          }
         }
-      }
-    }).catch(err => {
-      unwatch();
-      fail(err);
-    });
+      })
+      .catch((err) => {
+        unwatch();
+        fail(err);
+      });
 
     return promise;
   }
 }
 
-export function encodeCiphertexts(ciphertexts: { ciphertexts0: [bigint, bigint], ciphertexts1: [bigint, bigint], ciphertexts2: [bigint, bigint] }, senderPk: AffinePoint<bigint>): { amount: [bigint, bigint, bigint], r: [bigint, bigint, bigint], senderPk: AffinePoint<bigint> } {
+export function encodeCiphertexts(
+  ciphertexts: {
+    ciphertexts0: [bigint, bigint];
+    ciphertexts1: [bigint, bigint];
+    ciphertexts2: [bigint, bigint];
+  },
+  senderPk: AffinePoint<bigint>,
+): {
+  amount: [bigint, bigint, bigint];
+  r: [bigint, bigint, bigint];
+  senderPk: AffinePoint<bigint>;
+} {
   return {
     amount: [ciphertexts.ciphertexts0[0], ciphertexts.ciphertexts1[0], ciphertexts.ciphertexts2[0]],
     r: [ciphertexts.ciphertexts0[1], ciphertexts.ciphertexts1[1], ciphertexts.ciphertexts2[1]],
@@ -491,7 +605,12 @@ export interface TransactionFilter {
   type?: 'Deposit' | 'Withdraw' | 'Transfer';
 }
 
-export async function getTransactions(nodeUrls: string[], offset?: number, limit?: number, filter?: TransactionFilter): Promise<Transaction[]> {
+export async function getTransactions(
+  nodeUrls: string[],
+  offset?: number,
+  limit?: number,
+  filter?: TransactionFilter,
+): Promise<Transaction[]> {
   const fetchFromNode = async (url: string, nodeIndex: number): Promise<RawTransaction[]> => {
     const params = new URLSearchParams({
       offset: String(offset ?? 0),
@@ -519,13 +638,40 @@ export async function getTransactions(nodeUrls: string[], offset?: number, limit
 
     if ('Deposit' in tx0 && 'Deposit' in tx1 && 'Deposit' in tx2) {
       const amount = BigInt(tx0.Deposit.amount);
-      return { type: 'Deposit' as const, id: tx0.Deposit.id, receiver: tx0.Deposit.receiver as Address, txHash: tx0.Deposit.tx_hash, amount, timestamp: tx0.Deposit.timestamp };
+      return {
+        type: 'Deposit' as const,
+        id: tx0.Deposit.id,
+        receiver: tx0.Deposit.receiver as Address,
+        txHash: tx0.Deposit.tx_hash,
+        amount,
+        timestamp: tx0.Deposit.timestamp,
+      };
     } else if ('Withdraw' in tx0 && 'Withdraw' in tx1 && 'Withdraw' in tx2) {
       const amount = BigInt(tx0.Withdraw.amount);
-      return { type: 'Withdraw' as const, id: tx0.Withdraw.id, sender: tx0.Withdraw.sender as Address, txHash: tx0.Withdraw.tx_hash, amount, timestamp: tx0.Withdraw.timestamp };
+      return {
+        type: 'Withdraw' as const,
+        id: tx0.Withdraw.id,
+        sender: tx0.Withdraw.sender as Address,
+        txHash: tx0.Withdraw.tx_hash,
+        amount,
+        timestamp: tx0.Withdraw.timestamp,
+      };
     } else if ('Transfer' in tx0 && 'Transfer' in tx1 && 'Transfer' in tx2) {
-      const amount = (BigInt(tx0.Transfer.amount_share) + BigInt(tx1.Transfer.amount_share) + BigInt(tx2.Transfer.amount_share)) % BN254_PRIME;
-      return { type: 'Transfer' as const, id: tx0.Transfer.id, sender: tx0.Transfer.sender as Address, receiver: tx0.Transfer.receiver as Address, txHash: tx0.Transfer.tx_hash, amountCommitment: BigInt(tx0.Transfer.amount_commitment), amount, timestamp: tx0.Transfer.timestamp };
+      const amount =
+        (BigInt(tx0.Transfer.amount_share) +
+          BigInt(tx1.Transfer.amount_share) +
+          BigInt(tx2.Transfer.amount_share)) %
+        BN254_PRIME;
+      return {
+        type: 'Transfer' as const,
+        id: tx0.Transfer.id,
+        sender: tx0.Transfer.sender as Address,
+        receiver: tx0.Transfer.receiver as Address,
+        txHash: tx0.Transfer.tx_hash,
+        amountCommitment: BigInt(tx0.Transfer.amount_commitment),
+        amount,
+        timestamp: tx0.Transfer.timestamp,
+      };
     } else {
       throw new Error(`Transaction type mismatch between nodes at index ${i}`);
     }
@@ -538,7 +684,7 @@ const Bn254Fr = babyjubjub.Point.Fp;
 const BabyJubJubFr = babyjubjub.Point.Fn;
 
 // DS constant for commit1 (Poseidon2-t2 based Pedersen commitment)
-const DS_COMMIT1 = BigInt(0xDEADBEEF);
+const DS_COMMIT1 = BigInt(0xdeadbeef);
 
 // DS constant for sym_encrypt2, from the SAFE-API paper (absorb 2, squeeze 2, domainsep = 0x4142)
 // Matches Rust: ark_bn254::Fr::from_bigint(BigInt([0x00020000_00024142, 0x8000, 0, 0]))
@@ -589,7 +735,6 @@ function computeAlpha(hashInputs: bigint[]): bigint {
 }
 
 const Fp = bn254.fields.Fp;
-const Fp2 = bn254.fields.Fp2;
 
 function compressG1(x: bigint, y: bigint): bigint {
   if (x === 0n && y === 0n) return 0n;
@@ -625,9 +770,7 @@ function compressG2(
   const hint = !hasFpSqrt(Fp.mul(Fp.add(y0_pos, d), half));
 
   // Compute candidateSqrt matching Rust's Fq2::sqrt() — no normalization
-  const d_inner = hint
-    ? Fp.mul(Fp.sub(y0_pos, d), half)
-    : Fp.mul(Fp.add(y0_pos, d), half);
+  const d_inner = hint ? Fp.mul(Fp.sub(y0_pos, d), half) : Fp.mul(Fp.add(y0_pos, d), half);
   const a0 = Fp.sqrt(d_inner);
   const a1 = Fp.mul(Fp.mul(y1_pos, half), Fp.inv(a0));
   const sign = Fp.eql(a0, y.c0) && Fp.eql(a1, y.c1) ? 0n : 1n;
@@ -698,9 +841,11 @@ export function prepareTransfer(
   }) as [[bigint, bigint], [bigint, bigint], [bigint, bigint]];
 
   const hashInputs = [
-    encryptPk.x, encryptPk.y, amountCommitment,
-    ...ciphertextsArr.flatMap(c => [c[0], c[1]]),
-    ...mpcPks.flatMap(pk => [pk.x, pk.y]),
+    encryptPk.x,
+    encryptPk.y,
+    amountCommitment,
+    ...ciphertextsArr.flatMap((c) => [c[0], c[1]]),
+    ...mpcPks.flatMap((pk) => [pk.x, pk.y]),
   ];
   const alpha = computeAlpha(hashInputs);
 
@@ -709,7 +854,7 @@ export function prepareTransfer(
       amount: amount.toString(),
       amount_r: amountR.toString(),
       encrypt_sk: encryptSk.toString(),
-      mpc_pks: mpcPks.flatMap(pk => [pk.x.toString(), pk.y.toString()]),
+      mpc_pks: mpcPks.flatMap((pk) => [pk.x.toString(), pk.y.toString()]),
       share_amount: [shareAmount[0].toString(), shareAmount[1].toString()],
       share_amount_r: [shareAmountR[0].toString(), shareAmountR[1].toString()],
       alpha: alpha.toString(),
