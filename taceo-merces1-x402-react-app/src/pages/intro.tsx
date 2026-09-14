@@ -1,22 +1,28 @@
-import { useState, useEffect, useMemo } from "react";
-import WalletButton from "@/components/WalletButton";
-import { useAccount, useWalletClient, useSwitchChain } from "wagmi";
-import { type Address } from "viem";
-import { x402Client, wrapFetchWithPayment, x402HTTPClient } from "@x402/fetch";
-import { ConfidentialEvmScheme } from "@taceo/confidential-x402";
-import Footer from "@/components/Footer";
-import Sidebar from "@/components/Sidebar";
-import TierBarChart, { inferPriceTier, type PriceTier } from "@/components/TierBarChart";
-import PriceTierSelect from "@/components/PriceTierSelect";
-import TxTable, { type Transfer } from "@/components/TxTable";
-import X402ModeToggle, { X402Mode } from "@/components/X402ModeToggle";
-import PaymentResultDialog from "@/components/PaymentResultDialog";
-import ErrorDialog from "@/components/ErrorDialog";
-import { CHAIN_ID, X402_SERVER_URL, FAUCET_URL, X402_SERVER_ADDRESS, BLOCK_EXPLORER_URL } from "@/lib/constants";
-import { fetchPrivateBalanceShares, fetchTransactions } from "@/lib/api";
-import { formatUSDC, truncateAddress } from "@/lib/utils";
-import FaucetButton from "@/components/FaucetButton";
-import PayButton from "@/components/PayButton";
+import { useState, useEffect, useMemo } from 'react';
+import WalletButton from '@/components/WalletButton';
+import { useAccount, useWalletClient, useSwitchChain } from 'wagmi';
+import { type Address } from 'viem';
+import { x402Client, wrapFetchWithPayment, x402HTTPClient } from '@x402/fetch';
+import { ConfidentialEvmScheme } from '@taceo/confidential-x402';
+import Footer from '@/components/Footer';
+import Sidebar from '@/components/Sidebar';
+import TierBarChart, { inferPriceTier, type PriceTier } from '@/components/TierBarChart';
+import PriceTierSelect from '@/components/PriceTierSelect';
+import TxTable, { type Transfer } from '@/components/TxTable';
+import X402ModeToggle, { X402Mode } from '@/components/X402ModeToggle';
+import PaymentResultDialog from '@/components/PaymentResultDialog';
+import ErrorDialog from '@/components/ErrorDialog';
+import {
+  CHAIN_ID,
+  X402_SERVER_URL,
+  FAUCET_URL,
+  X402_SERVER_ADDRESS,
+  BLOCK_EXPLORER_URL,
+} from '@/lib/constants';
+import { fetchPrivateBalanceShares, fetchTransactions } from '@/lib/api';
+import { formatUSDC, truncateAddress } from '@/lib/utils';
+import FaucetButton from '@/components/FaucetButton';
+import PayButton from '@/components/PayButton';
 
 interface PaymentSettleResponse {
   success: boolean;
@@ -25,13 +31,12 @@ interface PaymentSettleResponse {
   payer?: string;
 }
 
-
 const tocItems = [
-  { label: "Confidential x402", href: "#intro" },
-  { label: "The client", href: "#client" },
-  { label: "The resource server", href: "#resource-server" },
-  { label: "Onchain transactions", href: "#transaction-log" },
-  { label: "Why privacy matters", href: "#why-privacy" },
+  { label: 'Confidential x402', href: '#intro' },
+  { label: 'The client', href: '#client' },
+  { label: 'The resource server', href: '#resource-server' },
+  { label: 'Onchain transactions', href: '#transaction-log' },
+  { label: 'Why privacy matters', href: '#why-privacy' },
 ];
 
 export default function ArticlePage() {
@@ -45,11 +50,11 @@ export default function ArticlePage() {
   const [serverBalanceLoading, setServerBalanceLoading] = useState(false);
   const [faucetClaiming, setFaucetClaiming] = useState(false);
   const [faucetError, setFaucetError] = useState<string | null>(null);
-  const [priceTier, setPriceTier] = useState("");
+  const [priceTier, setPriceTier] = useState('');
   const [content, setContent] = useState<string | null>(null);
   const [paymentResponse, setPaymentResponse] = useState<PaymentSettleResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [x402Mode, setX402Mode] = useState<X402Mode>("confidential");
+  const [x402Mode, setX402Mode] = useState<X402Mode>('confidential');
   const [txs, setTxs] = useState<Transfer[]>([]);
   const [txsLoading, setTxsLoading] = useState(true);
   const [paying, setPaying] = useState(false);
@@ -58,8 +63,18 @@ export default function ArticlePage() {
     if (txs.length === 0) return null;
     const totalRevenue = txs.reduce((acc, tx) => acc + tx.amount, BigInt(0));
     const avgPayment = totalRevenue / BigInt(txs.length);
-    const tierCounts: Record<PriceTier, number> = { Standard: 0, STARTUP: 0, GROWTH: 0, ENTERPRISE: 0 };
-    const tierRevenue: Record<PriceTier, bigint> = { Standard: BigInt(0), STARTUP: BigInt(0), GROWTH: BigInt(0), ENTERPRISE: BigInt(0) };
+    const tierCounts: Record<PriceTier, number> = {
+      Standard: 0,
+      STARTUP: 0,
+      GROWTH: 0,
+      ENTERPRISE: 0,
+    };
+    const tierRevenue: Record<PriceTier, bigint> = {
+      Standard: BigInt(0),
+      STARTUP: BigInt(0),
+      GROWTH: BigInt(0),
+      ENTERPRISE: BigInt(0),
+    };
     for (const tx of txs) {
       const tier = inferPriceTier(tx.amount);
       tierCounts[tier]++;
@@ -126,10 +141,10 @@ export default function ArticlePage() {
     setFaucetClaiming(true);
     setFaucetError(null);
     try {
-      const res = await fetch(`${FAUCET_URL}/claim/${address}`, { method: "POST" });
+      const res = await fetch(`${FAUCET_URL}/claim/${address}`, { method: 'POST' });
       if (res.status === 429) {
         const msg = await res.text();
-        setFaucetError(msg || "You can only claim once every 24 hours.");
+        setFaucetError(msg || 'You can only claim once every 24 hours.');
       }
     } finally {
       setFaucetClaiming(false);
@@ -151,11 +166,14 @@ export default function ArticlePage() {
       };
       const client = new x402Client();
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      client.register("eip155:*", new ConfidentialEvmScheme(signer as any));
+      client.register('eip155:*', new ConfidentialEvmScheme(signer as any));
       const fetchWithPayment = wrapFetchWithPayment(fetch, client);
       const headers: Record<string, string> = {};
-      if (priceTier) headers["x-price-tier"] = priceTier;
-      const response = await fetchWithPayment(`${X402_SERVER_URL}/api/protected`, { method: "GET", headers });
+      if (priceTier) headers['x-price-tier'] = priceTier;
+      const response = await fetchWithPayment(`${X402_SERVER_URL}/api/protected`, {
+        method: 'GET',
+        headers,
+      });
       if (response.ok) {
         const data = await response.text();
         setContent(data);
@@ -185,43 +203,74 @@ export default function ArticlePage() {
   }
 
   return (
-    <div className="flex flex-col md:flex-row min-h-screen text-zinc-900 font-sans antialiased" style={{ scrollBehavior: "smooth" }}>
+    <div
+      className="flex flex-col md:flex-row min-h-screen text-zinc-900 font-sans antialiased"
+      style={{ scrollBehavior: 'smooth' }}
+    >
       <Sidebar />
       <div className="flex-1 flex flex-col min-w-0">
         <main className="flex-1 flex flex-col px-6 pb-12 lg:px-10">
           {/* Body */}
           <div className="flex flex-col lg:flex-row lg:items-start gap-10 max-w-4xl mx-auto w-full">
-
             {/* Article - center */}
             <article className="w-full min-w-0 max-w-3xl mx-auto flex flex-col gap-y-4 pt-12">
-
               {/* Intro */}
-              <div id="intro" style={{ scrollMarginTop: "5rem" }}>
-                <h1 className="text-3xl font-medium tracking-tight text-zinc-900 mb-6">Confidential x402</h1>
+              <div id="intro" style={{ scrollMarginTop: '5rem' }}>
+                <h1 className="text-3xl font-medium tracking-tight text-zinc-900 mb-6">
+                  Confidential x402
+                </h1>
                 <p className="text-base text-zinc-500 leading-relaxed">
-                  <a href="https://x402.org/" className="underline underline-offset-4 hover:text-zinc-900 transition-colors">x402</a> is an open HTTP payment protocol for machine-to-machine payments. A resource server responds with <code>HTTP 402 Payment Required</code> when a request lacks a valid payment. The client attaches a cryptographically signed payment to its next request; the server verifies it and settles it onchain before responding. No API keys, no subscriptions, no billing infrastructure.
+                  <a
+                    href="https://x402.org/"
+                    className="underline underline-offset-4 hover:text-zinc-900 transition-colors"
+                  >
+                    x402
+                  </a>{' '}
+                  is an open HTTP payment protocol for machine-to-machine payments. A resource
+                  server responds with <code>HTTP 402 Payment Required</code> when a request lacks a
+                  valid payment. The client attaches a cryptographically signed payment to its next
+                  request; the server verifies it and settles it onchain before responding. No API
+                  keys, no subscriptions, no billing infrastructure.
                 </p>
                 <p className="text-base text-zinc-500 leading-relaxed mt-3">
-                  The default x402 flow is fully public: every payment is visible onchain as a plain ERC-20 token transfer. This works for flat-rate APIs, but breaks down once pricing becomes dynamic: per-customer rates, volume discounts, and AI agent spending patterns are all exposed. <em>Merces</em> by <a href="https://taceo.io/" className="underline underline-offset-4 hover:text-zinc-900 transition-colors">TACEO</a> extends x402 with a confidential transfer scheme: the payment settles onchain, but the amount stays hidden.
+                  The default x402 flow is fully public: every payment is visible onchain as a plain
+                  ERC-20 token transfer. This works for flat-rate APIs, but breaks down once pricing
+                  becomes dynamic: per-customer rates, volume discounts, and AI agent spending
+                  patterns are all exposed. <em>Merces</em> by{' '}
+                  <a
+                    href="https://taceo.io/"
+                    className="underline underline-offset-4 hover:text-zinc-900 transition-colors"
+                  >
+                    TACEO
+                  </a>{' '}
+                  extends x402 with a confidential transfer scheme: the payment settles onchain, but
+                  the amount stays hidden.
                 </p>
               </div>
 
               {/* Client */}
-              <div id="client" style={{ scrollMarginTop: "5rem" }}>
+              <div id="client" style={{ scrollMarginTop: '5rem' }}>
                 <h2 className="text-xl font-medium text-zinc-900 mt-6 mb-3">The client</h2>
 
                 <p className="text-base text-zinc-500 leading-relaxed">
-                  If you want to try it out, connect a wallet and use it to pay with <em>Confidential x402</em>. Your balance is held as a secret-shared encrypted value distributed across three MPC nodes, and no single node knows the plaintext amount.
+                  If you want to try it out, connect a wallet and use it to pay with{' '}
+                  <em>Confidential x402</em>. Your balance is held as a secret-shared encrypted
+                  value distributed across three MPC nodes, and no single node knows the plaintext
+                  amount.
                 </p>
                 <div className="mt-3 flex items-center justify-center gap-3">
                   <WalletButton />
                   {isConnected && (
                     <span className="text-lg font-semibold text-[#192b25]">
-                      {privateBalanceLoading
-                        ? <span className="text-zinc-400 font-normal">loading…</span>
-                        : privateBalance !== null
-                          ? <>{privateBalance} <span className="font-medium text-zinc-400">USDC</span></>
-                          : <span className="text-zinc-400 font-normal">—</span>}
+                      {privateBalanceLoading ? (
+                        <span className="text-zinc-400 font-normal">loading…</span>
+                      ) : privateBalance !== null ? (
+                        <>
+                          {privateBalance} <span className="font-medium text-zinc-400">USDC</span>
+                        </>
+                      ) : (
+                        <span className="text-zinc-400 font-normal">—</span>
+                      )}
                     </span>
                   )}
                 </div>
@@ -230,12 +279,17 @@ export default function ArticlePage() {
                   {/* Step 1 */}
                   <div>
                     <p className="text-base text-zinc-500 leading-relaxed">
-                      <span className="font-medium text-zinc-700">Fund from the faucet.</span>{" "}
-                      Receive 1,000 testnet USDC credited to your private balance. The faucet can be used once every 24 hours.
+                      <span className="font-medium text-zinc-700">Fund from the faucet.</span>{' '}
+                      Receive 1,000 testnet USDC credited to your private balance. The faucet can be
+                      used once every 24 hours.
                     </p>
                     <div className="mt-3 flex justify-center">
                       <div className="flex justify-end">
-                        <FaucetButton onClick={handleClaim} disabled={!isConnected} loading={faucetClaiming} />
+                        <FaucetButton
+                          onClick={handleClaim}
+                          disabled={!isConnected}
+                          loading={faucetClaiming}
+                        />
                       </div>
                       {faucetError && (
                         <ErrorDialog message={faucetError} onClose={() => setFaucetError(null)} />
@@ -246,8 +300,9 @@ export default function ArticlePage() {
                   {/* Step 2 */}
                   <div>
                     <p className="text-base text-zinc-500 leading-relaxed">
-                      <span className="font-medium text-zinc-700">Select a price tier.</span>{" "}
-                      The resource server applies per-customer pricing. Choose a tier. Whatever rate you pay stays hidden onchain.
+                      <span className="font-medium text-zinc-700">Select a price tier.</span> The
+                      resource server applies per-customer pricing. Choose a tier. Whatever rate you
+                      pay stays hidden onchain.
                     </p>
                     <div className="mt-3 flex justify-center">
                       <PriceTierSelect value={priceTier} onChange={setPriceTier} />
@@ -257,21 +312,15 @@ export default function ArticlePage() {
                   {/* Step 3 */}
                   <div>
                     <p className="text-base text-zinc-500 leading-relaxed">
-                      <span className="font-medium text-zinc-700">Pay for access.</span>{" "}
-                      Sign a confidential payment, generate the ZK proof and call the protected endpoint.
+                      <span className="font-medium text-zinc-700">Pay for access.</span> Sign a
+                      confidential payment, generate the ZK proof and call the protected endpoint.
                     </p>
                     <div className="mt-3 flex justify-center">
-                      <PayButton
-                        onClick={handleAccess}
-                        disabled={!isConnected}
-                        loading={paying}
-                      />
+                      <PayButton onClick={handleAccess} disabled={!isConnected} loading={paying} />
                     </div>
                   </div>
 
-                  {error && (
-                    <ErrorDialog message={error} onClose={() => setError(null)} />
-                  )}
+                  {error && <ErrorDialog message={error} onClose={() => setError(null)} />}
 
                   {content && (
                     <PaymentResultDialog
@@ -284,31 +333,53 @@ export default function ArticlePage() {
               </div>
 
               {/* Resource server */}
-              <div id="resource-server" style={{ scrollMarginTop: "5rem" }}>
+              <div id="resource-server" style={{ scrollMarginTop: '5rem' }}>
                 <h2 className="text-xl font-medium text-zinc-900 mt-6 mb-3">The resource server</h2>
                 <p className="text-base text-zinc-500 leading-relaxed">
-                  The resource server issues a <code>402 Payment Required</code> challenge when no payment is attached, then forwards the client's signed payload to the facilitator for verification and settlement before serving the protected content. Its accumulated private balance grows with each successful payment, but individual amounts are never exposed onchain. The server tracks them directly, and they can be reconstructed from the MPC network if needed.
+                  The resource server issues a <code>402 Payment Required</code> challenge when no
+                  payment is attached, then forwards the client's signed payload to the facilitator
+                  for verification and settlement before serving the protected content. Its
+                  accumulated private balance grows with each successful payment, but individual
+                  amounts are never exposed onchain. The server tracks them directly, and they can
+                  be reconstructed from the MPC network if needed.
                 </p>
 
                 {/* Server balance */}
                 <div className="mt-4 flex items-center justify-center gap-3">
                   {X402_SERVER_ADDRESS && (
                     <div className="inline-flex items-center gap-2 h-9 px-3 pr-4 rounded-full border border-zinc-200 bg-[#f4f4f5] text-sm font-semibold text-zinc-800">
-                      <span style={{ height: "1.5rem", width: "1.5rem", borderRadius: "9999px", background: "radial-gradient(120% 95% at 24% 22%, #255b4d 0%, transparent 56%), radial-gradient(95% 95% at 70% 86%, #62ffd1 0%, transparent 62%), linear-gradient(145deg, #173f36 8%, #52ffc5 58%, #e5dbbc 100%)", display: "inline-block", flexShrink: 0 }} />
+                      <span
+                        style={{
+                          height: '1.5rem',
+                          width: '1.5rem',
+                          borderRadius: '9999px',
+                          background:
+                            'radial-gradient(120% 95% at 24% 22%, #255b4d 0%, transparent 56%), radial-gradient(95% 95% at 70% 86%, #62ffd1 0%, transparent 62%), linear-gradient(145deg, #173f36 8%, #52ffc5 58%, #e5dbbc 100%)',
+                          display: 'inline-block',
+                          flexShrink: 0,
+                        }}
+                      />
                       {truncateAddress(X402_SERVER_ADDRESS)}
                     </div>
                   )}
                   <span className="text-lg font-semibold text-[#192b25]">
-                    {serverBalanceLoading
-                      ? <span className="text-zinc-400 font-normal">loading…</span>
-                      : serverBalance !== null
-                        ? <>{serverBalance} <span className="font-medium text-zinc-400">USDC</span></>
-                        : <span className="text-zinc-400 font-normal">—</span>}
+                    {serverBalanceLoading ? (
+                      <span className="text-zinc-400 font-normal">loading…</span>
+                    ) : serverBalance !== null ? (
+                      <>
+                        {serverBalance} <span className="font-medium text-zinc-400">USDC</span>
+                      </>
+                    ) : (
+                      <span className="text-zinc-400 font-normal">—</span>
+                    )}
                   </span>
                 </div>
 
                 <p className="text-base text-zinc-500 leading-relaxed mt-5">
-                  No public onchain data reveals how many payments were made at each tier, or how much revenue each tier generated. With <em>Standard x402</em>, all this information would be visible onchain as plain ERC-20 transfers. Switch to <em>Confidential x402</em> to see how it looks onchain.
+                  No public onchain data reveals how many payments were made at each tier, or how
+                  much revenue each tier generated. With <em>Standard x402</em>, all this
+                  information would be visible onchain as plain ERC-20 transfers. Switch to{' '}
+                  <em>Confidential x402</em> to see how it looks onchain.
                 </p>
 
                 {/* Mode toggle */}
@@ -318,15 +389,25 @@ export default function ArticlePage() {
 
                 {/* Pricing tier chart */}
                 <div className="mt-4 rounded-[0.5rem] border border-zinc-200 bg-white p-5 shadow-[0_2px_4px_rgba(0,0,0,0.04)]">
-                  <TierBarChart stats={tierStats} txsLoading={txsLoading} txMode={x402Mode} onRefresh={refreshTransactions} />
+                  <TierBarChart
+                    stats={tierStats}
+                    txsLoading={txsLoading}
+                    txMode={x402Mode}
+                    onRefresh={refreshTransactions}
+                  />
                 </div>
               </div>
 
               {/* Transaction log */}
-              <div id="transaction-log" style={{ scrollMarginTop: "5rem" }}>
-                <h2 className="text-xl font-medium text-zinc-900 mt-6 mb-3">Onchain transaction log</h2>
+              <div id="transaction-log" style={{ scrollMarginTop: '5rem' }}>
+                <h2 className="text-xl font-medium text-zinc-900 mt-6 mb-3">
+                  Onchain transaction log
+                </h2>
                 <p className="text-base text-zinc-500 leading-relaxed">
-                  Every payment settles as an onchain transaction. The toggle below switches between two views of the same data: the <em>Standard x402</em> view shows the plaintext amount, while the <em>Confidential x402</em> view shows only the amount commitment that appears onchain. The amounts never touch the public chain in cleartext.
+                  Every payment settles as an onchain transaction. The toggle below switches between
+                  two views of the same data: the <em>Standard x402</em> view shows the plaintext
+                  amount, while the <em>Confidential x402</em> view shows only the amount commitment
+                  that appears onchain. The amounts never touch the public chain in cleartext.
                 </p>
 
                 {/* Mode toggle */}
@@ -344,35 +425,53 @@ export default function ArticlePage() {
               </div>
 
               {/* Why privacy matters */}
-              <div id="why-privacy" style={{ scrollMarginTop: "5rem" }}>
-                <h2 className="text-xl font-medium text-zinc-900 mt-6 mb-3">Why payment privacy matters</h2>
+              <div id="why-privacy" style={{ scrollMarginTop: '5rem' }}>
+                <h2 className="text-xl font-medium text-zinc-900 mt-6 mb-3">
+                  Why payment privacy matters
+                </h2>
                 <p className="text-base text-zinc-500 leading-relaxed mb-3">
-                  Standard x402 settles payments as plain ERC-20 token transfers, making every amount permanently visible onchain. This works for flat-rate APIs, but breaks down the moment pricing becomes dynamic:
+                  Standard x402 settles payments as plain ERC-20 token transfers, making every
+                  amount permanently visible onchain. This works for flat-rate APIs, but breaks down
+                  the moment pricing becomes dynamic:
                 </p>
                 <ul className="flex flex-col gap-3 pl-4">
                   <li className="text-base text-zinc-500 leading-relaxed list-disc">
-                    <span className="font-medium text-zinc-700">Competitors read your pricing strategy off the blockchain.</span>{" "}
-                    Every <code>transferWithAuthorization</code> call exposes exactly what each customer paid: volume discounts, enterprise rates, and promotional pricing become public record.
+                    <span className="font-medium text-zinc-700">
+                      Competitors read your pricing strategy off the blockchain.
+                    </span>{' '}
+                    Every <code>transferWithAuthorization</code> call exposes exactly what each
+                    customer paid: volume discounts, enterprise rates, and promotional pricing
+                    become public record.
                   </li>
                   <li className="text-base text-zinc-500 leading-relaxed list-disc">
-                    <span className="font-medium text-zinc-700">Per-customer deals are impossible to keep confidential.</span>{" "}
-                    Volume discounts, enterprise rates, and promotional pricing are all public record.
+                    <span className="font-medium text-zinc-700">
+                      Per-customer deals are impossible to keep confidential.
+                    </span>{' '}
+                    Volume discounts, enterprise rates, and promotional pricing are all public
+                    record.
                   </li>
                   <li className="text-base text-zinc-500 leading-relaxed list-disc">
-                    <span className="font-medium text-zinc-700">AI agents reveal their economic strategy.</span>{" "}
-                    Spending patterns across API providers expose which data sources an agent values and how much budget it allocates to each.
+                    <span className="font-medium text-zinc-700">
+                      AI agents reveal their economic strategy.
+                    </span>{' '}
+                    Spending patterns across API providers expose which data sources an agent values
+                    and how much budget it allocates to each.
                   </li>
                 </ul>
                 <p className="text-base text-zinc-500 leading-relaxed mt-4">
-                  With <em>Confidential x402</em>, the onchain record reveals that a payment was made, including sender and receiver addresses, but not how much. Privacy is enforced by a combination of Multi-Party Computation (MPC) and Zero-Knowledge Proofs (ZKP), so no single party ever sees the plaintext amount.
+                  With <em>Confidential x402</em>, the onchain record reveals that a payment was
+                  made, including sender and receiver addresses, but not how much. Privacy is
+                  enforced by a combination of Multi-Party Computation (MPC) and Zero-Knowledge
+                  Proofs (ZKP), so no single party ever sees the plaintext amount.
                 </p>
               </div>
-
             </article>
 
             {/* TOC - right, sticky */}
             <aside className="lg:flex-none lg:w-52 lg:sticky lg:top-14 lg:self-start hidden lg:block lg:pt-12">
-              <p className="text-xs font-semibold uppercase tracking-wider text-zinc-400 mb-3 px-2">On this page</p>
+              <p className="text-xs font-semibold uppercase tracking-wider text-zinc-400 mb-3 px-2">
+                On this page
+              </p>
               <nav className="flex flex-col">
                 {tocItems.map(({ label, href }) => (
                   <a
@@ -385,7 +484,6 @@ export default function ArticlePage() {
                 ))}
               </nav>
             </aside>
-
           </div>
         </main>
 

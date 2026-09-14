@@ -1,4 +1,4 @@
-import { BLOCK_EXPLORER_URL } from "@/lib/constants";
+import { BLOCK_EXPLORER_URL } from '@/lib/constants';
 
 interface PaymentSettleResponse {
   success: boolean;
@@ -29,7 +29,13 @@ export default function PaymentResultDialog({ content, paymentResponse, onClose 
           <div className="flex items-center gap-2.5">
             <span className="flex h-5 w-5 items-center justify-center rounded-full bg-[#52ffc5]">
               <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
-                <path d="M2 5l2.5 2.5L8 3" stroke="#173f36" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                <path
+                  d="M2 5l2.5 2.5L8 3"
+                  stroke="#173f36"
+                  strokeWidth="1.5"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
               </svg>
             </span>
             <p className="text-sm font-semibold text-zinc-900">Payment successful</p>
@@ -40,25 +46,37 @@ export default function PaymentResultDialog({ content, paymentResponse, onClose 
             className="flex items-center justify-center h-7 w-7 rounded-md text-zinc-400 hover:text-zinc-700 hover:bg-zinc-100 transition-colors cursor-pointer border-0 bg-transparent"
           >
             <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-              <path d="M1 1L13 13M13 1L1 13" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round"/>
+              <path
+                d="M1 1L13 13M13 1L1 13"
+                stroke="currentColor"
+                strokeWidth="1.75"
+                strokeLinecap="round"
+              />
             </svg>
           </button>
         </div>
 
         {/* Body */}
         <div className="flex flex-col gap-5 p-5 overflow-y-auto max-h-[70vh]">
-
           {paymentResponse && (
             <div className="flex flex-col gap-3.5">
               {txHash && (
                 <div className="flex flex-col gap-1">
                   <p className="text-sm font-semibold text-zinc-700">Transaction</p>
                   {explorerHref ? (
-                    <a href={explorerHref} target="_blank" rel="noopener noreferrer" className="font-mono text-sm underline" title={txHash}>
+                    <a
+                      href={explorerHref}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="font-mono text-sm underline"
+                      title={txHash}
+                    >
                       {txHash.slice(0, 10)}…{txHash.slice(-8)}
                     </a>
                   ) : (
-                    <span className="font-mono text-sm text-zinc-700" title={txHash}>{txHash.slice(0, 10)}…{txHash.slice(-8)}</span>
+                    <span className="font-mono text-sm text-zinc-700" title={txHash}>
+                      {txHash.slice(0, 10)}…{txHash.slice(-8)}
+                    </span>
                   )}
                 </div>
               )}
@@ -82,7 +100,9 @@ export default function PaymentResultDialog({ content, paymentResponse, onClose 
           <div className="flex flex-col gap-1">
             <p className="text-sm font-semibold text-zinc-700">Response body</p>
             <div className="rounded-lg border border-zinc-200 px-4 py-3">
-              <pre className="text-sm whitespace-pre-wrap break-all text-zinc-700">{JSON.stringify(content, null, 2)}</pre>
+              <pre className="text-sm whitespace-pre-wrap break-all text-zinc-700">
+                {JSON.stringify(content, null, 2)}
+              </pre>
             </div>
           </div>
         </div>
