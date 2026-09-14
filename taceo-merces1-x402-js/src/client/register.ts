@@ -1,7 +1,7 @@
-import { x402Client } from "@x402/core/client";
-import { Network } from "@x402/core/types";
-import { ClientEvmSigner } from "@x402/evm";
-import { ConfidentialEvmScheme } from "./scheme";
+import { x402Client } from '@x402/core/client';
+import { Network } from '@x402/core/types';
+import { ClientEvmSigner } from '@x402/evm';
+import { ConfidentialEvmScheme } from './scheme';
 
 /**
  * Configuration for registering the confidential EVM scheme on a client.
@@ -23,11 +23,11 @@ export function registerConfidentialEvmScheme(
   const scheme = new ConfidentialEvmScheme(config.signer);
 
   if (config.networks && config.networks.length > 0) {
-    config.networks.forEach(network => {
+    config.networks.forEach((network) => {
       client.register(network, scheme);
     });
   } else {
-    client.register("eip155:*", scheme);
+    client.register('eip155:*', scheme);
   }
 
   return client;

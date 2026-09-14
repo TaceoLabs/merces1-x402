@@ -1,5 +1,5 @@
-import { type Address } from "viem";
-import { NODE_URLS, BN254_PRIME, X402_SERVER_ADDRESS } from "@/lib/constants";
+import { type Address } from 'viem';
+import { NODE_URLS, BN254_PRIME, X402_SERVER_ADDRESS } from '@/lib/constants';
 
 export interface Transfer {
   id: number;
@@ -26,7 +26,8 @@ type RawTransfer = {
 export async function fetchPrivateBalanceShares(address: Address): Promise<bigint> {
   const fetchShare = async (url: string, nodeIndex: number) => {
     const res = await fetch(`${url}/balance/${address}`);
-    if (!res.ok) throw new Error(`node ${nodeIndex} returned HTTP ${res.status}: ${res.statusText}`);
+    if (!res.ok)
+      throw new Error(`node ${nodeIndex} returned HTTP ${res.status}: ${res.statusText}`);
     return BigInt(await res.text());
   };
   const [s0, s1, s2] = await Promise.all(NODE_URLS.map((url, i) => fetchShare(url, i)));
@@ -34,8 +35,8 @@ export async function fetchPrivateBalanceShares(address: Address): Promise<bigin
 }
 
 export async function fetchTransactions(): Promise<Transfer[]> {
-  const params = new URLSearchParams({ limit: "10000", type: "Transfer" });
-  if (X402_SERVER_ADDRESS) params.set("receiver", X402_SERVER_ADDRESS);
+  const params = new URLSearchParams({ limit: '10000', type: 'Transfer' });
+  if (X402_SERVER_ADDRESS) params.set('receiver', X402_SERVER_ADDRESS);
   const fetchFromNode = async (url: string, i: number): Promise<RawTransfer[]> => {
     const res = await fetch(`${url}/transactions?${params}`);
     if (!res.ok) throw new Error(`node ${i} returned HTTP ${res.status}: ${res.statusText}`);
@@ -46,7 +47,8 @@ export async function fetchTransactions(): Promise<Transfer[]> {
     const t0 = tx0.Transfer;
     const t1 = txs1[i]!.Transfer;
     const t2 = txs2[i]!.Transfer;
-    const amount = (BigInt(t0.amount_share) + BigInt(t1.amount_share) + BigInt(t2.amount_share)) % BN254_PRIME;
+    const amount =
+      (BigInt(t0.amount_share) + BigInt(t1.amount_share) + BigInt(t2.amount_share)) % BN254_PRIME;
     return {
       id: t0.id,
       sender: t0.sender,

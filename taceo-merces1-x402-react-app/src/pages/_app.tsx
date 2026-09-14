@@ -1,10 +1,10 @@
-import "@/styles/globals.css";
-import type { AppProps } from "next/app";
-import { WagmiProvider } from "wagmi";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { config } from "@/config/wagmi";
-import { Analytics } from "@vercel/analytics/next"
-import Script from "next/script";
+import '@/styles/globals.css';
+import type { AppProps } from 'next/app';
+import { WagmiProvider } from 'wagmi';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { config } from '@/config/wagmi';
+import { Analytics } from '@vercel/analytics/next';
+import Script from 'next/script';
 
 const queryClient = new QueryClient();
 

@@ -1,4 +1,4 @@
-import SpinnerButton from "@/components/SpinnerButton";
+import SpinnerButton from '@/components/SpinnerButton';
 
 interface FaucetButtonProps {
   onClick: () => void;

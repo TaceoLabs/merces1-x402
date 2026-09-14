@@ -1,0 +1,44 @@
+name: PNPM Publish
+
+on:
+    workflow_dispatch:
+        inputs:
+            package:
+                description: "Package to publish"
+                required: true
+                type: choice
+                options:
+                    - taceo-merces1-client-js
+                    - taceo-merces1-x402-js
+
+jobs:
+    publish:
+        runs-on: [ubuntu-latest]
+        defaults:
+            run:
+                working-directory: ${{ inputs.package }}
+        permissions:
+            contents: read
+
+        steps:
+            - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+            - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
+              with:
+                  package_json_file: ${{ inputs.package }}/package.json
+
+            - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+              with:
+                  node-version-file: ${{ inputs.package }}/.nvmrc
+                  registry-url: "https://registry.npmjs.org"
+                  scope: "@taceo"
+                  cache: "pnpm"
+                  cache-dependency-path: ${{ inputs.package }}/pnpm-lock.yaml
+
+            - run: pnpm install --frozen-lockfile
+
+            - run: pnpm build
+
+            - run: pnpm publish --no-git-checks
+              env:
+                  NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}

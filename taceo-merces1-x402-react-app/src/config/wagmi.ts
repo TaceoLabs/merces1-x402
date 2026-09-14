@@ -1,8 +1,8 @@
-import { baseSepolia, foundry, mainnet } from "viem/chains";
-import { createConfig, http } from "wagmi";
-import { walletConnect } from "wagmi/connectors";
+import { baseSepolia, foundry, mainnet } from 'viem/chains';
+import { createConfig, http } from 'wagmi';
+import { walletConnect } from 'wagmi/connectors';
 
-const isProduction = process.env.NODE_ENV === "production";
+const isProduction = process.env.NODE_ENV === 'production';
 
 export const config = createConfig({
   // Need to include mainnet for the WalletConnect QR code to work, even though
@@ -10,7 +10,7 @@ export const config = createConfig({
   chains: [isProduction ? mainnet : foundry, baseSepolia],
   connectors: [
     walletConnect({
-      projectId: process.env.NEXT_PUBLIC_WC_PROJECT_ID ?? "demo",
+      projectId: process.env.NEXT_PUBLIC_WC_PROJECT_ID ?? 'demo',
       showQrModal: true,
     }),
   ],

@@ -1,20 +1,20 @@
-import { useState, useEffect, useRef } from "react";
-import WalletButton from "@/components/WalletButton";
-import { useAccount, useWalletClient, useSwitchChain } from "wagmi";
-import { type Address } from "viem";
-import { x402Client, wrapFetchWithPayment, x402HTTPClient } from "@x402/fetch";
-import { ConfidentialEvmScheme } from "@taceo/confidential-x402";
-import Footer from "@/components/Footer";
-import Sidebar from "@/components/Sidebar";
-import PriceTierSelect from "@/components/PriceTierSelect";
-import PaymentResultDialog from "@/components/PaymentResultDialog";
-import ErrorDialog from "@/components/ErrorDialog";
-import FaucetButton from "@/components/FaucetButton";
-import PayButton from "@/components/PayButton";
-import RequestFlowStepper from "@/components/RequestFlowStepper";
-import { CHAIN_ID, X402_SERVER_URL, FAUCET_URL } from "@/lib/constants";
-import { fetchPrivateBalanceShares } from "@/lib/api";
-import { formatUSDC } from "@/lib/utils";
+import { useState, useEffect, useRef } from 'react';
+import WalletButton from '@/components/WalletButton';
+import { useAccount, useWalletClient, useSwitchChain } from 'wagmi';
+import { type Address } from 'viem';
+import { x402Client, wrapFetchWithPayment, x402HTTPClient } from '@x402/fetch';
+import { ConfidentialEvmScheme } from '@taceo/confidential-x402';
+import Footer from '@/components/Footer';
+import Sidebar from '@/components/Sidebar';
+import PriceTierSelect from '@/components/PriceTierSelect';
+import PaymentResultDialog from '@/components/PaymentResultDialog';
+import ErrorDialog from '@/components/ErrorDialog';
+import FaucetButton from '@/components/FaucetButton';
+import PayButton from '@/components/PayButton';
+import RequestFlowStepper from '@/components/RequestFlowStepper';
+import { CHAIN_ID, X402_SERVER_URL, FAUCET_URL } from '@/lib/constants';
+import { fetchPrivateBalanceShares } from '@/lib/api';
+import { formatUSDC } from '@/lib/utils';
 
 interface PaymentSettleResponse {
   success: boolean;
@@ -32,7 +32,7 @@ export default function ClientPage() {
   const [privateBalanceLoading, setPrivateBalanceLoading] = useState(false);
   const [faucetClaiming, setFaucetClaiming] = useState(false);
   const [faucetError, setFaucetError] = useState<string | null>(null);
-  const [priceTier, setPriceTier] = useState("");
+  const [priceTier, setPriceTier] = useState('');
   const [paying, setPaying] = useState(false);
   const [content, setContent] = useState<string | null>(null);
   const [paymentResponse, setPaymentResponse] = useState<PaymentSettleResponse | null>(null);
@@ -69,10 +69,10 @@ export default function ClientPage() {
     setFaucetClaiming(true);
     setFaucetError(null);
     try {
-      const res = await fetch(`${FAUCET_URL}/claim/${address}`, { method: "POST" });
+      const res = await fetch(`${FAUCET_URL}/claim/${address}`, { method: 'POST' });
       if (res.status === 429) {
         const msg = await res.text();
-        setFaucetError(msg || "You can only claim once every 24 hours.");
+        setFaucetError(msg || 'You can only claim once every 24 hours.');
       }
     } finally {
       setFaucetClaiming(false);
@@ -102,16 +102,19 @@ export default function ClientPage() {
       };
       const client = new x402Client();
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      client.register("eip155:*", new ConfidentialEvmScheme(signer as any));
+      client.register('eip155:*', new ConfidentialEvmScheme(signer as any));
       const fetchWithPayment = wrapFetchWithPayment(fetch, client);
       const headers: Record<string, string> = {};
-      if (priceTier) headers["x-price-tier"] = priceTier;
+      if (priceTier) headers['x-price-tier'] = priceTier;
 
       // Advance through early steps while ZK proof generates inside fetchWithPayment
       flowTimers.current.push(setTimeout(() => setFlowStep(1), 400));
       flowTimers.current.push(setTimeout(() => setFlowStep(2), 900));
 
-      const response = await fetchWithPayment(`${X402_SERVER_URL}/api/protected`, { method: "GET", headers });
+      const response = await fetchWithPayment(`${X402_SERVER_URL}/api/protected`, {
+        method: 'GET',
+        headers,
+      });
       clearFlowTimers();
 
       if (response.ok) {
@@ -158,18 +161,16 @@ export default function ClientPage() {
     <div className="flex flex-col md:flex-row min-h-screen text-zinc-900 font-sans antialiased">
       <Sidebar />
       <div className="flex-1 flex flex-col min-w-0">
-
         {/* Main */}
         <main className="flex-1 flex flex-col px-6 py-12">
           <div className="w-full max-w-4xl mx-auto flex flex-col gap-8">
-
             {/* Header */}
             <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
               <div>
                 <h1 className="text-3xl font-semibold tracking-tight text-zinc-900">Client</h1>
                 <p className="text-base text-zinc-500 mt-5">
-                  Connect your wallet, use the faucet to get 1,000 testnet USDC to you private wallet.
-                  Pay for access to the protected resource using Confidential x402.
+                  Connect your wallet, use the faucet to get 1,000 testnet USDC to you private
+                  wallet. Pay for access to the protected resource using Confidential x402.
                 </p>
               </div>
               <div className="sm:pt-1 sm:shrink-0">
@@ -180,30 +181,43 @@ export default function ClientPage() {
             {/* Dashboard */}
             <div className="rounded-xl border border-zinc-200 bg-white overflow-hidden">
               <div className="flex flex-col sm:flex-row divide-y sm:divide-y-0 sm:divide-x divide-zinc-100">
-
                 {/* Balance + Faucet */}
                 <div className="flex-1 p-6 flex flex-col gap-4">
                   <div>
                     <p className="text-base font-semibold">Private Balance</p>
                     <div className="mt-2 text-4xl font-semibold text-[#192b25] leading-none">
-                      {privateBalanceLoading
-                        ? <span className="text-zinc-400 text-base font-normal">Loading…</span>
-                        : privateBalance !== null
-                          ? <>{privateBalance} <span className="text-lg font-medium text-zinc-500">USDC</span></>
-                          : <span className="text-zinc-400 text-base font-normal">—</span>}
+                      {privateBalanceLoading ? (
+                        <span className="text-zinc-400 text-base font-normal">Loading…</span>
+                      ) : privateBalance !== null ? (
+                        <>
+                          {privateBalance}{' '}
+                          <span className="text-lg font-medium text-zinc-500">USDC</span>
+                        </>
+                      ) : (
+                        <span className="text-zinc-400 text-base font-normal">—</span>
+                      )}
                     </div>
                   </div>
                   <div>
-                    <FaucetButton onClick={handleClaim} disabled={!isConnected} loading={faucetClaiming} />
+                    <FaucetButton
+                      onClick={handleClaim}
+                      disabled={!isConnected}
+                      loading={faucetClaiming}
+                    />
                   </div>
-                  {faucetError && <ErrorDialog message={faucetError} onClose={() => setFaucetError(null)} />}
+                  {faucetError && (
+                    <ErrorDialog message={faucetError} onClose={() => setFaucetError(null)} />
+                  )}
                 </div>
 
                 {/* Tier + Pay */}
                 <div className="flex-1 p-6 flex flex-col gap-5">
                   <div>
                     <p className="text-base font-semibold">Pay for access</p>
-                    <p className="text-sm text-zinc-500 mt-1">Choose a price tier and pay to access the protected endpoint. The amount will be hidden onchain.</p>
+                    <p className="text-sm text-zinc-500 mt-1">
+                      Choose a price tier and pay to access the protected endpoint. The amount will
+                      be hidden onchain.
+                    </p>
                     <div className="mt-3">
                       <PriceTierSelect value={priceTier} onChange={setPriceTier} />
                     </div>
@@ -213,7 +227,6 @@ export default function ClientPage() {
                     {error && <ErrorDialog message={error} onClose={() => setError(null)} />}
                   </div>
                 </div>
-
               </div>
             </div>
 
@@ -221,7 +234,10 @@ export default function ClientPage() {
             <div className="flex flex-col gap-4">
               <div>
                 <h2 className="text-lg font-semibold text-zinc-900">Request Flow</h2>
-                <p className="text-base text-zinc-500 mt-1">Each payment flows through these steps. MPC and ZK proof ensure that no payment amount are visible onchain.</p>
+                <p className="text-base text-zinc-500 mt-1">
+                  Each payment flows through these steps. MPC and ZK proof ensure that no payment
+                  amount are visible onchain.
+                </p>
               </div>
               <div className="grid grid-cols-1 lg:grid-cols-[3fr_1.5fr] gap-4 items-start">
                 <RequestFlowStepper step={flowStep} />
@@ -232,16 +248,31 @@ export default function ClientPage() {
                     <p className="text-base font-semibold mb-3">Actors</p>
                     <div className="flex flex-col gap-4">
                       <div>
-                        <span className="inline-block text-[10px] font-medium px-1.5 py-0.5 rounded bg-sky-50 text-sky-600 mb-1.5">client</span>
-                        <p className="text-xs text-zinc-500">Your agent or browser. Initiates requests and generates ZK proofs entirely locally.</p>
+                        <span className="inline-block text-[10px] font-medium px-1.5 py-0.5 rounded bg-sky-50 text-sky-600 mb-1.5">
+                          client
+                        </span>
+                        <p className="text-xs text-zinc-500">
+                          Your agent or browser. Initiates requests and generates ZK proofs entirely
+                          locally.
+                        </p>
                       </div>
                       <div>
-                        <span className="inline-block text-[10px] font-medium px-1.5 py-0.5 rounded bg-violet-50 text-violet-600 mb-1.5">server</span>
-                        <p className="text-xs text-zinc-500">The protected API. Returns 402 payment requirements, then serves content once payment is settled.</p>
+                        <span className="inline-block text-[10px] font-medium px-1.5 py-0.5 rounded bg-violet-50 text-violet-600 mb-1.5">
+                          server
+                        </span>
+                        <p className="text-xs text-zinc-500">
+                          The protected API. Returns 402 payment requirements, then serves content
+                          once payment is settled.
+                        </p>
                       </div>
                       <div>
-                        <span className="inline-block text-[10px] font-medium px-1.5 py-0.5 rounded bg-amber-50 text-amber-600 mb-1.5">facilitator</span>
-                        <p className="text-xs text-zinc-500">An offchain service that verifies the ZK proof and settles the payment onchain.</p>
+                        <span className="inline-block text-[10px] font-medium px-1.5 py-0.5 rounded bg-amber-50 text-amber-600 mb-1.5">
+                          facilitator
+                        </span>
+                        <p className="text-xs text-zinc-500">
+                          An offchain service that verifies the ZK proof and settles the payment
+                          onchain.
+                        </p>
                       </div>
                     </div>
                   </div>

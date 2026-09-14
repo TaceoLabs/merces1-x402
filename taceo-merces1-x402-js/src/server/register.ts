@@ -1,6 +1,6 @@
-import { x402ResourceServer } from "@x402/core/server";
-import { Network } from "@x402/core/types";
-import { ConfidentialEvmScheme, ConfidentialServerSchemeConfig } from "./scheme";
+import { x402ResourceServer } from '@x402/core/server';
+import { Network } from '@x402/core/types';
+import { ConfidentialEvmScheme, ConfidentialServerSchemeConfig } from './scheme';
 
 /**
  * Configuration for registering the confidential EVM scheme on a resource server.
@@ -20,11 +20,11 @@ export function registerConfidentialEvmScheme(
   const scheme = new ConfidentialEvmScheme(config);
 
   if (config.networks && config.networks.length > 0) {
-    config.networks.forEach(network => {
+    config.networks.forEach((network) => {
       server.register(network, scheme);
     });
   } else {
-    server.register("eip155:*", scheme);
+    server.register('eip155:*', scheme);
   }
 
   return server;

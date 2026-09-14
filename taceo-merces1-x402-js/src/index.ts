@@ -1,2 +1,1 @@
-export { ConfidentialEvmScheme } from "./client/scheme";
-
+export { ConfidentialEvmScheme } from './client/scheme';
