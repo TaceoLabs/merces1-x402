@@ -10,8 +10,8 @@ export type ConfidentialAuthorization = {
   ciphertexts: [string, string, string, string, string, string];
   senderPk: [string, string];
   nonce: string;
-  deadline: string,
-  proof: snarkjs.Groth16Proof,
+  deadline: string;
+  proof: snarkjs.Groth16Proof;
 };
 
 /**
