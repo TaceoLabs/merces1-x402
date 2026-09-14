@@ -1,45 +1,45 @@
 const STEPS = [
   {
-    title: "GET /api/protected",
-    description: "Initial request to the protected endpoint",
-    actor: "client" as const,
+    title: 'GET /api/protected',
+    description: 'Initial request to the protected endpoint',
+    actor: 'client' as const,
   },
   {
-    title: "402 Payment Required",
-    description: "Server returns payment requirements",
-    actor: "server" as const,
+    title: '402 Payment Required',
+    description: 'Server returns payment requirements',
+    actor: 'server' as const,
   },
   {
-    title: "ZK proof generation",
-    description: "Confidential payment proof generated locally",
-    actor: "client" as const,
+    title: 'ZK proof generation',
+    description: 'Confidential payment proof generated locally',
+    actor: 'client' as const,
   },
   {
-    title: "GET /api/protected",
-    description: "Request retried with payment proof attached",
-    actor: "client" as const,
+    title: 'GET /api/protected',
+    description: 'Request retried with payment proof attached',
+    actor: 'client' as const,
   },
   {
-    title: "Facilitator /verify",
-    description: "Server verifies the payment proof",
-    actor: "facilitator" as const,
+    title: 'Facilitator /verify',
+    description: 'Server verifies the payment proof',
+    actor: 'facilitator' as const,
   },
   {
-    title: "Facilitator /settle",
-    description: "Server settles the confidential payment",
-    actor: "facilitator" as const,
+    title: 'Facilitator /settle',
+    description: 'Server settles the confidential payment',
+    actor: 'facilitator' as const,
   },
   {
-    title: "Content + receipt",
-    description: "Protected content and payment response delivered",
-    actor: "server" as const,
+    title: 'Content + receipt',
+    description: 'Protected content and payment response delivered',
+    actor: 'server' as const,
   },
 ];
 
 const ACTOR_STYLES = {
-  client: "bg-sky-50 text-sky-600",
-  server: "bg-violet-50 text-violet-600",
-  facilitator: "bg-amber-50 text-amber-600",
+  client: 'bg-sky-50 text-sky-600',
+  server: 'bg-violet-50 text-violet-600',
+  facilitator: 'bg-amber-50 text-amber-600',
 } as const;
 
 interface Props {
@@ -55,7 +55,13 @@ export default function RequestFlowStepper({ step }: Props) {
       {allDone && (
         <span className="absolute top-4 right-4 inline-flex items-center gap-1.5 text-xs font-medium text-emerald-700 bg-emerald-50 border border-emerald-200 px-2.5 py-1 rounded-full">
           <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
-            <path d="M2 5l2 2 4-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+            <path
+              d="M2 5l2 2 4-4"
+              stroke="currentColor"
+              strokeWidth="1.5"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
           </svg>
           Complete
         </span>
@@ -81,10 +87,10 @@ export default function RequestFlowStepper({ step }: Props) {
                 <div
                   className={`w-7 h-7 rounded-full flex items-center justify-center shrink-0 transition-all duration-500 ${
                     isComplete
-                      ? "bg-[#52ffc5]"
+                      ? 'bg-[#52ffc5]'
                       : isActive
-                        ? "ring-2 ring-[#52ffc5] bg-[#52ffc5]/10"
-                        : "bg-zinc-100"
+                        ? 'ring-2 ring-[#52ffc5] bg-[#52ffc5]/10'
+                        : 'bg-zinc-100'
                   }`}
                 >
                   {isComplete ? (
@@ -98,9 +104,20 @@ export default function RequestFlowStepper({ step }: Props) {
                       />
                     </svg>
                   ) : isActive ? (
-                    <svg className="animate-spin" width="14" height="14" viewBox="0 0 14 14" fill="none">
+                    <svg
+                      className="animate-spin"
+                      width="14"
+                      height="14"
+                      viewBox="0 0 14 14"
+                      fill="none"
+                    >
                       <circle cx="7" cy="7" r="5" stroke="#d4fae8" strokeWidth="2" />
-                      <path d="M7 2A5 5 0 0 1 12 7" stroke="#52ffc5" strokeWidth="2" strokeLinecap="round" />
+                      <path
+                        d="M7 2A5 5 0 0 1 12 7"
+                        stroke="#52ffc5"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                      />
                     </svg>
                   ) : (
                     <span className="text-[10px] font-semibold text-zinc-400">{i + 1}</span>
@@ -111,30 +128,26 @@ export default function RequestFlowStepper({ step }: Props) {
                 {!isLast && (
                   <div
                     className={`w-px transition-colors duration-500 ${
-                      isComplete ? "bg-[#52ffc5]" : "bg-zinc-100"
+                      isComplete ? 'bg-[#52ffc5]' : 'bg-zinc-100'
                     }`}
-                    style={{ height: "24px", marginTop: "3px", marginBottom: "3px" }}
+                    style={{ height: '24px', marginTop: '3px', marginBottom: '3px' }}
                   />
                 )}
               </div>
 
               {/* Content */}
-              <div className="flex-1 pb-1" style={{ minHeight: "36px" }}>
+              <div className="flex-1 pb-1" style={{ minHeight: '36px' }}>
                 <div className="flex items-center gap-2 flex-wrap">
                   <span
                     className={`text-sm font-medium font-mono transition-colors duration-300 ${
-                      isComplete
-                        ? "text-zinc-600"
-                        : isActive
-                          ? "text-zinc-900"
-                          : "text-zinc-300"
+                      isComplete ? 'text-zinc-600' : isActive ? 'text-zinc-900' : 'text-zinc-300'
                     }`}
                   >
                     {s.title}
                   </span>
                   <span
                     className={`text-[10px] font-medium px-1.5 py-0.5 rounded transition-opacity duration-300 ${ACTOR_STYLES[s.actor]} ${
-                      isComplete || isActive ? "opacity-100" : "opacity-25"
+                      isComplete || isActive ? 'opacity-100' : 'opacity-25'
                     }`}
                   >
                     {s.actor}
@@ -142,7 +155,7 @@ export default function RequestFlowStepper({ step }: Props) {
                 </div>
                 <p
                   className={`text-xs mt-0.5 transition-colors duration-300 ${
-                    isComplete || isActive ? "text-zinc-400" : "text-zinc-200"
+                    isComplete || isActive ? 'text-zinc-400' : 'text-zinc-200'
                   }`}
                 >
                   {s.description}

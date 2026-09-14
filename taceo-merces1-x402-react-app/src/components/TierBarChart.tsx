@@ -1,5 +1,5 @@
-import { formatUnits } from "viem";
-import { formatUSDC } from "@/lib/utils";
+import { formatUnits } from 'viem';
+import { formatUSDC } from '@/lib/utils';
 import {
   BarChart,
   Bar,
@@ -9,24 +9,36 @@ import {
   Tooltip,
   ResponsiveContainer,
   Cell,
-} from "recharts";
-import { X402Mode } from "./X402ModeToggle";
+} from 'recharts';
+import { X402Mode } from './X402ModeToggle';
 
-export type PriceTier = "Standard" | "STARTUP" | "GROWTH" | "ENTERPRISE";
+export type PriceTier = 'Standard' | 'STARTUP' | 'GROWTH' | 'ENTERPRISE';
 
-export const PRICE_TIERS: { tier: PriceTier; label: string; price: string; color: string; textColor: string }[] = [
-  { tier: "Standard",   label: "Standard",   price: "1.00", color: "#52ffc5", textColor: "#475569" },
-  { tier: "STARTUP",    label: "STARTUP",    price: "0.20", color: "#fde68a", textColor: "#92400e" },
-  { tier: "GROWTH",     label: "GROWTH",     price: "0.80", color: "#bfdbfe", textColor: "#1e40af" },
-  { tier: "ENTERPRISE", label: "ENTERPRISE", price: "1.50", color: "#c4b5fd", textColor: "#5b21b6" },
+export const PRICE_TIERS: {
+  tier: PriceTier;
+  label: string;
+  price: string;
+  color: string;
+  textColor: string;
+}[] = [
+  { tier: 'Standard', label: 'Standard', price: '1.00', color: '#52ffc5', textColor: '#475569' },
+  { tier: 'STARTUP', label: 'STARTUP', price: '0.20', color: '#fde68a', textColor: '#92400e' },
+  { tier: 'GROWTH', label: 'GROWTH', price: '0.80', color: '#bfdbfe', textColor: '#1e40af' },
+  {
+    tier: 'ENTERPRISE',
+    label: 'ENTERPRISE',
+    price: '1.50',
+    color: '#c4b5fd',
+    textColor: '#5b21b6',
+  },
 ];
 
 export function inferPriceTier(amount: bigint): PriceTier {
   const usdc = Number(formatUnits(amount, 6));
-  if (Math.abs(usdc - 0.2) < 0.01) return "STARTUP";
-  if (Math.abs(usdc - 0.8) < 0.01) return "GROWTH";
-  if (Math.abs(usdc - 1.5) < 0.01) return "ENTERPRISE";
-  return "Standard";
+  if (Math.abs(usdc - 0.2) < 0.01) return 'STARTUP';
+  if (Math.abs(usdc - 0.8) < 0.01) return 'GROWTH';
+  if (Math.abs(usdc - 1.5) < 0.01) return 'ENTERPRISE';
+  return 'Standard';
 }
 
 export interface TierStats {
@@ -55,8 +67,16 @@ interface TooltipProps {
 
 function makeRevenueLabel(txMode: X402Mode, data: TierChartDatum[]) {
   return function RevenueLabel(props: object) {
-    const { x = 0, y = 0, width = 0, index = -1 } = props as {
-      x?: number; y?: number; width?: number; index?: number;
+    const {
+      x = 0,
+      y = 0,
+      width = 0,
+      index = -1,
+    } = props as {
+      x?: number;
+      y?: number;
+      width?: number;
+      index?: number;
     };
     const datum = data[index];
     const count = datum?.count ?? 0;
@@ -66,21 +86,42 @@ function makeRevenueLabel(txMode: X402Mode, data: TierChartDatum[]) {
 
     const cx = x + width / 2;
 
-    if (txMode === "standard") {
+    if (txMode === 'standard') {
       return (
         <foreignObject x={cx - 52} y={y - 40} width={104} height={38}>
-          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 2 }}>
-            <span style={{
-              fontSize: 10, fontWeight: 600, color: "#ef4444",
-              background: "#fef2f2", border: "1px solid #fecaca",
-              padding: "1px 5px", borderRadius: 9999,
-              display: "inline-flex", alignItems: "center", gap: 3,
-              whiteSpace: "nowrap",
-            }}>
-              <svg xmlns="http://www.w3.org/2000/svg" width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" /><circle cx="12" cy="12" r="3" /></svg>
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 }}>
+            <span
+              style={{
+                fontSize: 10,
+                fontWeight: 600,
+                color: '#ef4444',
+                background: '#fef2f2',
+                border: '1px solid #fecaca',
+                padding: '1px 5px',
+                borderRadius: 9999,
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 3,
+                whiteSpace: 'nowrap',
+              }}
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="9"
+                height="9"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2.5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                <circle cx="12" cy="12" r="3" />
+              </svg>
               public
             </span>
-            <span style={{ fontSize: 10, fontWeight: 600, color: "#3f3f46", whiteSpace: "nowrap" }}>
+            <span style={{ fontSize: 10, fontWeight: 600, color: '#3f3f46', whiteSpace: 'nowrap' }}>
               {formatUSDC(revenue)} USDC
             </span>
           </div>
@@ -90,15 +131,36 @@ function makeRevenueLabel(txMode: X402Mode, data: TierChartDatum[]) {
 
     return (
       <foreignObject x={cx - 32} y={y - 22} width={64} height={20}>
-        <div style={{ display: "flex", justifyContent: "center" }}>
-          <span style={{
-            fontSize: 10, fontWeight: 500, color: "#a1a1aa",
-            background: "#f4f4f5", border: "1px solid #e4e4e7",
-            padding: "1px 5px", borderRadius: 9999,
-            display: "inline-flex", alignItems: "center", gap: 3,
-            whiteSpace: "nowrap",
-          }}>
-            <svg xmlns="http://www.w3.org/2000/svg" width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" /><line x1="1" y1="1" x2="23" y2="23" /></svg>
+        <div style={{ display: 'flex', justifyContent: 'center' }}>
+          <span
+            style={{
+              fontSize: 10,
+              fontWeight: 500,
+              color: '#a1a1aa',
+              background: '#f4f4f5',
+              border: '1px solid #e4e4e7',
+              padding: '1px 5px',
+              borderRadius: 9999,
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 3,
+              whiteSpace: 'nowrap',
+            }}
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="9"
+              height="9"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2.5"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" />
+              <line x1="1" y1="1" x2="23" y2="23" />
+            </svg>
             hidden
           </span>
         </div>
@@ -110,7 +172,21 @@ function makeRevenueLabel(txMode: X402Mode, data: TierChartDatum[]) {
 function PublicFlair() {
   return (
     <span className="inline-flex items-center gap-1 text-[10px] font-medium text-red-500 bg-red-50 border border-red-200 px-1.5 py-0.5 rounded-full">
-      <svg xmlns="http://www.w3.org/2000/svg" width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" /><circle cx="12" cy="12" r="3" /></svg>
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        width="9"
+        height="9"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        aria-hidden="true"
+      >
+        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+        <circle cx="12" cy="12" r="3" />
+      </svg>
       public
     </span>
   );
@@ -119,7 +195,21 @@ function PublicFlair() {
 function HiddenFlair() {
   return (
     <span className="inline-flex items-center gap-1 text-[10px] font-medium text-zinc-400 bg-zinc-100 border border-zinc-200 px-1.5 py-0.5 rounded-full">
-      <svg xmlns="http://www.w3.org/2000/svg" width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" /><line x1="1" y1="1" x2="23" y2="23" /></svg>
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        width="9"
+        height="9"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        aria-hidden="true"
+      >
+        <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" />
+        <line x1="1" y1="1" x2="23" y2="23" />
+      </svg>
       hidden
     </span>
   );
@@ -128,7 +218,7 @@ function HiddenFlair() {
 function TierTooltip({ active, payload, txMode }: TooltipProps) {
   if (!active || !payload?.length) return null;
   const d = payload[0].payload;
-  const isStandard = txMode === "standard";
+  const isStandard = txMode === 'standard';
   return (
     <div className="rounded-lg border border-zinc-200 bg-white shadow-lg px-3.5 py-3 text-xs flex flex-col gap-1.5 min-w-[140px]">
       <div className="flex items-center gap-2 mb-0.5">
@@ -141,30 +231,38 @@ function TierTooltip({ active, payload, txMode }: TooltipProps) {
       </div>
       <div className="flex justify-between items-center gap-4">
         <span className="text-zinc-500">Payments</span>
-        {isStandard
-          ? <span className="flex items-center gap-1.5">
-              <span className="font-semibold text-zinc-800">{d.count} <span className="font-normal text-zinc-400">({d.pct}%)</span></span>
-              <PublicFlair />
+        {isStandard ? (
+          <span className="flex items-center gap-1.5">
+            <span className="font-semibold text-zinc-800">
+              {d.count} <span className="font-normal text-zinc-400">({d.pct}%)</span>
             </span>
-          : <HiddenFlair />}
+            <PublicFlair />
+          </span>
+        ) : (
+          <HiddenFlair />
+        )}
       </div>
       <div className="flex justify-between items-center gap-4">
         <span className="text-zinc-500">Price</span>
-        {isStandard
-          ? <span className="flex items-center gap-1.5">
-              <span className="font-semibold text-zinc-800">{d.price} USDC</span>
-              <PublicFlair />
-            </span>
-          : <HiddenFlair />}
+        {isStandard ? (
+          <span className="flex items-center gap-1.5">
+            <span className="font-semibold text-zinc-800">{d.price} USDC</span>
+            <PublicFlair />
+          </span>
+        ) : (
+          <HiddenFlair />
+        )}
       </div>
       <div className="flex justify-between items-center gap-4">
         <span className="text-zinc-500">Revenue</span>
-        {isStandard
-          ? <span className="flex items-center gap-1.5">
-              <span className="font-semibold text-zinc-800">{formatUSDC(d.revenue)} USDC</span>
-              <PublicFlair />
-            </span>
-          : <HiddenFlair />}
+        {isStandard ? (
+          <span className="flex items-center gap-1.5">
+            <span className="font-semibold text-zinc-800">{formatUSDC(d.revenue)} USDC</span>
+            <PublicFlair />
+          </span>
+        ) : (
+          <HiddenFlair />
+        )}
       </div>
     </div>
   );
@@ -191,7 +289,7 @@ function RefreshButton({ onClick, loading }: { onClick: () => void; loading: boo
           strokeLinecap="round"
           strokeLinejoin="round"
           aria-hidden="true"
-          style={loading ? { animation: "spin 1s linear infinite" } : undefined}
+          style={loading ? { animation: 'spin 1s linear infinite' } : undefined}
         >
           <polyline points="23 4 23 10 17 10" />
           <polyline points="1 20 1 14 7 14" />
@@ -217,23 +315,33 @@ export default function TierBarChart({
     const count = stats?.tierCounts[tier] ?? 0;
     const total = stats ? Object.values(stats.tierCounts).reduce((a, b) => a + b, 0) : 0;
     return {
-      tier, label, price, color, textColor,
+      tier,
+      label,
+      price,
+      color,
+      textColor,
       count,
       revenue: stats?.tierRevenue[tier] ?? BigInt(0),
       pct: total > 0 ? Math.round((count / total) * 100) : 0,
     };
   });
 
-  const isConfidential = txMode !== "standard";
+  const isConfidential = txMode !== 'standard';
   const isEmpty = data.every((d) => d.count === 0);
   const displayData = isConfidential ? data.map((d) => ({ ...d, count: 2 })) : data;
 
   if (txsLoading && isEmpty) {
-    return <div className="h-[294px] flex items-center justify-center text-sm text-zinc-400">Loading…</div>;
+    return (
+      <div className="h-[294px] flex items-center justify-center text-sm text-zinc-400">
+        Loading…
+      </div>
+    );
   }
 
   return (
-    <div className={`flex flex-col gap-4 transition-opacity duration-150 ${txsLoading ? "opacity-50 pointer-events-none" : ""}`}>
+    <div
+      className={`flex flex-col gap-4 transition-opacity duration-150 ${txsLoading ? 'opacity-50 pointer-events-none' : ''}`}
+    >
       <div className="flex items-center gap-3 flex-wrap">
         {PRICE_TIERS.map(({ tier, label, color }) => (
           <span key={tier} className="flex items-center gap-1.5 text-xs text-zinc-500">
@@ -244,12 +352,36 @@ export default function TierBarChart({
         {onRefresh && <RefreshButton onClick={onRefresh} loading={txsLoading} />}
       </div>
       <ResponsiveContainer width="100%" height={250}>
-        <BarChart data={displayData} barCategoryGap="28%" margin={{ top: 36, right: 8, left: -16, bottom: 0 }}>
+        <BarChart
+          data={displayData}
+          barCategoryGap="28%"
+          margin={{ top: 36, right: 8, left: -16, bottom: 0 }}
+        >
           <CartesianGrid strokeDasharray="3 3" stroke="#f4f4f5" vertical={false} />
-          <XAxis dataKey="label" tick={{ fontSize: 11, fill: "#a1a1aa" }} axisLine={false} tickLine={false} />
-          <YAxis allowDecimals={false} tick={{ fontSize: 11, fill: "#a1a1aa" }} axisLine={false} tickLine={false} domain={isConfidential ? [0, 4] : undefined} tickFormatter={isConfidential ? () => "?" : undefined} />
-          <Tooltip content={<TierTooltip txMode={txMode} />} cursor={{ fill: "rgba(0,0,0,0.03)", radius: 6 }} />
-          <Bar dataKey="count" radius={[5, 5, 0, 0]} isAnimationActive={!isEmpty} label={{ content: makeRevenueLabel(txMode, displayData) }}>
+          <XAxis
+            dataKey="label"
+            tick={{ fontSize: 11, fill: '#a1a1aa' }}
+            axisLine={false}
+            tickLine={false}
+          />
+          <YAxis
+            allowDecimals={false}
+            tick={{ fontSize: 11, fill: '#a1a1aa' }}
+            axisLine={false}
+            tickLine={false}
+            domain={isConfidential ? [0, 4] : undefined}
+            tickFormatter={isConfidential ? () => '?' : undefined}
+          />
+          <Tooltip
+            content={<TierTooltip txMode={txMode} />}
+            cursor={{ fill: 'rgba(0,0,0,0.03)', radius: 6 }}
+          />
+          <Bar
+            dataKey="count"
+            radius={[5, 5, 0, 0]}
+            isAnimationActive={!isEmpty}
+            label={{ content: makeRevenueLabel(txMode, displayData) }}
+          >
             {displayData.map(({ tier, color }) => (
               <Cell key={tier} fill={color} />
             ))}

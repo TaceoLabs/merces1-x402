@@ -17,10 +17,10 @@ npm install @taceo/confidential-x402
 Use `ConfidentialEvmScheme` with `@x402/express` to gate routes behind confidential on-chain payments:
 
 ```ts
-import express from "express";
-import { paymentMiddleware, x402ResourceServer } from "@x402/express";
-import { HTTPFacilitatorClient } from "@x402/core/server";
-import { ConfidentialEvmScheme } from "@taceo/confidential-x402/server";
+import express from 'express';
+import { paymentMiddleware, x402ResourceServer } from '@x402/express';
+import { HTTPFacilitatorClient } from '@x402/core/server';
+import { ConfidentialEvmScheme } from '@taceo/confidential-x402/server';
 
 const address = process.env.ADDRESS as `0x${string}`;
 const facilitatorUrl = process.env.FACILITATOR_URL;
@@ -31,27 +31,29 @@ const app = express();
 app.use(
   paymentMiddleware(
     {
-      "GET /api/protected": {
+      'GET /api/protected': {
         accepts: [
           {
-            scheme: "confidential",
-            price: "$1",
-            network: "eip155:84532",
+            scheme: 'confidential',
+            price: '$1',
+            network: 'eip155:84532',
             payTo: address,
           },
-        ]
+        ],
       },
     },
-    new x402ResourceServer(facilitatorClient)
-      .register("eip155:84532", new ConfidentialEvmScheme({ asset: "0x4Ee80fFA1332525A8Cd100E1edf72Fe066f01c10" }))
+    new x402ResourceServer(facilitatorClient).register(
+      'eip155:84532',
+      new ConfidentialEvmScheme({ asset: '0x4Ee80fFA1332525A8Cd100E1edf72Fe066f01c10' }),
+    ),
   ),
 );
 
-app.get("/api/protected", (req, res) => {
-  res.send("protected content");
+app.get('/api/protected', (req, res) => {
+  res.send('protected content');
 });
 
-app.listen(8080)
+app.listen(8080);
 ```
 
 ### Send Payments (Client)
@@ -59,9 +61,9 @@ app.listen(8080)
 Use `ConfidentialEvmScheme` with `@x402/fetch` to automatically handle confidential payments:
 
 ```ts
-import { x402Client, wrapFetchWithPayment } from "@x402/fetch";
-import { ConfidentialEvmScheme } from "@taceo/confidential-x402/client";
-import { privateKeyToAccount } from "viem/accounts";
+import { x402Client, wrapFetchWithPayment } from '@x402/fetch';
+import { ConfidentialEvmScheme } from '@taceo/confidential-x402/client';
+import { privateKeyToAccount } from 'viem/accounts';
 
 const privateKey = process.env.PRIVATE_KEY as `0x${string}`;
 const serverUrl = process.env.SERVER_URL;
@@ -69,11 +71,11 @@ const serverUrl = process.env.SERVER_URL;
 const signer = privateKeyToAccount(privateKey);
 
 const client = new x402Client();
-client.register("eip155:*", new ConfidentialEvmScheme(signer));
+client.register('eip155:*', new ConfidentialEvmScheme(signer));
 
 const fetchWithPayment = wrapFetchWithPayment(fetch, client);
 
-const response = await fetchWithPayment(`${serverUrl}/api/protected`, { method: "GET" });
-console.log("Response status:", response.status);
-console.log("Response body:", await response.text());
+const response = await fetchWithPayment(`${serverUrl}/api/protected`, { method: 'GET' });
+console.log('Response status:', response.status);
+console.log('Response body:', await response.text());
 ```

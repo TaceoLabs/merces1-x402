@@ -3,12 +3,17 @@ import {
   SchemeNetworkClient,
   PaymentPayloadResult,
   PaymentPayloadContext,
-} from "@x402/core/types";
-import { ClientEvmSigner } from "@x402/evm";
-import { ConfidentialEvmPayload, ConfidentialExtra } from "../types";
-import { encodeAbiParameters, getAddress, keccak256, toHex } from "viem";
+} from '@x402/core/types';
+import { ClientEvmSigner } from '@x402/evm';
+import { ConfidentialEvmPayload, ConfidentialExtra } from '../types';
+import { encodeAbiParameters, getAddress, keccak256, toHex } from 'viem';
 import * as snarkjs from 'snarkjs';
-import { encodeCiphertexts, fetchWitnessWasm, fetchZkey, prepareTransfer } from "@taceo/merces1-client";
+import {
+  encodeCiphertexts,
+  fetchWitnessWasm,
+  fetchZkey,
+  prepareTransfer,
+} from '@taceo/merces1-client';
 
 /**
  * Get the crypto object from the global scope.
@@ -19,7 +24,7 @@ import { encodeCiphertexts, fetchWitnessWasm, fetchZkey, prepareTransfer } from 
 function getCrypto(): Crypto {
   const cryptoObj = globalThis.crypto as Crypto | undefined;
   if (!cryptoObj) {
-    throw new Error("Crypto API not available");
+    throw new Error('Crypto API not available');
   }
   return cryptoObj;
 }
@@ -33,7 +38,6 @@ export function createNonce(): bigint {
   return BigInt(toHex(getCrypto().getRandomValues(new Uint8Array(32))));
 }
 
-
 /**
  * EVM client implementation for the Confidential payment scheme.
  *
@@ -41,11 +45,9 @@ export function createNonce(): bigint {
  * and EIP-712 signed transferFrom authorizations.
  */
 export class ConfidentialEvmScheme implements SchemeNetworkClient {
-  readonly scheme = "confidential";
+  readonly scheme = 'confidential';
 
-  constructor(
-    private readonly signer: ClientEvmSigner,
-  ) { }
+  constructor(private readonly signer: ClientEvmSigner) {}
 
   async createPaymentPayload(
     x402Version: number,
@@ -55,20 +57,23 @@ export class ConfidentialEvmScheme implements SchemeNetworkClient {
     const extra = paymentRequirements.extra as unknown as ConfidentialExtra;
     if (!extra?.confidentialToken || !extra?.eip712Domain) {
       throw new Error(
-        "Payment requirements missing confidential extra (confidentialToken, eip712Domain)",
+        'Payment requirements missing confidential extra (confidentialToken, eip712Domain)',
       );
     }
 
     const amount = BigInt(paymentRequirements.amount);
     const receiver = getAddress(paymentRequirements.payTo);
-    const chainId = parseInt(paymentRequirements.network.split(":")[1]!);
+    const chainId = parseInt(paymentRequirements.network.split(':')[1]!);
     const confidentialToken = getAddress(extra.confidentialToken) as `0x${string}`;
-    const mpcPublicKeys = extra.mpcPks.map(pk => ({ x: BigInt(pk[0]), y: BigInt(pk[1]) }));
+    const mpcPublicKeys = extra.mpcPks.map((pk) => ({ x: BigInt(pk[0]), y: BigInt(pk[1]) }));
 
     // ZK proof path: circuit computes commitment + encrypted shares + compressed proof
     const witnessWasm = await fetchWitnessWasm();
     const zkey = await fetchZkey();
-    const { inputs, ciphertexts, senderPk, amountCommitment, amountR } = prepareTransfer(amount, mpcPublicKeys);
+    const { inputs, ciphertexts, senderPk, amountCommitment, amountR } = prepareTransfer(
+      amount,
+      mpcPublicKeys,
+    );
     let proof: snarkjs.Groth16Proof, publicSignals: snarkjs.PublicSignals;
     try {
       ({ proof, publicSignals } = await snarkjs.groth16.fullProve(inputs, witnessWasm, zkey));
@@ -88,24 +93,22 @@ export class ConfidentialEvmScheme implements SchemeNetworkClient {
       encodeAbiParameters(
         [
           {
-            type: "tuple",
+            type: 'tuple',
             components: [
-              { name: "amount", type: "uint256[3]" },
-              { name: "r", type: "uint256[3]" },
+              { name: 'amount', type: 'uint256[3]' },
+              { name: 'r', type: 'uint256[3]' },
               {
-                name: "senderPk",
-                type: "tuple",
+                name: 'senderPk',
+                type: 'tuple',
                 components: [
-                  { name: "x", type: "uint256" },
-                  { name: "y", type: "uint256" },
+                  { name: 'x', type: 'uint256' },
+                  { name: 'y', type: 'uint256' },
                 ],
               },
             ],
           },
         ],
-        [
-          encodedCiphertexts,
-        ],
+        [encodedCiphertexts],
       ),
     );
 
@@ -131,16 +134,16 @@ export class ConfidentialEvmScheme implements SchemeNetworkClient {
       domain,
       types: {
         TransferFromAuthorization: [
-          { name: "sender", type: "address" },
-          { name: "receiver", type: "address" },
-          { name: "amountCommitment", type: "uint256" },
-          { name: "ciphertextHash", type: "bytes32" },
-          { name: "beta", type: "uint256" },
-          { name: "nonce", type: "uint256" },
-          { name: "deadline", type: "uint256" },
+          { name: 'sender', type: 'address' },
+          { name: 'receiver', type: 'address' },
+          { name: 'amountCommitment', type: 'uint256' },
+          { name: 'ciphertextHash', type: 'bytes32' },
+          { name: 'beta', type: 'uint256' },
+          { name: 'nonce', type: 'uint256' },
+          { name: 'deadline', type: 'uint256' },
         ],
       },
-      primaryType: "TransferFromAuthorization",
+      primaryType: 'TransferFromAuthorization',
       message,
     });
 
@@ -153,12 +156,19 @@ export class ConfidentialEvmScheme implements SchemeNetworkClient {
         amountCommitment: amountCommitment.toString(),
         amountR: amountR.toString(),
         beta: beta.toString(),
-        ciphertexts: [ciphertexts.ciphertexts0[0].toString(), ciphertexts.ciphertexts0[1].toString(), ciphertexts.ciphertexts1[0].toString(), ciphertexts.ciphertexts1[1].toString(), ciphertexts.ciphertexts2[0].toString(), ciphertexts.ciphertexts2[1].toString()],
+        ciphertexts: [
+          ciphertexts.ciphertexts0[0].toString(),
+          ciphertexts.ciphertexts0[1].toString(),
+          ciphertexts.ciphertexts1[0].toString(),
+          ciphertexts.ciphertexts1[1].toString(),
+          ciphertexts.ciphertexts2[0].toString(),
+          ciphertexts.ciphertexts2[1].toString(),
+        ],
         senderPk: [senderPk.x.toString(), senderPk.y.toString()],
         nonce: toHex(nonce, { size: 32 }),
         deadline: deadline.toString(),
         proof,
-      }
+      },
     };
 
     return {
