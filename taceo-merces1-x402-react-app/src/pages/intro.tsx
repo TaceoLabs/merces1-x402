@@ -121,10 +121,11 @@ export default function ArticlePage() {
 
   useEffect(() => {
     if (isConnected && chainId !== CHAIN_ID) switchChain({ chainId: CHAIN_ID });
-  }, [isConnected, chainId]);
+  }, [isConnected, chainId, switchChain]);
 
   useEffect(() => {
     if (isConnected && address) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       refreshPrivateBalance(address);
     } else {
       setPrivateBalance(null);
@@ -132,6 +133,7 @@ export default function ArticlePage() {
   }, [isConnected, address]);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     refreshTransactions();
     refreshServerBalance();
   }, []);
@@ -337,7 +339,7 @@ export default function ArticlePage() {
                 <h2 className="text-xl font-medium text-zinc-900 mt-6 mb-3">The resource server</h2>
                 <p className="text-base text-zinc-500 leading-relaxed">
                   The resource server issues a <code>402 Payment Required</code> challenge when no
-                  payment is attached, then forwards the client's signed payload to the facilitator
+                  payment is attached, then forwards the client&apos;s signed payload to the facilitator
                   for verification and settlement before serving the protected content. Its
                   accumulated private balance grows with each successful payment, but individual
                   amounts are never exposed onchain. The server tracks them directly, and they can
