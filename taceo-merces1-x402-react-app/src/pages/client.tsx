@@ -42,12 +42,13 @@ export default function ClientPage() {
 
   useEffect(() => {
     if (isConnected && chainId !== CHAIN_ID) switchChain({ chainId: CHAIN_ID });
-  }, [isConnected, chainId]);
+  }, [isConnected, chainId, switchChain]);
 
   useEffect(() => {
     if (isConnected && address) {
       refreshPrivateBalance(address);
     } else {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setPrivateBalance(null);
     }
   }, [isConnected, address]);
