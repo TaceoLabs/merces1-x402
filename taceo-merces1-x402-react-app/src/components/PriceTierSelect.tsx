@@ -1,4 +1,4 @@
-import * as Select from '@radix-ui/react-select';
+import { Select } from 'radix-ui';
 import { PRICE_TIERS } from '@/components/TierBarChart';
 
 const TIER_OPTIONS = [
