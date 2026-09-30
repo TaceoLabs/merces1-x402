@@ -1,16 +1,20 @@
-import "@/styles/globals.css";
-import type { AppProps } from "next/app";
-import { WagmiProvider } from "wagmi";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { config } from "@/config/wagmi";
-import { Analytics } from "@vercel/analytics/next"
-import Script from "next/script";
+import '@/styles/globals.css';
+import type { AppProps } from 'next/app';
+import Head from 'next/head';
+import { WagmiProvider } from 'wagmi';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { config } from '@/config/wagmi';
+import { Analytics } from '@vercel/analytics/next';
+import Script from 'next/script';
 
 const queryClient = new QueryClient();
 
 export default function App({ Component, pageProps }: AppProps) {
   return (
     <>
+      <Head>
+        <title>Confidential x402 | by TACEO</title>
+      </Head>
       <WagmiProvider config={config}>
         <QueryClientProvider client={queryClient}>
           <Component {...pageProps} />

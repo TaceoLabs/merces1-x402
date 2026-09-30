@@ -1,6 +1,6 @@
-import { ScanLine, Wallet } from "lucide-react";
-import { useState, type ReactNode } from "react";
-import { type Connector, useAccount, useConnect, useConnectors, useDisconnect } from "wagmi";
+import { ScanLine, Wallet } from 'lucide-react';
+import { useState, type ReactNode } from 'react';
+import { type Connector, useAccount, useConnect, useConnectors, useDisconnect } from 'wagmi';
 
 function truncateAddress(address: string) {
   return `${address.slice(0, 4)}…${address.slice(-4)}`;
@@ -32,8 +32,8 @@ export default function WalletButton() {
   const { connect } = useConnect();
   const { disconnect } = useDisconnect();
   const connectors = useConnectors();
-  const injectedConnectors = connectors.filter((connector) => connector.type === "injected");
-  const walletConnectConnector = connectors.find((connector) => connector.type === "walletConnect");
+  const injectedConnectors = connectors.filter((connector) => connector.type === 'injected');
+  const walletConnectConnector = connectors.find((connector) => connector.type === 'walletConnect');
   const [isPickerOpen, setIsPickerOpen] = useState(false);
   const [isAccountMenuOpen, setIsAccountMenuOpen] = useState(false);
 
@@ -73,7 +73,11 @@ export default function WalletButton() {
                     icon={
                       connector.icon ? (
                         // eslint-disable-next-line @next/next/no-img-element
-                        <img src={connector.icon} alt="" className="size-8 rounded-lg object-cover" />
+                        <img
+                          src={connector.icon}
+                          alt=""
+                          className="size-8 rounded-lg object-cover"
+                        />
                       ) : (
                         <span className="flex size-8 items-center justify-center rounded-lg bg-zinc-100">
                           <Wallet className="size-4 text-zinc-500" />
@@ -111,12 +115,12 @@ export default function WalletButton() {
       >
         <span
           style={{
-            height: "1.5rem",
-            width: "1.5rem",
-            borderRadius: "9999px",
+            height: '1.5rem',
+            width: '1.5rem',
+            borderRadius: '9999px',
             background:
-              "radial-gradient(120% 95% at 24% 22%, #255b4d 0%, transparent 56%), radial-gradient(95% 95% at 70% 86%, #62ffd1 0%, transparent 62%), linear-gradient(145deg, #173f36 8%, #52ffc5 58%, #e5dbbc 100%)",
-            display: "inline-block",
+              'radial-gradient(120% 95% at 24% 22%, #255b4d 0%, transparent 56%), radial-gradient(95% 95% at 70% 86%, #62ffd1 0%, transparent 62%), linear-gradient(145deg, #173f36 8%, #52ffc5 58%, #e5dbbc 100%)',
+            display: 'inline-block',
             flexShrink: 0,
           }}
         />
