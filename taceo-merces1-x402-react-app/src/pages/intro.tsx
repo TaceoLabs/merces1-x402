@@ -339,9 +339,9 @@ export default function ArticlePage() {
                 <h2 className="text-xl font-medium text-zinc-900 mt-6 mb-3">The resource server</h2>
                 <p className="text-base text-zinc-500 leading-relaxed">
                   The resource server issues a <code>402 Payment Required</code> challenge when no
-                  payment is attached, then forwards the client&apos;s signed payload to the facilitator
-                  for verification and settlement before serving the protected content. Its
-                  accumulated private balance grows with each successful payment, but individual
+                  payment is attached, then forwards the client&apos;s signed payload to the
+                  facilitator for verification and settlement before serving the protected content.
+                  Its accumulated private balance grows with each successful payment, but individual
                   amounts are never exposed onchain. The server tracks them directly, and they can
                   be reconstructed from the MPC network if needed.
                 </p>

@@ -252,8 +252,8 @@ export default function ServerPage() {
             <div>
               <h2 className="text-lg font-semibold text-zinc-700 mb-1">Pricing tier breakdown</h2>
               <p className="text-base text-zinc-500 leading-relaxed mb-3">
-                In confidential mode, neither the payment amount nor the customer&apos;s price tier is
-                visible onchain. An outside observer cannot reconstruct this chart, the total
+                In confidential mode, neither the payment amount nor the customer&apos;s price tier
+                is visible onchain. An outside observer cannot reconstruct this chart, the total
                 revenue, or the average payment, as the onchain record contains only opaque
                 commitments.
               </p>
