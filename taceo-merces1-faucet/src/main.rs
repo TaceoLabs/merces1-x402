@@ -86,7 +86,9 @@ async fn run() -> eyre::Result<()> {
         }
         Ok(Ok(Err(err))) => Err(err),
         Ok(Err(join_err)) => Err(join_err.into()),
-        Err(_) => eyre::bail!("could not finish shutdown in time"),
+        Err(_) => {
+            eyre::bail!("could not finish shutdown in time");
+        }
     }
 }
 
