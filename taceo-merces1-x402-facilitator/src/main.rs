@@ -88,8 +88,12 @@ async fn run() -> eyre::Result<()> {
             Ok(())
         }
         Ok(Ok(Err(err))) => Err(err),
-        Ok(Err(join_err)) => eyre::bail!("server task panicked: {join_err}"),
-        Err(_) => eyre::bail!("could not finish shutdown in time"),
+        Ok(Err(join_err)) => {
+            eyre::bail!("server task panicked: {join_err}");
+        }
+        Err(_) => {
+            eyre::bail!("could not finish shutdown in time");
+        }
     }
 }
 
