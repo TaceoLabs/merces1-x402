@@ -1,4 +1,4 @@
-use std::array;
+use std::{array, time::Duration};
 
 use crate::{
     DecodedCiphertext,
@@ -18,6 +18,7 @@ use alloy::{
 use ark_bn254::Bn254;
 use ark_ff::PrimeField;
 use ark_groth16::Proof;
+use backon::{ExponentialBuilder, Retryable};
 use eyre::{Context, ContextCompat};
 use taceo_nodes_common::{Environment, web3::GetReceiptExt};
 use tracing::instrument;
@@ -649,7 +650,16 @@ impl MercesContract {
             .from_block(from_block)
             .event_signature(Merces::ProcessedMPC::SIGNATURE_HASH);
         loop {
-            let logs = provider.get_logs(&filter).await?;
+            // load-balanced RPCs may lag behind the node that served the receipt
+            let logs = (|| provider.get_logs(&filter))
+                .retry(
+                    ExponentialBuilder::default()
+                        .with_min_delay(Duration::from_millis(200))
+                        .with_max_delay(Duration::from_secs(2))
+                        .with_max_times(5),
+                )
+                .notify(|e, d| tracing::warn!("get_logs failed, retrying in {d:?}: {e}"))
+                .await?;
 
             for log in logs {
                 let decoded = log.log_decode::<Merces::ProcessedMPC>()?;
@@ -663,7 +673,7 @@ impl MercesContract {
                     return Ok((pos, decoded));
                 }
             }
-            tokio::time::sleep(std::time::Duration::from_secs(1)).await;
+            tokio::time::sleep(Duration::from_secs(1)).await;
         }
     }
 
