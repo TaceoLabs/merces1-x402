@@ -27,6 +27,7 @@ use mpc_core::{
         rep3_ring::{self, Rep3RingShare, ring::bit::Bit},
     },
     serde_compat::{ark_de, ark_se},
+    uint::{FieldUint, UintBackend as _},
 };
 use mpc_net::Network;
 use num_bigint::BigUint;
@@ -352,7 +353,7 @@ pub(crate) fn feed_forward_shared<
 }
 
 #[expect(clippy::type_complexity)]
-pub(crate) fn decompose_compose<F: PrimeField, N: Network>(
+pub(crate) fn decompose_compose<F: FieldUint, N: Network>(
     sender_new_balance: Rep3PrimeFieldShare<F>,
     net: &N,
     rep3_state: &mut Rep3State,
@@ -368,8 +369,8 @@ pub(crate) fn decompose_compose<F: PrimeField, N: Network>(
 
     assert!(F::MODULUS_BIT_SIZE <= 256);
     assert!(F::MODULUS_BIT_SIZE > 192);
-    let a2b_sender_a_ = a2b.a.to_u64_digits();
-    let a2b_sender_b_ = a2b.b.to_u64_digits();
+    let a2b_sender_a_ = a2b.a.as_limbs();
+    let a2b_sender_b_ = a2b.b.as_limbs();
 
     // First the lowest 128 bit
     let mut a2b_sender_a = ((a2b_sender_a_[1] as u128) << 64) | a2b_sender_a_[0] as u128;
@@ -643,7 +644,7 @@ pub(crate) fn alias_check_trace_helper<F: PrimeField /*const CT: i32*/>(
     alias_check_output(parts, trace_num2_bits, sum.into())
 }
 
-pub(crate) fn alias_check_trace_helper_rep3<F: PrimeField, N: Network /*const CT: i32*/>(
+pub(crate) fn alias_check_trace_helper_rep3<F: FieldUint, N: Network /*const CT: i32*/>(
     input: [Rep3PrimeFieldShare<F>; 254],
     net: &N,
     rep3_state: &mut Rep3State,
@@ -709,7 +710,8 @@ pub(crate) fn alias_check_trace_helper_rep3<F: PrimeField, N: Network /*const CT
     }
 
     let a_bits = conversion::a2b(sum, net, rep3_state)?;
-    let a_bits_split: Vec<_> = (0..135).map(|i| (&a_bits >> i) & BigUint::one()).collect();
+    let one = F::Uint::one();
+    let a_bits_split: Vec<_> = (0..135).map(|i| (a_bits >> i).and_mask(&one)).collect();
     let trace_num2_bits: Vec<Rep3VmType<F>> =
         conversion::bit_inject_many(&a_bits_split, net, rep3_state)?
             .iter()

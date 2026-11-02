@@ -45,6 +45,11 @@ pub struct Merces1NodeServiceConfig {
     #[serde(default = "default_mpc_net_init_session_timeout")]
     pub mpc_net_init_session_timeout: Duration,
 
+    /// Max wait time for a single send/recv/flush on the MPC net.
+    #[serde(with = "humantime_serde")]
+    #[serde(default = "default_mpc_net_timeout")]
+    pub mpc_net_timeout: Duration,
+
     /// Secret key for encrypting/decrypting data for smart contract
     pub mpc_sk: SecretString,
 
@@ -67,5 +72,9 @@ fn default_mpc_bind_addr() -> SocketAddr {
 }
 
 fn default_mpc_net_init_session_timeout() -> Duration {
+    Duration::from_secs(30)
+}
+
+fn default_mpc_net_timeout() -> Duration {
     Duration::from_secs(30)
 }
