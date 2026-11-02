@@ -1,5 +1,6 @@
 //! Configuration types for the x402 facilitator service.
 
+use std::num::NonZeroUsize;
 use std::path::PathBuf;
 
 use alloy::primitives::Address;
@@ -32,4 +33,14 @@ pub struct X402FacilitatorServiceConfig {
 
     /// The path to the verifying key file for the client proof.
     pub vk_path: PathBuf,
+
+    /// Max request body size the service accepts.
+    ///
+    /// Default value: 10 kilobytes
+    #[serde(default = "default_max_body_size")]
+    pub max_body_size: NonZeroUsize,
+}
+
+fn default_max_body_size() -> NonZeroUsize {
+    NonZeroUsize::new(10 * 1024).expect("non-zero")
 }

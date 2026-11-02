@@ -4,6 +4,7 @@ use alloy::providers::Provider as _;
 use alloy::providers::fillers::CachedNonceManager;
 use alloy::{network::EthereumWallet, signers::local::PrivateKeySigner};
 use axum::Router;
+use axum::extract::DefaultBodyLimit;
 use axum::http::Method;
 use secrecy::ExposeSecret as _;
 use taceo_circom_types::groth16::VerificationKey;
@@ -46,12 +47,15 @@ pub async fn start(config: X402FacilitatorServiceConfig) -> eyre::Result<Router>
         verifying_key.into(),
     ));
 
-    let router = handlers::routes().with_state(facilitator).layer(
-        cors::CorsLayer::new()
-            .allow_origin(cors::Any)
-            .allow_methods([Method::GET, Method::POST])
-            .allow_headers(cors::Any),
-    );
+    let router = handlers::routes()
+        .with_state(facilitator)
+        .layer(
+            cors::CorsLayer::new()
+                .allow_origin(cors::Any)
+                .allow_methods([Method::GET, Method::POST])
+                .allow_headers(cors::Any),
+        )
+        .layer(DefaultBodyLimit::max(config.max_body_size.get()));
 
     Ok(router)
 }
