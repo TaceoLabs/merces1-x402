@@ -21,7 +21,7 @@ use contract_rs::merces::{
 use eyre::ContextCompat as _;
 use futures::StreamExt as _;
 use mpc_core::protocols::rep3::network::Rep3NetworkExt;
-use mpc_net::tcp_session::{TcpNetworkHandler, TcpNetworkHandlerBuilder};
+use mpc_net::tcp_session::{NetworkConfig, TcpNetworkHandler};
 use mpc_nodes::{
     Action,
     circom::{config::CircomConfig, groth16::Groth16Material},
@@ -80,13 +80,16 @@ pub async fn start(
         .erased();
     let chain_id = http_provider.get_chain_id().await?;
 
-    let network = TcpNetworkHandlerBuilder::new(
-        config.party_id,
-        config.mpc_bind_addr,
-        config.node_addrs.clone(),
-    )
-    .time_to_idle(config.mpc_net_init_session_timeout * 2) // remove sessions that are idle for too long, to prevent hanging sessions in case of failures
-    .build()
+    let network = TcpNetworkHandler::new(NetworkConfig {
+        party_id: config.party_id,
+        bind_addr: config.mpc_bind_addr,
+        node_addrs: config.node_addrs.clone(),
+        init_session_timeout: Some(config.mpc_net_init_session_timeout),
+        timeout: Some(config.mpc_net_timeout),
+        flush_timeout: Some(config.mpc_net_timeout),
+        time_to_idle: config.mpc_net_init_session_timeout * 2, // remove sessions that are idle for too long, to prevent hanging sessions in case of failures
+        max_frame_length: mpc_net::DEFAULT_MAX_FRAME_LENGTH,
+    })
     .await?;
 
     let mpc_sk = ark_babyjubjub::Fr::from_str(config.mpc_sk.expose_secret()).expect("valid mpc_sk");

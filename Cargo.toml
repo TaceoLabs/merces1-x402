@@ -25,38 +25,38 @@ publish = false
 
 [workspace.dependencies]
 alloy = { version = "2", default-features = false }
-ark-babyjubjub = { package = "taceo-ark-babyjubjub", version = "^0.5.3" }
-ark-bn254 = "^0.5.0"
-ark-ec = "^0.5.0"
-ark-ff = "^0.5.0"
-ark-groth16 = "^0.5.0"
-ark-serde-compat = { package = "taceo-ark-serde-compat", version = "0.5", default-features = false }
-ark-serialize = "^0.5.0"
+ark-babyjubjub = { package = "taceo-ark-babyjubjub", version = "0.6.0" }
+ark-bn254 = "^0.6.0"
+ark-ec = "^0.6.0"
+ark-ff = "^0.6.0"
+ark-groth16 = "^0.6.0"
+ark-serde-compat = { package = "taceo-ark-serde-compat", version = "0.6.2", default-features = false }
+ark-serialize = "^0.6.0"
 async-trait = "0.1"
 axum = "0.8"
 axum-extra = "0.12"
 axum-test = "18"
 backon = "1.6"
 chrono = "0.4"
-circom-mpc-vm = { git = "https://github.com/TaceoLabs/co-snarks", rev = "924c886ed3d2e11ba3260f2e7f0ab9cb7546eaf2", version = "0.9.0" }
-circom-proof-schema = { git = "https://github.com/TaceoLabs/circom_proof_schema", rev = "c10be7f44b693c11a76426df8fe2736f67a16c4b", version = "^0.1.0" }
+circom-mpc-vm = { git = "https://github.com/TaceoLabs/co-snarks", rev = "c062afd71540cca659e655aa1a4221fe4cb4d15f", version = "0.9.0" }
+circom-proof-schema = { git = "https://github.com/TaceoLabs/circom_proof_schema", rev = "30bc69c3dab1fd4495aae8bc6021469f77f0c677", version = "^0.1.0" }
 clap = { version = "4.5.53", features = ["derive", "env"] }
 client = { path = "./client" }
-co-circom = { git = "https://github.com/TaceoLabs/co-snarks", rev = "924c886ed3d2e11ba3260f2e7f0ab9cb7546eaf2", version = "0.10.0" }
+co-circom = { git = "https://github.com/TaceoLabs/co-snarks", rev = "c062afd71540cca659e655aa1a4221fe4cb4d15f", version = "0.10.0" }
 config = "0.15"
 contract-rs = { path = "./contract-rs" }
 eyre = "0.6.12"
 futures = "0.3"
-groth16-material = { package = "taceo-groth16-material", version = "0.2" }
-groth16-sol = { package = "taceo-groth16-sol", version = "0.2" }
+groth16-material = { package = "taceo-groth16-material", version = "0.4.2" }
+groth16-sol = { package = "taceo-groth16-sol", version = "0.4.1" }
 humantime = "2"
 humantime-serde = "1"
 itertools = "0.14.0"
-mpc-core = { git = "https://github.com/TaceoLabs/co-snarks", rev = "924c886ed3d2e11ba3260f2e7f0ab9cb7546eaf2", version = "0.10.0" }
-mpc-net = { git = "https://github.com/TaceoLabs/co-snarks", rev = "924c886ed3d2e11ba3260f2e7f0ab9cb7546eaf2", version = "0.5.0" }
+mpc-core = { git = "https://github.com/TaceoLabs/co-snarks", rev = "c062afd71540cca659e655aa1a4221fe4cb4d15f", version = "0.10.0" }
+mpc-net = { git = "https://github.com/TaceoLabs/co-snarks", rev = "c062afd71540cca659e655aa1a4221fe4cb4d15f", version = "0.5.0" }
 mpc-nodes = { path = "./mpc-nodes" }
 num-bigint = { version = "0.4.6" }
-poseidon2 = { package = "taceo-poseidon2", version = "0.2", default-features = false }
+poseidon2 = { package = "taceo-poseidon2", version = "0.3.0", default-features = false }
 rand = "0.8.5"
 rand_chacha = "0.3"
 reqwest = { version = "0.13", default-features = false }
@@ -67,8 +67,8 @@ serde = { version = "1", features = ["derive"] }
 serde_json = { version = "1" }
 sha2 = { version = "0.10", features = ["compress"] }
 sqlx = "0.8"
-taceo-circom-types = { version = "0.2.2", default-features = false }
-taceo-groth16 = "0.1.3"
+taceo-circom-types = { version = "0.3.1", default-features = false }
+taceo-groth16 = "0.2.1"
 taceo-nodes-common = "0.8.2"
 taceo-nodes-observability = "0.1"
 thiserror = { version = "2" }
@@ -95,3 +95,11 @@ incremental = false
 inherits = "bench"
 debug = true
 lto = "thin"
+
+# Keep the Circom helper crates on one source revision until the witness-graph
+# support in circom-witness-rs 0.5.1 is available in a compatible release.
+[patch.crates-io]
+taceo-groth16-material = { git = "https://github.com/TaceoLabs/circom-helpers", rev = "f7973e2201c2bd11eda721d83b586662d4a39e99" }
+taceo-circom-types = { git = "https://github.com/TaceoLabs/circom-helpers", rev = "f7973e2201c2bd11eda721d83b586662d4a39e99" }
+taceo-groth16 = { git = "https://github.com/TaceoLabs/circom-helpers", rev = "f7973e2201c2bd11eda721d83b586662d4a39e99" }
+taceo-ark-algebra = { git = "https://github.com/TaceoLabs/circom-helpers", rev = "f7973e2201c2bd11eda721d83b586662d4a39e99" }
