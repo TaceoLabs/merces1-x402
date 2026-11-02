@@ -268,7 +268,7 @@ run-x402-client-js:
     echo "balance before: $(just get-balance {{ X402_CLIENT_ADDRESS }})"
     echo "running x402 js client example.."
     cd taceo-merces1-x402-js
-    PRIVATE_KEY={{ X402_CLIENT_PRIVATE_KEY }} SERVER_URL=http://localhost:8081 npm run example:client
+    PRIVATE_KEY={{ X402_CLIENT_PRIVATE_KEY }} SERVER_URL=http://localhost:8081 pnpm run example:client
     echo "balance after: $(just get-balance {{ X402_CLIENT_ADDRESS }})"
 
 get-balance address:
