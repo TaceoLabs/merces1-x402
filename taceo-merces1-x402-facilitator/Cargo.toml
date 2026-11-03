@@ -27,7 +27,7 @@ taceo-merces1-x402 = { path = "../taceo-merces1-x402", features = [
   "facilitator"
 ] }
 taceo-nodes-common = { workspace = true, features = ["serde", "web3"] }
-taceo-nodes-observability.workspace = true
+telemetry-batteries = { workspace = true, features = ["metrics-statsd"] }
 tokio = { workspace = true, features = ["macros", "rt-multi-thread"] }
 tower-http = { workspace = true, features = ["cors"] }
 tracing = { workspace = true }

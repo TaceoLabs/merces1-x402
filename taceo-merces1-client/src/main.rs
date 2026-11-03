@@ -75,7 +75,7 @@ async fn main() -> eyre::Result<()> {
     rustls::crypto::aws_lc_rs::default_provider()
         .install_default()
         .expect("Can install");
-    taceo_nodes_observability::install_tracing("info");
+    let _guard = telemetry_batteries::init().expect("Can initialize tracing");
 
     let cli = Merces2ClientCli::parse();
     tracing::info!("config: {cli:#?}");

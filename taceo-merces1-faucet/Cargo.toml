@@ -33,7 +33,7 @@ taceo-nodes-common = { workspace = true, features = [
   "serde",
   "web3",
 ] }
-taceo-nodes-observability.workspace = true
+telemetry-batteries = { workspace = true, features = ["metrics-statsd"] }
 thiserror.workspace = true
 tokio = { workspace = true, features = ["macros", "rt-multi-thread"] }
 tower-http = { workspace = true, features = ["fs", "set-header", "trace"] }
