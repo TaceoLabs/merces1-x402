@@ -10,6 +10,7 @@ import {ERC165} from "@openzeppelin/contracts/utils/introspection/ERC165.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {Poseidon2T2_BN254} from "./Poseidon2.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 
 interface IVerifierClient {
     function verifyCompressedProof(uint256[4] calldata compressedProof, uint256[3] calldata input) external view;
@@ -37,7 +38,7 @@ interface IMercesMpc {
 
 string constant MERCES_TAG = "merces1";
 
-contract Merces is ERC165, EIP712, IMercesMpc {
+contract Merces is ERC165, EIP712, ReentrancyGuard, IMercesMpc {
     using BabyJubJub for BabyJubJub.Affine;
     using ActionQueueLib for ActionQueue;
     using SafeERC20 for IERC20;
@@ -52,11 +53,11 @@ contract Merces is ERC165, EIP712, IMercesMpc {
     IVerifierServer public immutable serverVerifier;
 
     // The token we use
-    bool native; // If true, we use the native token
+    bool public immutable native; // If true, we use the native token
     IERC20 public immutable token;
 
     // The address of the MPC network allowed to post proofs
-    address mpcAddress;
+    address public immutable mpcAddress;
 
     // MPC public keys
     BabyJubJub.Affine public mpcPk1;
@@ -232,9 +233,9 @@ contract Merces is ERC165, EIP712, IMercesMpc {
         return (mpcPk1, mpcPk2, mpcPk3);
     }
 
-    // TODO the following is just for a demo to be able to retrieve funds after it is done
-    // Remove for a real deployment
-    function retrieveFunds(address receiver) public onlyMpc {
+    /// @notice Demo-only function to retrieve funds after workflow completion
+    /// @dev Protected by `onlyMpc` and `nonReentrant` modifiers. Should be removed in production deployments.
+    function retrieveFunds(address receiver) public onlyMpc nonReentrant {
         if (native) {
             (bool success,) = receiver.call{value: address(this).balance}("");
             require(success, "Token transfer failed");
@@ -423,7 +424,7 @@ contract Merces is ERC165, EIP712, IMercesMpc {
         bool[BATCH_SIZE] calldata valid,
         uint256 beta,
         uint256[4] calldata proof
-    ) public onlyMpc returns (uint256[BATCH_SIZE] memory) {
+    ) public onlyMpc nonReentrant returns (uint256[BATCH_SIZE] memory) {
         if (num_transactions > BATCH_SIZE) {
             revert InvalidMpcAction();
         }
