@@ -30,6 +30,6 @@ reqwest = { workspace = true, features = ["rustls"] }
 rustls.workspace = true
 secrecy = { workspace = true, features = ["serde"] }
 taceo-nodes-common = { workspace = true, features = ["serde", "web3"] }
-taceo-nodes-observability.workspace = true
+telemetry-batteries.workspace = true
 tokio = { workspace = true, features = ["macros", "rt-multi-thread"] }
 tracing.workspace = true

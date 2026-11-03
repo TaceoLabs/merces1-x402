@@ -116,10 +116,7 @@ async fn main() -> ExitCode {
     rustls::crypto::aws_lc_rs::default_provider()
         .install_default()
         .expect("Can install");
-    let tracing_config =
-        taceo_nodes_observability::TracingConfig::try_from_env().expect("Can create TryingConfig");
-    let _tracing_handle = taceo_nodes_observability::initialize_tracing(&tracing_config)
-        .expect("Can get tracing handle");
+    let _guard = telemetry_batteries::init().expect("Can initialize tracing");
     match run().await {
         Ok(_) => {
             tracing::info!("good night");
